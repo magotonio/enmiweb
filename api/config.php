@@ -17,6 +17,33 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
 }
 
 /**
+ * Carga el array de configuración del archivo de entorno correspondiente (PRO > LOCAL).
+ * 
+ * @return array
+ */
+function getAppConfig(): array {
+    static $config = null;
+    if ($config !== null) {
+        return $config;
+    }
+
+    $config = [];
+    if (file_exists(__DIR__ . '/config.env.php')) {
+        $loaded = require __DIR__ . '/config.env.php';
+        if (is_array($loaded)) {
+            $config = $loaded;
+        }
+    } elseif (file_exists(__DIR__ . '/config.env.local.php')) {
+        $loaded = require __DIR__ . '/config.env.local.php';
+        if (is_array($loaded)) {
+            $config = $loaded;
+        }
+    }
+
+    return $config;
+}
+
+/**
  * Obtiene la conexión PDO a la base de datos MariaDB.
  * Prioridad de configuración:
  *  1. Archivo de producción no versionado: api/config.env.php (PRO)
@@ -27,21 +54,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
  * @return PDO
  */
 function getDbConnection(): PDO {
-    // 1. Cargar archivo de configuración según entorno (PRO > LOCAL)
-    $customConfig = [];
-    if (file_exists(__DIR__ . '/config.env.php')) {
-        $loaded = require __DIR__ . '/config.env.php';
-        if (is_array($loaded)) {
-            $customConfig = $loaded;
-        }
-    } elseif (file_exists(__DIR__ . '/config.env.local.php')) {
-        $loaded = require __DIR__ . '/config.env.local.php';
-        if (is_array($loaded)) {
-            $customConfig = $loaded;
-        }
-    }
+    $customConfig = getAppConfig();
 
-    // 2. Resolver parámetros con cascada de prioridad
+    // Resolver parámetros con cascada de prioridad
     $host = $customConfig['DB_HOST'] ?? getenv('DB_HOST') ?: '127.0.0.1';
     $port = $customConfig['DB_PORT'] ?? getenv('DB_PORT') ?: '3306';
     $db   = $customConfig['DB_NAME'] ?? getenv('DB_NAME') ?: 'enmi_db';
@@ -66,6 +81,31 @@ function getDbConnection(): PDO {
         ], 500);
         exit();
     }
+}
+
+/**
+ * Obtiene los parámetros de configuración para el envío de correos electrónicos vía SMTP.
+ * Prioridad de configuración:
+ *  1. Archivo de producción: api/config.env.php (PRO)
+ *  2. Archivo de entorno local: api/config.env.local.php (LOCAL)
+ *  3. Variables de entorno: getenv()
+ *  4. Valores predeterminados estándar de Dinahosting
+ * 
+ * @return array
+ */
+function getSmtpConfig(): array {
+    $customConfig = getAppConfig();
+
+    return [
+        'host'       => (string)($customConfig['SMTP_HOST'] ?? getenv('SMTP_HOST') ?: 'eutikea-com.correoseguro.dinaserver.com'),
+        'port'       => (int)($customConfig['SMTP_PORT'] ?? getenv('SMTP_PORT') ?: 465),
+        'secure'     => (string)($customConfig['SMTP_SECURE'] ?? getenv('SMTP_SECURE') ?: 'ssl'),
+        'auth'       => (bool)($customConfig['SMTP_AUTH'] ?? (getenv('SMTP_AUTH') !== false ? filter_var(getenv('SMTP_AUTH'), FILTER_VALIDATE_BOOLEAN) : true)),
+        'user'       => (string)($customConfig['SMTP_USER'] ?? getenv('SMTP_USER') ?: 'enmi@eutikea'),
+        'pass'       => (string)($customConfig['SMTP_PASS'] ?? (getenv('SMTP_PASS') !== false ? getenv('SMTP_PASS') : 'enmI.2702$Tk')),
+        'from_email' => (string)($customConfig['SMTP_FROM_EMAIL'] ?? getenv('SMTP_FROM_EMAIL') ?: 'enmi@eutikea'),
+        'from_name'  => (string)($customConfig['SMTP_FROM_NAME'] ?? getenv('SMTP_FROM_NAME') ?: 'ENMI Web'),
+    ];
 }
 
 /**

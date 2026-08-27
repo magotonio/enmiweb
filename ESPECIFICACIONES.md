@@ -61,6 +61,7 @@ Aplicación web moderna, accesible y modular construida con **Angular 21** conec
 - **Backend**:
   - **Lenguaje/Entorno**: **PHP 8.2+** sin dependencias externas pesadas (despliegue directo en hosting compartido).
   - **Persistencia**: **PDO (PHP Data Objects)** con juego de caracteres `utf8mb4` y sentencias preparadas contra inyecciones SQL.
+  - **Servicio de Email**: Configuración SMTP compatible con Dinahosting (puerto 465 SSL / 587 TLS) cargada dinámicamente mediante cascada de entornos (`config.env.php` > `config.env.local.php` > `getenv()`).
   - **Formato de Comunicación**: JSON REST con cabeceras CORS y códigos de estado HTTP estándar (201, 400, 405, 500).
 - **Infraestructura y Hosting**:
   - **Entorno Local**: **Docker Compose** con 3 servicios:
@@ -150,6 +151,38 @@ Registra una nueva inscripción en la base de datos `enmi_inscripciones`.
   }
   ```
 
+### `POST /api/login.php`
+Autentica un usuario contra la base de datos `enmi_usuarios`.
+
+- **Cabeceras**: `Content-Type: application/json`
+- **Cuerpo (JSON)**:
+  ```json
+  {
+    "login": "admin",
+    "password": "miPasswordSeguro"
+  }
+  ```
+- **Respuesta de Éxito (HTTP 200 OK)**:
+  ```json
+  {
+    "success": true,
+    "message": "Inicio de sesión exitoso.",
+    "user": {
+      "id": 1,
+      "login": "admin",
+      "email": "admin@enmi2027.es"
+    },
+    "token": "a1b2c3d4e5f6..."
+  }
+  ```
+- **Respuesta de Error (HTTP 401 Unauthorized / 403 Forbidden)**:
+  ```json
+  {
+    "success": false,
+    "message": "Usuario o contraseña incorrectos."
+  }
+  ```
+
 ### `GET /api/test_db.php`
 Comprueba la conectividad con MariaDB y reporta el estado y registros actuales.
 
@@ -171,6 +204,52 @@ CREATE TABLE IF NOT EXISTS `enmi_inscripciones` (
   PRIMARY KEY (`id`),
   INDEX `idx_enmi_inscripciones_fecha` (`fecha_creacion`),
   INDEX `idx_enmi_inscripciones_apellidos` (`apellidos`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+### 6.2. Tabla de Usuarios y Autenticación: `enmi_usuarios`
+
+```sql
+CREATE TABLE IF NOT EXISTS `enmi_usuarios` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `login` VARCHAR(50) NOT NULL,
+  `email` VARCHAR(255) NOT NULL,
+  `password_hash` VARCHAR(255) NOT NULL COMMENT 'Hash de contraseña encriptada (ej. BCRYPT/Argon2)',
+  `ultimo_login` DATETIME DEFAULT NULL COMMENT 'Fecha y hora del último acceso exitoso',
+  `bloqueado` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0: Activo / No bloqueado, 1: Bloqueado',
+  `fecha_creacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `fecha_actualizacion` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_enmi_usuarios_login` (`login`),
+  UNIQUE KEY `uq_enmi_usuarios_email` (`email`),
+  INDEX `idx_enmi_usuarios_bloqueado` (`bloqueado`),
+  INDEX `idx_enmi_usuarios_ultimo_login` (`ultimo_login`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+### 6.3. Tabla de Recuperación de Contraseñas: `enmi_recuperacion_passwords`
+
+```sql
+CREATE TABLE IF NOT EXISTS `enmi_recuperacion_passwords` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `usuario_id` INT UNSIGNED NOT NULL,
+  `email` VARCHAR(255) NOT NULL,
+  `token_hash` VARCHAR(64) NOT NULL COMMENT 'Hash SHA-256 del token seguro enviado por email',
+  `expira_en` DATETIME NOT NULL COMMENT 'Fecha y hora de expiración del enlace (ej. 30 o 60 min)',
+  `utilizado` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0: Pendiente / No utilizado, 1: Ya utilizado',
+  `ip_solicitud` VARCHAR(45) DEFAULT NULL COMMENT 'Dirección IP desde la que se solicitó el restablecimiento',
+  `fecha_creacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `fecha_utilizacion` DATETIME DEFAULT NULL COMMENT 'Fecha y hora en que se canjeó el token',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_enmi_recuperacion_token` (`token_hash`),
+  INDEX `idx_enmi_recuperacion_usuario` (`usuario_id`),
+  INDEX `idx_enmi_recuperacion_email` (`email`),
+  INDEX `idx_enmi_recuperacion_expira` (`expira_en`),
+  CONSTRAINT `fk_enmi_recuperacion_usuario` 
+    FOREIGN KEY (`usuario_id`) 
+    REFERENCES `enmi_usuarios` (`id`) 
+    ON DELETE CASCADE 
+    ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 

@@ -1,0 +1,5 @@
+/* Componente de Login - Estilos complementarios */
+:host {
+  display: block;
+  width: 100%;
+}

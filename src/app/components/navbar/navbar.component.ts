@@ -1,5 +1,6 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-navbar',
@@ -9,7 +10,11 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   styleUrl: './navbar.component.css'
 })
 export class NavbarComponent {
-  isMobileMenuOpen = signal(false);
+  private readonly authService = inject(AuthService);
+
+  readonly isMobileMenuOpen = signal(false);
+  readonly currentUser = this.authService.currentUser;
+  readonly isLoggedIn = this.authService.isLoggedIn;
 
   toggleMobileMenu(): void {
     this.isMobileMenuOpen.update(prev => !prev);
@@ -17,5 +22,10 @@ export class NavbarComponent {
 
   closeMobileMenu(): void {
     this.isMobileMenuOpen.set(false);
+  }
+
+  logout(): void {
+    this.closeMobileMenu();
+    this.authService.logout();
   }
 }

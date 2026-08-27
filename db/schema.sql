@@ -3,11 +3,13 @@
 -- Motor: MariaDB (Dinahosting)
 -- Juego de caracteres: utf8mb4 / Collate: utf8mb4_unicode_ci
 -- Prefijo de tablas: enmi_
--- Última actualización: Versión 1.1.0
+-- Última actualización: Versión 1.3.0 (Recuperación de contraseñas)
 -- =====================================================================
 
--- Tabla: enmi_inscripciones
+-- ---------------------------------------------------------------------
+-- Tabla 1: enmi_inscripciones
 -- Registra los participantes inscritos mediante el formulario.
+-- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `enmi_inscripciones` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `nombre` VARCHAR(100) NOT NULL,
@@ -19,4 +21,50 @@ CREATE TABLE IF NOT EXISTS `enmi_inscripciones` (
   PRIMARY KEY (`id`),
   INDEX `idx_enmi_inscripciones_fecha` (`fecha_creacion`),
   INDEX `idx_enmi_inscripciones_apellidos` (`apellidos`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- Tabla 2: enmi_usuarios
+-- Registra los usuarios del sistema para autenticación y control de acceso.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `enmi_usuarios` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `login` VARCHAR(50) NOT NULL,
+  `email` VARCHAR(255) NOT NULL,
+  `password_hash` VARCHAR(255) NOT NULL COMMENT 'Hash de contraseña encriptada (ej. BCRYPT/Argon2)',
+  `ultimo_login` DATETIME DEFAULT NULL COMMENT 'Fecha y hora del último acceso exitoso',
+  `bloqueado` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0: Activo / No bloqueado, 1: Bloqueado',
+  `fecha_creacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `fecha_actualizacion` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_enmi_usuarios_login` (`login`),
+  UNIQUE KEY `uq_enmi_usuarios_email` (`email`),
+  INDEX `idx_enmi_usuarios_bloqueado` (`bloqueado`),
+  INDEX `idx_enmi_usuarios_ultimo_login` (`ultimo_login`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- Tabla 3: enmi_recuperacion_passwords
+-- Gestiona los tokens seguros temporales para la recuperación de contraseñas.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `enmi_recuperacion_passwords` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `usuario_id` INT UNSIGNED NOT NULL,
+  `email` VARCHAR(255) NOT NULL,
+  `token_hash` VARCHAR(64) NOT NULL COMMENT 'Hash SHA-256 del token seguro enviado por email',
+  `expira_en` DATETIME NOT NULL COMMENT 'Fecha y hora de expiración del enlace (ej. 30 o 60 min)',
+  `utilizado` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0: Pendiente / No utilizado, 1: Ya utilizado',
+  `ip_solicitud` VARCHAR(45) DEFAULT NULL COMMENT 'Dirección IP desde la que se solicitó el restablecimiento',
+  `fecha_creacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `fecha_utilizacion` DATETIME DEFAULT NULL COMMENT 'Fecha y hora en que se canjeó el token',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_enmi_recuperacion_token` (`token_hash`),
+  INDEX `idx_enmi_recuperacion_usuario` (`usuario_id`),
+  INDEX `idx_enmi_recuperacion_email` (`email`),
+  INDEX `idx_enmi_recuperacion_expira` (`expira_en`),
+  CONSTRAINT `fk_enmi_recuperacion_usuario` 
+    FOREIGN KEY (`usuario_id`) 
+    REFERENCES `enmi_usuarios` (`id`) 
+    ON DELETE CASCADE 
+    ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -1,0 +1,21 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # 1. Excluir las llamadas a la API (/api y subrutas) para que no vayan a Angular
+  RewriteRule ^api(/.*)?$ - [L,NC]
+
+  # 2. Si el archivo o directorio existe físicamente (assets, js, css, imágenes), servirlo directamente
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # 3. Todas las demás rutas se envían a index.html para que Angular Router las administre
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# Desactivar negociación de contenido para evitar conflictos de rutas
+Options -MultiViews
+
+# Opcional: Desactivar listado de directorios
+Options -Indexes

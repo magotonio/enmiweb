@@ -37,8 +37,6 @@ yarn-error.log
 testem.log
 # Environment & credentials
 api/config.env.php
-api/config.env.pro.php
-!api/config.env.local.php
 .env
 
 # System files
