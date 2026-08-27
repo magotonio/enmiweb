@@ -1,0 +1,66 @@
+services:
+  # Base de Datos MariaDB
+  db:
+    image: mariadb:10.11
+    container_name: enmi_mariadb
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: enmi_db
+      MYSQL_USER: enmi_user
+      MYSQL_PASSWORD: enmi_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      # Inicializa el esquema automáticamente en el primer arranque
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    networks:
+      - enmi_network
+
+  # Backend PHP / Apache
+  api:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: enmi_api
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: enmi_db
+      DB_USER: enmi_user
+      DB_PASS: enmi_password
+    volumes:
+      - ./api:/var/www/html/api
+    depends_on:
+      - db
+    networks:
+      - enmi_network
+
+  # Administrador visual de Base de Datos (phpMyAdmin)
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: enmi_phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: rootpassword
+    depends_on:
+      - db
+    networks:
+      - enmi_network
+
+networks:
+  enmi_network:
+    driver: bridge
+
+volumes:
+  mariadb_data:
+    driver: local

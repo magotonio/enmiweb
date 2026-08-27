@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-navy: #001F5B;
+  --color-brand-navy-dark: #001540;
+  --color-brand-navy-light: #0d2c6e;
+  --color-brand-navy-soft: #f0f4fb;
+
+  --color-brand-gold: #D4AF37;
+  --color-brand-gold-hover: #c49f28;
+  --color-brand-gold-light: #faf5e6;
+  --color-brand-gold-dark: #a8871b;
+
+  --color-brand-silver: #C0C0C0;
+  --color-brand-silver-muted: #B5B3B3;
+  --color-brand-silver-light: #f5f6f8;
+  --color-brand-silver-border: #dcdde1;
+
+  --color-brand-white: #FFFFFF;
+}
+
+:root {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col selection:bg-brand-gold/30 selection:text-brand-navy;
+}
+
+

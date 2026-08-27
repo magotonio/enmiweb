@@ -1,0 +1,39 @@
+<footer class="w-full bg-brand-navy text-slate-300 mt-auto border-t border-brand-navy-light/40">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-center justify-between">
+      
+      <!-- Brand column -->
+      <div class="flex flex-col items-center md:items-start text-center md:text-left gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/10 p-1 flex items-center justify-center border border-white/20">
+            <img src="logo.svg" alt="ENMI Logo" class="w-full h-full object-contain brightness-0 invert">
+          </div>
+          <span class="text-lg font-bold text-white tracking-tight">
+            ENMI <span class="text-brand-gold">2027</span>
+          </span>
+        </div>
+        <p class="text-xs text-slate-300 max-w-xs leading-relaxed">
+          Encuentro Nacional Madrid 2027. Un espacio de encuentro, crecimiento y comunidad.
+        </p>
+      </div>
+
+      <!-- Quick links -->
+      <div class="flex justify-center items-center gap-6 text-sm font-medium">
+        <a routerLink="/" class="text-slate-300 hover:text-brand-gold transition-colors">
+          Inicio
+        </a>
+        <span class="text-slate-600">•</span>
+        <a routerLink="/registro" class="text-slate-300 hover:text-brand-gold transition-colors">
+          Inscripción
+        </a>
+      </div>
+
+      <!-- Copyright & Info -->
+      <div class="flex flex-col items-center md:items-end text-center md:text-right gap-1 text-xs text-slate-400">
+        <p>© {{ currentYear }} ENMI Madrid. Todos los derechos reservados.</p>
+        <p class="text-slate-400">Diseñado para una experiencia moderna y fluida.</p>
+      </div>
+
+    </div>
+  </div>
+</footer>

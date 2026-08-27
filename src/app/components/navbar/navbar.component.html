@@ -1,0 +1,97 @@
+<header
+  class="sticky top-0 z-50 w-full bg-brand-white/95 backdrop-blur-md border-b border-brand-silver/30 shadow-xs transition-all duration-200">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-20">
+
+      <!-- Brand Logo & Name -->
+      <a routerLink="/" (click)="closeMobileMenu()"
+        class="flex items-center gap-3.5 group focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold rounded-xl p-1">
+        <div
+          class="relative flex items-center justify-center w-12 h-12 rounded-2xl bg-brand-navy-soft border border-brand-silver/40 p-1.5 shadow-xs transition-transform duration-300 group-hover:scale-105">
+          <img src="logo.svg" alt="ENMI Logo" class="w-full h-full object-contain">
+        </div>
+        <div class="flex flex-col">
+          <span
+            class="text-xl font-bold tracking-tight text-brand-navy group-hover:text-brand-navy-light transition-colors">
+            ENMI <span class="text-brand-gold">2027</span>
+          </span>
+          <span class="text-[11px] font-medium uppercase tracking-widest text-slate-500">
+            Madrid · Encuentro Nacional
+          </span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation Menu (Horizontal) -->
+      <nav class="hidden md:flex items-center gap-1.5 lg:gap-2">
+        <a routerLink="/" [routerLinkActiveOptions]="{exact: true}"
+          routerLinkActive="text-brand-navy bg-brand-navy-soft font-semibold shadow-xs"
+          [routerLinkActive]="'text-brand-navy bg-brand-navy-soft font-semibold'"
+          class="px-4 py-2 text-sm font-medium text-slate-600 rounded-xl transition-all duration-200 hover:text-brand-navy hover:bg-slate-100/80">
+          Inicio
+        </a>
+      </nav>
+
+      <!-- Desktop CTA Button -->
+      <div class="hidden md:flex items-center gap-3">
+        <a routerLink="/registro"
+          class="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-brand-navy bg-gradient-to-r from-brand-gold to-brand-gold-hover hover:from-brand-gold-hover hover:to-brand-gold-dark hover:text-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0">
+          <span>Inscribirme</span>
+          <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"></path>
+            <path d="m12 5 7 7-7 7"></path>
+          </svg>
+        </a>
+      </div>
+
+      <!-- Mobile Hamburger Button -->
+      <div class="flex md:hidden">
+        <button (click)="toggleMobileMenu()" type="button" aria-label="Abrir menú de navegación"
+          [attr.aria-expanded]="isMobileMenuOpen()"
+          class="inline-flex items-center justify-center p-2.5 rounded-xl text-brand-navy hover:bg-brand-navy-soft transition-colors focus:outline-none focus:ring-2 focus:ring-brand-gold">
+          @if (!isMobileMenuOpen()) {
+          <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+          </svg>
+          } @else {
+          <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          }
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Mobile Dropdown Menu -->
+  @if (isMobileMenuOpen()) {
+  <div
+    class="md:hidden border-t border-brand-silver/30 bg-brand-white/95 px-4 pt-3 pb-6 space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+    <a routerLink="/" (click)="closeMobileMenu()" [routerLinkActiveOptions]="{exact: true}"
+      routerLinkActive="bg-brand-navy text-white font-semibold"
+      class="block px-4 py-3 text-base font-medium text-slate-700 rounded-xl hover:bg-brand-navy-soft hover:text-brand-navy transition-colors">
+      Inicio
+    </a>
+
+    <a routerLink="/registro" (click)="closeMobileMenu()" routerLinkActive="bg-brand-navy text-white font-semibold"
+      class="block px-4 py-3 text-base font-medium text-slate-700 rounded-xl hover:bg-brand-navy-soft hover:text-brand-navy transition-colors">
+      Inscripción
+    </a>
+
+    <div class="pt-2">
+      <a routerLink="/registro" (click)="closeMobileMenu()"
+        class="flex items-center justify-center gap-2 w-full px-5 py-3 text-base font-semibold text-brand-navy bg-gradient-to-r from-brand-gold to-brand-gold-hover hover:text-white rounded-xl shadow-xs transition-colors">
+        <span>Inscribirme ahora</span>
+        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14"></path>
+          <path d="m12 5 7 7-7 7"></path>
+        </svg>
+      </a>
+    </div>
+  </div>
+  }
+</header>
