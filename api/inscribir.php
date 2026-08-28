@@ -28,8 +28,23 @@ if (!is_array($data)) {
 }
 
 // Extraer y sanitizar campos
-$nombre = isset($data['nombre']) ? trim((string)$data['nombre']) : '';
-$apellidos = isset($data['apellidos']) ? trim((string)$data['apellidos']) : '';
+$nombre               = isset($data['nombre']) ? trim((string)$data['nombre']) : '';
+$apellidos            = isset($data['apellidos']) ? trim((string)$data['apellidos']) : '';
+$nombreArtistico      = isset($data['nombre_artistico']) ? trim((string)$data['nombre_artistico']) : null;
+$nifPasaporte         = isset($data['nif_pasaporte']) ? strtoupper(trim((string)$data['nif_pasaporte'])) : '';
+$email                = isset($data['email']) ? strtolower(trim((string)$data['email'])) : '';
+$telefono             = isset($data['telefono']) ? trim((string)$data['telefono']) : '';
+$origen               = isset($data['origen']) ? trim((string)$data['origen']) : '';
+$asociacion           = isset($data['asociacion']) ? trim((string)$data['asociacion']) : null;
+$quieroParticipar     = !empty($data['quiero_participar']) ? 1 : 0;
+$aceptaPrivacidad     = !empty($data['acepta_privacidad']) ? 1 : 0;
+$consentimientoImagen = !empty($data['consentimiento_imagen']) ? 1 : 0;
+$comentarios          = isset($data['comentarios']) ? trim((string)$data['comentarios']) : null;
+
+// Si los campos opcionales vienen vacíos, guardarlos como NULL
+if ($nombreArtistico === '') $nombreArtistico = null;
+if ($asociacion === '') $asociacion = null;
+if ($comentarios === '') $comentarios = null;
 
 // Validaciones de negocio
 $errors = [];
@@ -50,11 +65,49 @@ if (empty($apellidos)) {
     $errors['apellidos'] = 'Los apellidos no pueden superar los 150 caracteres.';
 }
 
+if ($nombreArtistico !== null && mb_strlen($nombreArtistico) > 100) {
+    $errors['nombre_artistico'] = 'El nombre artístico no puede superar los 100 caracteres.';
+}
+
+if (empty($nifPasaporte)) {
+    $errors['nif_pasaporte'] = 'El NIF / CIF / Pasaporte es obligatorio.';
+} elseif (mb_strlen($nifPasaporte) < 3 || mb_strlen($nifPasaporte) > 30) {
+    $errors['nif_pasaporte'] = 'Introduce un documento de identidad válido.';
+}
+
+if (empty($email)) {
+    $errors['email'] = 'El correo electrónico es obligatorio.';
+} elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    $errors['email'] = 'Introduce una dirección de correo electrónico válida.';
+} elseif (mb_strlen($email) > 255) {
+    $errors['email'] = 'El correo electrónico no puede superar los 255 caracteres.';
+}
+
+if (empty($telefono)) {
+    $errors['telefono'] = 'El teléfono móvil es obligatorio.';
+} elseif (mb_strlen($telefono) < 6 || mb_strlen($telefono) > 30) {
+    $errors['telefono'] = 'Introduce un número de teléfono válido.';
+}
+
+if (empty($origen)) {
+    $errors['origen'] = 'La localidad, provincia o país de residencia es obligatorio.';
+} elseif (mb_strlen($origen) < 2 || mb_strlen($origen) > 150) {
+    $errors['origen'] = 'El campo de residencia debe tener entre 2 y 150 caracteres.';
+}
+
+if ($asociacion !== null && mb_strlen($asociacion) > 150) {
+    $errors['asociacion'] = 'La asociación no puede superar los 150 caracteres.';
+}
+
+if (!$aceptaPrivacidad) {
+    $errors['acepta_privacidad'] = 'Debes aceptar la Política de Privacidad y RGPD para poder inscribirte.';
+}
+
 if (!empty($errors)) {
     sendJsonResponse([
         'success' => false,
         'message' => 'Errores de validación en el formulario.',
-        'errors' => $errors
+        'errors'  => $errors
     ], 400);
 }
 
@@ -67,33 +120,60 @@ $pdo = getDbConnection();
 try {
     $stmt = $pdo->prepare("
         INSERT INTO `enmi_inscripciones` 
-            (`nombre`, `apellidos`, `estado`, `ip_registro`, `fecha_creacion`) 
+            (`nombre`, `apellidos`, `nombre_artistico`, `nif_pasaporte`, `email`, `telefono`, `origen`, `asociacion`, `quiero_participar`, `acepta_privacidad`, `consentimiento_imagen`, `comentarios`, `estado`, `ip_registro`, `fecha_creacion`) 
         VALUES 
-            (:nombre, :apellidos, 'activo', :ip_registro, NOW())
+            (:nombre, :apellidos, :nombre_artistico, :nif_pasaporte, :email, :telefono, :origen, :asociacion, :quiero_participar, :acepta_privacidad, :consentimiento_imagen, :comentarios, 'activo', :ip_registro, NOW())
     ");
 
     $stmt->execute([
-        ':nombre'      => $nombre,
-        ':apellidos'   => $apellidos,
-        ':ip_registro' => $ipRegistro
+        ':nombre'                => $nombre,
+        ':apellidos'             => $apellidos,
+        ':nombre_artistico'      => $nombreArtistico,
+        ':nif_pasaporte'         => $nifPasaporte,
+        ':email'                 => $email,
+        ':telefono'              => $telefono,
+        ':origen'                => $origen,
+        ':asociacion'            => $asociacion,
+        ':quiero_participar'     => $quieroParticipar,
+        ':acepta_privacidad'     => $aceptaPrivacidad,
+        ':consentimiento_imagen' => $consentimientoImagen,
+        ':comentarios'           => $comentarios,
+        ':ip_registro'           => $ipRegistro
     ]);
 
     $insertedId = (int)$pdo->lastInsertId();
 
+    $logMsg = "Nueva inscripción ID #{$insertedId} registrada para {$nombre} {$apellidos}";
+    if ($nombreArtistico) {
+        $logMsg .= " ({$nombreArtistico})";
+    }
+
     // Registrar log de nueva inscripción
-    logInfo('inscripciones', 'registro_creado', "Nueva inscripción ID #{$insertedId} registrada para {$nombre} {$apellidos}", [
-        'id'        => $insertedId,
-        'nombre'    => $nombre,
-        'apellidos' => $apellidos
+    logInfo('inscripciones', 'registro_creado', $logMsg, [
+        'id'                => $insertedId,
+        'nombre'            => $nombre,
+        'apellidos'         => $apellidos,
+        'nombre_artistico'  => $nombreArtistico,
+        'email'             => $email,
+        'quiero_participar' => $quieroParticipar
     ]);
 
     // Enviar notificación por correo electrónico a los administradores
     $emailResult = sendRegistrationNotification([
-        'id'          => $insertedId,
-        'nombre'      => $nombre,
-        'apellidos'   => $apellidos,
-        'ip_registro' => $ipRegistro,
-        'fecha'       => date('d/m/Y H:i:s')
+        'id'                    => $insertedId,
+        'nombre'                => $nombre,
+        'apellidos'             => $apellidos,
+        'nombre_artistico'      => $nombreArtistico,
+        'nif_pasaporte'         => $nifPasaporte,
+        'email'                 => $email,
+        'telefono'              => $telefono,
+        'origen'                => $origen,
+        'asociacion'            => $asociacion,
+        'quiero_participar'     => $quieroParticipar,
+        'consentimiento_imagen' => $consentimientoImagen,
+        'comentarios'           => $comentarios,
+        'ip_registro'           => $ipRegistro,
+        'fecha'                 => date('d/m/Y H:i:s')
     ]);
 
     // Registrar log del resultado del envío de notificación
@@ -109,8 +189,11 @@ try {
         'message'      => 'Inscripción guardada correctamente.',
         'id'           => $insertedId,
         'data'         => [
-            'nombre'    => $nombre,
-            'apellidos' => $apellidos
+            'nombre'            => $nombre,
+            'apellidos'         => $apellidos,
+            'nombre_artistico'  => $nombreArtistico,
+            'email'             => $email,
+            'quiero_participar' => (bool)$quieroParticipar
         ],
         'notificacion' => [
             'enviada' => $emailResult['success'] ?? false,
@@ -121,7 +204,8 @@ try {
 } catch (PDOException $e) {
     logError('inscripciones', 'error_bd_inscripcion', $e->getMessage(), [
         'nombre'    => $nombre,
-        'apellidos' => $apellidos
+        'apellidos' => $apellidos,
+        'email'     => $email
     ]);
     sendJsonResponse([
         'success' => false,

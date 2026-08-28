@@ -30,11 +30,16 @@ try {
 
     // Lista blanca para evitar inyecciones en ORDER BY
     $allowedSortFields = [
-        'id'             => 'id',
-        'nombre'         => 'nombre',
-        'apellidos'      => 'apellidos',
-        'estado'         => 'estado',
-        'fecha_creacion' => 'fecha_creacion'
+        'id'                => 'id',
+        'nombre'            => 'nombre',
+        'apellidos'         => 'apellidos',
+        'nombre_artistico'  => 'nombre_artistico',
+        'email'             => 'email',
+        'nif_pasaporte'     => 'nif_pasaporte',
+        'origen'            => 'origen',
+        'quiero_participar' => 'quiero_participar',
+        'estado'            => 'estado',
+        'fecha_creacion'    => 'fecha_creacion'
     ];
 
     $sortColumn = $allowedSortFields[$sortParam] ?? 'fecha_creacion';
@@ -45,15 +50,27 @@ try {
     $params = [];
 
     if ($search !== '') {
-        $whereClauses[] = '(nombre LIKE :search1 OR apellidos LIKE :search2 OR id = :searchId)';
-        $params[':search1'] = '%' . $search . '%';
-        $params[':search2'] = '%' . $search . '%';
+        $whereClauses[] = '(nombre LIKE :search1 OR apellidos LIKE :search2 OR nombre_artistico LIKE :search3 OR email LIKE :search4 OR nif_pasaporte LIKE :search5 OR telefono LIKE :search6 OR origen LIKE :search7 OR asociacion LIKE :search8 OR id = :searchId OR ip_registro LIKE :searchIp)';
+        $searchWild = '%' . $search . '%';
+        $params[':search1'] = $searchWild;
+        $params[':search2'] = $searchWild;
+        $params[':search3'] = $searchWild;
+        $params[':search4'] = $searchWild;
+        $params[':search5'] = $searchWild;
+        $params[':search6'] = $searchWild;
+        $params[':search7'] = $searchWild;
+        $params[':search8'] = $searchWild;
+        $params[':searchIp'] = $searchWild;
         $params[':searchId'] = is_numeric($search) ? (int)$search : 0;
     }
 
     if ($estado !== '' && $estado !== 'todos') {
-        $whereClauses[] = 'estado = :estado';
-        $params[':estado'] = $estado;
+        if ($estado === 'participa') {
+            $whereClauses[] = 'quiero_participar = 1';
+        } else {
+            $whereClauses[] = 'estado = :estado';
+            $params[':estado'] = $estado;
+        }
     }
 
     $whereSql = '';
@@ -67,6 +84,16 @@ try {
             id, 
             nombre, 
             apellidos, 
+            nombre_artistico,
+            nif_pasaporte,
+            email,
+            telefono,
+            origen,
+            asociacion,
+            quiero_participar,
+            acepta_privacidad,
+            consentimiento_imagen,
+            comentarios,
             estado, 
             ip_registro, 
             fecha_creacion, 
@@ -83,13 +110,23 @@ try {
     // Formatear tipos de datos devueltos
     $formattedInscripciones = array_map(function ($item) {
         return [
-            'id'                  => (int)$item['id'],
-            'nombre'              => $item['nombre'],
-            'apellidos'           => $item['apellidos'],
-            'estado'              => $item['estado'] ?? 'activo',
-            'ip_registro'         => $item['ip_registro'] ?? null,
-            'fecha_creacion'      => $item['fecha_creacion'],
-            'fecha_actualizacion' => $item['fecha_actualizacion']
+            'id'                    => (int)$item['id'],
+            'nombre'                => $item['nombre'],
+            'apellidos'             => $item['apellidos'],
+            'nombre_artistico'      => $item['nombre_artistico'] ?? null,
+            'nif_pasaporte'         => $item['nif_pasaporte'] ?? '',
+            'email'                 => $item['email'] ?? '',
+            'telefono'              => $item['telefono'] ?? '',
+            'origen'                => $item['origen'] ?? '',
+            'asociacion'            => $item['asociacion'] ?? null,
+            'quiero_participar'     => !empty($item['quiero_participar']),
+            'acepta_privacidad'     => !empty($item['acepta_privacidad']),
+            'consentimiento_imagen' => !empty($item['consentimiento_imagen']),
+            'comentarios'           => $item['comentarios'] ?? null,
+            'estado'                => $item['estado'] ?? 'activo',
+            'ip_registro'           => $item['ip_registro'] ?? null,
+            'fecha_creacion'        => $item['fecha_creacion'],
+            'fecha_actualizacion'   => $item['fecha_actualizacion']
         ];
     }, $inscripciones);
 
@@ -98,15 +135,17 @@ try {
         SELECT 
             COUNT(*) AS total,
             SUM(CASE WHEN DATE(fecha_creacion) = CURDATE() THEN 1 ELSE 0 END) AS hoy,
-            SUM(CASE WHEN estado = 'activo' THEN 1 ELSE 0 END) AS activos
+            SUM(CASE WHEN estado = 'activo' THEN 1 ELSE 0 END) AS activos,
+            SUM(CASE WHEN quiero_participar = 1 THEN 1 ELSE 0 END) AS quieren_participar
         FROM `enmi_inscripciones`
     ");
     $statsData = $statsStmt->fetch() ?: [];
 
     $stats = [
-        'total'   => (int)($statsData['total'] ?? count($formattedInscripciones)),
-        'hoy'     => (int)($statsData['hoy'] ?? 0),
-        'activos' => (int)($statsData['activos'] ?? count($formattedInscripciones))
+        'total'              => (int)($statsData['total'] ?? count($formattedInscripciones)),
+        'hoy'                => (int)($statsData['hoy'] ?? 0),
+        'activos'            => (int)($statsData['activos'] ?? count($formattedInscripciones)),
+        'quieren_participar' => (int)($statsData['quieren_participar'] ?? 0)
     ];
 
     sendJsonResponse([

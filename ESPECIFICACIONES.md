@@ -146,7 +146,17 @@ Registra una nueva inscripción en la base de datos `enmi_inscripciones`.
   ```json
   {
     "nombre": "Elena",
-    "apellidos": "Navarro Sánchez"
+    "apellidos": "Navarro Sánchez",
+    "nombre_artistico": "Magic Elena",
+    "nif_pasaporte": "12345678Z",
+    "email": "elena@magia.es",
+    "telefono": "+34 600 123 456",
+    "origen": "Segovia, España",
+    "asociacion": "Círculo Mágico Segoviano",
+    "quiero_participar": true,
+    "acepta_privacidad": true,
+    "consentimiento_imagen": true,
+    "comentarios": "Disponible para gala infantil de cerca."
   }
   ```
 - **Respuesta de Éxito (HTTP 201 Created)**:
@@ -157,7 +167,14 @@ Registra una nueva inscripción en la base de datos `enmi_inscripciones`.
     "id": 1,
     "data": {
       "nombre": "Elena",
-      "apellidos": "Navarro Sánchez"
+      "apellidos": "Navarro Sánchez",
+      "nombre_artistico": "Magic Elena",
+      "email": "elena@magia.es",
+      "quiero_participar": true
+    },
+    "notificacion": {
+      "enviada": true,
+      "mensaje": "Correo enviado exitosamente vía SMTP."
     }
   }
   ```
@@ -166,9 +183,9 @@ Registra una nueva inscripción en la base de datos `enmi_inscripciones`.
 Consulta y recupera el listado completo de participantes inscritos con estadísticas agregadas y parámetros opcionales de búsqueda y ordenación.
 
 - **Parámetros URL Opcionales**:
-  - `q`: Búsqueda textual por nombre o apellidos.
-  - `estado`: Filtrado por estado (`activo`, etc.).
-  - `sort`: Campo de ordenación (`fecha_creacion`, `nombre`, `apellidos`, `id`).
+  - `q`: Búsqueda textual por nombre, apellidos, nombre artístico, email, NIF, origen, asociación o ID.
+  - `estado`: Filtrado por estado (`activo`, `participa`, etc.).
+  - `sort`: Campo de ordenación (`fecha_creacion`, `nombre`, `apellidos`, `nombre_artistico`, `email`, `nif_pasaporte`, `origen`, `quiero_participar`, `id`).
   - `order`: Sentido de ordenación (`ASC` o `DESC`).
 - **Respuesta de Éxito (HTTP 200 OK)**:
   ```json
@@ -178,49 +195,32 @@ Consulta y recupera el listado completo de participantes inscritos con estadíst
     "stats": {
       "total": 2,
       "hoy": 1,
-      "activos": 2
+      "activos": 2,
+      "quieren_participar": 1
     },
     "data": [
       {
         "id": 2,
         "nombre": "Carlos",
         "apellidos": "Gómez Pérez",
+        "nombre_artistico": "Mago Carlos",
+        "nif_pasaporte": "87654321X",
+        "email": "carlos@mago.es",
+        "telefono": "612345678",
+        "origen": "Madrid, España",
+        "asociacion": "Hermandad Mágica Española",
+        "quiero_participar": true,
+        "acepta_privacidad": true,
+        "consentimiento_imagen": true,
+        "comentarios": "Alergia a los frutos secos.",
         "estado": "activo",
         "ip_registro": "127.0.0.1",
-        "fecha_creacion": "2026-08-27 20:15:00",
+        "fecha_creacion": "2026-08-28 20:15:00",
         "fecha_actualizacion": null
       }
     ]
   }
   ```
-
-### `POST /api/login.php`
-Autentica un usuario contra la base de datos `enmi_usuarios`.
-
-- **Cabeceras**: `Content-Type: application/json`
-- **Cuerpo (JSON)** (Usuario por defecto creado en BD: `admin` / `Admin.123`):
-  ```json
-  {
-    "login": "admin",
-    "password": "Admin.123"
-  }
-  ```
-- **Respuesta de Éxito (HTTP 200 OK)**:
-  ```json
-  {
-    "success": true,
-    "message": "Inicio de sesión exitoso.",
-    "user": {
-      "id": 1,
-      "login": "admin",
-      "email": "admin@enmi2027.es"
-    },
-    "token": "a1b2c3d4e5f6..."
-  }
-  ```
-
-### `GET /api/test_db.php`
-Comprueba la conectividad con MariaDB y reporta el estado y registros actuales.
 
 ---
 
@@ -233,63 +233,26 @@ CREATE TABLE IF NOT EXISTS `enmi_inscripciones` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `nombre` VARCHAR(100) NOT NULL,
   `apellidos` VARCHAR(150) NOT NULL,
+  `nombre_artistico` VARCHAR(100) DEFAULT NULL,
+  `nif_pasaporte` VARCHAR(30) NOT NULL DEFAULT '',
+  `email` VARCHAR(255) NOT NULL DEFAULT '',
+  `telefono` VARCHAR(30) NOT NULL DEFAULT '',
+  `origen` VARCHAR(150) NOT NULL DEFAULT '',
+  `asociacion` VARCHAR(150) DEFAULT NULL,
+  `quiero_participar` TINYINT(1) NOT NULL DEFAULT 0,
+  `acepta_privacidad` TINYINT(1) NOT NULL DEFAULT 0,
+  `consentimiento_imagen` TINYINT(1) NOT NULL DEFAULT 0,
+  `comentarios` TEXT DEFAULT NULL,
   `estado` VARCHAR(20) NOT NULL DEFAULT 'activo',
   `ip_registro` VARCHAR(45) DEFAULT NULL,
   `fecha_creacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `fecha_actualizacion` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   INDEX `idx_enmi_inscripciones_fecha` (`fecha_creacion`),
-  INDEX `idx_enmi_inscripciones_apellidos` (`apellidos`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
-### 6.2. Tabla de Usuarios y Autenticación: `enmi_usuarios`
-
-```sql
-CREATE TABLE IF NOT EXISTS `enmi_usuarios` (
-  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `login` VARCHAR(50) NOT NULL,
-  `email` VARCHAR(255) NOT NULL,
-  `password_hash` VARCHAR(255) NOT NULL COMMENT 'Hash de contraseña encriptada (ej. BCRYPT/Argon2)',
-  `ultimo_login` DATETIME DEFAULT NULL COMMENT 'Fecha y hora del último acceso exitoso',
-  `bloqueado` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0: Activo / No bloqueado, 1: Bloqueado',
-  `fecha_creacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `fecha_actualizacion` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_enmi_usuarios_login` (`login`),
-  UNIQUE KEY `uq_enmi_usuarios_email` (`email`),
-  INDEX `idx_enmi_usuarios_bloqueado` (`bloqueado`),
-  INDEX `idx_enmi_usuarios_ultimo_login` (`ultimo_login`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
-### 6.3. Tabla de Logs y Auditoría: `enmi_logs`
-
-```sql
-CREATE TABLE IF NOT EXISTS `enmi_logs` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `nivel` VARCHAR(20) NOT NULL DEFAULT 'INFO' COMMENT 'Nivel de severidad: DEBUG, INFO, NOTICE, WARNING, ERROR, CRITICAL, ALERT, EMERGENCY',
-  `categoria` VARCHAR(50) NOT NULL DEFAULT 'general' COMMENT 'Módulo o categoría: auth, inscripciones, email, api, bd, seguridad, sistema',
-  `accion` VARCHAR(100) NOT NULL COMMENT 'Identificador de la acción (ej: login_exitoso, login_fallido, registro_creado, email_enviado, error_sql)',
-  `mensaje` TEXT NOT NULL COMMENT 'Descripción legible o detalle del evento',
-  `contexto` JSON DEFAULT NULL COMMENT 'Datos complementarios, payload o stack trace en formato JSON',
-  `usuario_id` INT UNSIGNED DEFAULT NULL COMMENT 'ID del usuario autenticado si aplica',
-  `ip` VARCHAR(45) DEFAULT NULL COMMENT 'Dirección IP del cliente (IPv4 o IPv6)',
-  `user_agent` VARCHAR(255) DEFAULT NULL COMMENT 'Navegador o cliente HTTP que originó la petición',
-  `origen` VARCHAR(100) DEFAULT NULL COMMENT 'Fichero o endpoint de origen (ej: inscribir.php, mailer.php)',
-  `fecha_creacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha y hora exacta del registro',
-  PRIMARY KEY (`id`),
-  INDEX `idx_enmi_logs_nivel` (`nivel`),
-  INDEX `idx_enmi_logs_categoria` (`categoria`),
-  INDEX `idx_enmi_logs_accion` (`accion`),
-  INDEX `idx_enmi_logs_usuario` (`usuario_id`),
-  INDEX `idx_enmi_logs_fecha` (`fecha_creacion`),
-  INDEX `idx_enmi_logs_cat_fecha` (`categoria`, `fecha_creacion`),
-  CONSTRAINT `fk_enmi_logs_usuario` 
-    FOREIGN KEY (`usuario_id`) 
-    REFERENCES `enmi_usuarios` (`id`) 
-    ON DELETE SET NULL 
-    ON UPDATE CASCADE
+  INDEX `idx_enmi_inscripciones_apellidos` (`apellidos`),
+  INDEX `idx_enmi_inscripciones_email` (`email`),
+  INDEX `idx_enmi_inscripciones_nif` (`nif_pasaporte`),
+  INDEX `idx_enmi_inscripciones_participar` (`quiero_participar`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
@@ -297,57 +260,24 @@ CREATE TABLE IF NOT EXISTS `enmi_logs` (
 
 ## 7. Requisitos Funcionales (RF)
 
-- **RF-01: Entrada de Datos**:
-  - El usuario ingresa su nombre y apellidos gestionados reactivamente por `ReactiveFormsModule`.
-- **RF-02: Validación Reactiva en Cliente**:
-  - Validación visual inmediata y al pulsar el botón de envío. Resalta campos con errores y dirige el foco automáticamente al primer campo inválido.
-- **RF-03: Envío Asíncrono y Estado de Carga**:
-  - Al enviar un formulario válido, se desactiva el botón y se muestra un indicador animado de carga (*"Guardando inscripción..."*).
-- **RF-04: Gestión de Errores del Servidor**:
-  - Si la API o la base de datos fallan, se muestra un banner de error accesible (`role="alert"`) manteniendo los datos introducidos para reintentar.
-- **RF-05: Estado de Confirmación (Éxito)**:
-  - Al completarse el registro en MariaDB, se conmuta el estado mediante Signals (`isSubmitted`) y se despliega el mensaje de éxito con el nombre registrado.
-- **RF-06: Registro Continuo**:
-  - Botón *"Registrar a otra persona"* que limpia el formulario y enfoca de nuevo el campo *Nombre*.
-- **RF-07: Control de Acceso y Protección de Rutas Administrativas**:
-  - Rutas bajo `/admin/*` protegidas por `authGuard`. Redirección al login y retorno a la ruta previa al autenticarse.
-- **RF-08: Panel de Revisión de Inscritos**:
-  - Interfaz de administración con métricas rápidas (KPIs), tabla con ordenación por columnas, buscador en tiempo real, paginación configurable y modal de detalle.
-- **RF-09: Exportación de Datos a CSV**:
-  - Generación en cliente de archivo CSV con BOM UTF-8 (\uFEFF) para compatibilidad con Microsoft Excel y caracteres en español.
+- **RF-01: Entrada de Datos Completa**:
+  - Captación de nombre real, apellidos, nombre artístico, documento de identidad (NIF/CIF/Pasaporte), correo electrónico, teléfono móvil, lugar de residencia (localidad/provincia/país), asociación o círculo mágico, voluntad de participación activa, aceptación de RGPD y derechos de imagen, y comentarios adicionales.
+- **RF-02: Modales Interactivos en Formulario**:
+  - Modal informativo con las 6 modalidades de participación (Concurso oficial, Galas, Feria de stands, Charlas y Apoyo) y aviso de contacto.
+  - Modal legal con el texto íntegro de Política de Privacidad / RGPD y aceptación directa.
+- **RF-03: Diseño Adaptable y Ampliado**:
+  - Contenedor responsive ancho (`max-w-4xl`) con rejilla de 2 columnas en desktop y fluido en móviles.
+- **RF-04: Gestión y Auditoría en Panel de Administración**:
+  - Listado enriquecido con identificación artística, filtro de participación, modal de ficha completa y exportación a Excel/CSV con todas las columnas.
 
 ---
 
 ## 8. Registro de Cambios (Changelog)
 
-### v2.5.0 (Actual)
-- **Tabla de Logs y Auditoría (`enmi_logs`)**: Creación de la migración `004_create_enmi_logs.sql` y actualización del esquema consolidado `schema.sql` para registro de eventos, errores, notificaciones y auditoría de accesos.
-- **Niveles de Log Configurables**: Filtrado por nivel de severidad (`LOG_LEVEL`: `DEBUG`, `INFO`, `NOTICE`, `WARNING`, `ERROR`, `CRITICAL`) configurable en `config.env.*.php` y variables de entorno.
-- **Control Global de Errores en API**: Handlers globales para excepciones, errores de ejecución PHP y errores fatales en `api/config.php` con registro automático en `enmi_logs` y modo depuración (`SHOW_ERROR_DETAILS`).
-- **Servicio Centralizado de Logs (`api/logger.php`)**: Funciones PHP reutilizables (`logEvent`, `logDebug`, `logInfo`, `logNotice`, `logWarning`, `logError`, `logCritical`, `logNotification`, `logAuth`) con captura automática de IP, User-Agent y origen, almacenamiento JSON y mecanismo de fallback seguro.
-- **Integración de Logs en Endpoints**: Auditoría de inicios de sesión en `login.php` e inscripciones/notificaciones en `inscribir.php`.
-- **Diagnóstico en `test_db.php`**: Monitorización del estado de tablas `enmi_inscripciones`, `enmi_usuarios`, `enmi_logs` y visualización de la configuración activa de logs.
-
-### v2.4.0
-- **Servicio SMTP Nativo y Notificaciones (`api/mailer.php`)**: Implementación de cliente SMTP ligero en PHP 8.2 compatible con Dinahosting (SSL/TLS con autenticación) para envío de correos sin dependencias de terceros.
-- **Notificación por Nueva Inscripción**: Envío automático de correo con plantilla HTML moderna y versión texto a las direcciones configuradas en `NOTIFICATION_EMAILS` al procesar `POST /api/inscribir.php`.
-- **Configuración Multidirección de Emails**: Soporte para array de destinatarios en `config.env.*.php` y función auxiliar `getNotificationEmails()`.
-
-### v2.3.0
-- **Panel de Administración de Inscritos**: Implementación de la página `/admin/inscritos` con diseño premium en tonos azul marino y dorado.
-- **Endpoint GET `/api/inscripciones.php`**: Creación del servicio PHP con filtros de búsqueda, ordenación por columnas y cálculo de métricas en tiempo real.
-- **Seguridad en Rutas (AuthGuard)**: Creación de guard funcional `authGuard` en Angular para proteger el acceso a administradores autenticados.
-- **Exportación CSV**: Soporte de descarga de listados filtrados con codificación UTF-8 BOM.
-- **Internacionalización**: Configuración del locale en español en `app.config.ts` para visualización precisa de fechas.
-
-### v2.2.0
-- **Infraestructura Docker Compose**: Configuración completa con servicios MariaDB 10.11, PHP 8.2 Apache y phpMyAdmin.
-- **Backend API REST en PHP**: Creación de endpoints `api/config.php`, `api/inscribir.php` (inserción con PDO parametrizada) y `api/test_db.php`.
-- **Integración HTTP en Angular**: Implementación de `InscripcionService`, `provideHttpClient(withFetch())`, configuración de proxy `proxy.conf.json`.
-
----
-
-## 9. Backlog / Próximas Mejoras Propuestas
-- [ ] Incorporación de campos adicionales (Correo electrónico, Teléfono, Fecha de nacimiento).
-- [ ] Envío de correo de confirmación automático (vía PHPMailer / SMTP).
-- [ ] Modo oscuro / selector de tema.
+### v2.6.0 (Actual)
+- **Ampliación Integral del Formulario de Inscripción**: Inclusión de campos para nombre artístico, NIF/CIF/Pasaporte, email, teléfono, lugar de residencia, asociación, quiero participar, consentimiento de imagen y comentarios.
+- **Modales de Información y RGPD**: Modal de desglose de participación y modal de texto legal de protección de datos.
+- **Diseño Ancho y Adaptable**: Rejilla responsive de 2 columnas (`max-w-4xl`) con microinteracciones y secciones visuales.
+- **Migración 005 (`005_add_fields_to_enmi_inscripciones.sql`)**: Modificación del esquema de MariaDB.
+- **Actualización de API y Notificaciones**: Adaptación de `inscribir.php`, `inscripciones.php` y plantillas de correo en `mailer.php`.
+- **Panel de Administración Enriquecido**: Ficha detallada con datos artísticos, residencia, contacto y exportación CSV completa.

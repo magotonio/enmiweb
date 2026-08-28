@@ -67,11 +67,37 @@ export class InscripcionService {
       return;
     }
 
-    const headers = ['ID', 'Nombre', 'Apellidos', 'Estado', 'IP Registro', 'Fecha de Registro'];
+    const headers = [
+      'ID',
+      'Nombre',
+      'Apellidos',
+      'Nombre Artístico',
+      'NIF / Pasaporte',
+      'Correo Electrónico',
+      'Teléfono Móvil',
+      'Lugar de Residencia',
+      'Asociación Mágica',
+      'Quiero Participar',
+      'Consentimiento Imagen',
+      'Comentarios',
+      'Estado',
+      'IP Registro',
+      'Fecha de Registro'
+    ];
+
     const rows = inscripciones.map(item => [
       item.id.toString(),
       `"${(item.nombre || '').replace(/"/g, '""')}"`,
       `"${(item.apellidos || '').replace(/"/g, '""')}"`,
+      `"${(item.nombre_artistico || '').replace(/"/g, '""')}"`,
+      `"${(item.nif_pasaporte || '').replace(/"/g, '""')}"`,
+      `"${(item.email || '').replace(/"/g, '""')}"`,
+      `"${(item.telefono || '').replace(/"/g, '""')}"`,
+      `"${(item.origen || '').replace(/"/g, '""')}"`,
+      `"${(item.asociacion || '').replace(/"/g, '""')}"`,
+      item.quiero_participar ? '"SÍ"' : '"NO"',
+      item.consentimiento_imagen ? '"SÍ"' : '"NO"',
+      `"${(item.comentarios || '').replace(/"/g, '""')}"`,
       `"${(item.estado || 'activo').replace(/"/g, '""')}"`,
       `"${(item.ip_registro || '').replace(/"/g, '""')}"`,
       `"${(item.fecha_creacion || '').replace(/"/g, '""')}"`

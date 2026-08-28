@@ -1,38 +1,42 @@
-<div class="w-full py-10 sm:py-16 px-4 flex items-center justify-center flex-1 animate-in fade-in duration-300">
-  <section class="w-full max-w-lg mx-auto">
+<div class="w-full py-8 sm:py-12 px-4 flex items-center justify-center flex-1 animate-in fade-in duration-300">
+  <section class="w-full max-w-4xl mx-auto">
     <div
       class="relative bg-brand-white border border-brand-silver/40 rounded-3xl p-6 sm:p-10 shadow-2xl shadow-brand-navy/10 transition-all duration-300">
+
       <!-- Decorative top gradient accent bar with brand colors -->
       <div
-        class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-brand-navy via-brand-gold to-brand-navy rounded-t-3xl"
+        class="absolute top-0 left-0 right-0 h-2.5 bg-gradient-to-r from-brand-navy via-brand-gold to-brand-navy rounded-t-3xl"
         aria-hidden="true"></div>
 
       <!-- Header Section -->
-      <header class="mb-8 text-center sm:text-left">
-        <div class="flex justify-center mb-6">
-          <img src="logo.svg" alt="Logo"
-            class="h-60 w-auto object-contain drop-shadow-sm transition-transform duration-300 hover:scale-105">
+      <header class="mb-8 text-center">
+        <div class="flex justify-center mb-5">
+          <img src="logo.svg" alt="Logo ENMI"
+            class="h-44 sm:h-52 w-auto object-contain drop-shadow-sm transition-transform duration-300 hover:scale-105">
         </div>
 
         <div
-          class="inline-flex items-center gap-1.5 px-3.5 py-1 text-xs font-bold tracking-wider text-brand-navy bg-brand-gold/15 border border-brand-gold/40 rounded-full uppercase mb-3">
-          <span class="w-1.5 h-1.5 rounded-full bg-brand-gold animate-pulse"></span>
-          Inscripción
+          class="inline-flex items-center gap-2 px-4 py-1 text-xs font-extrabold tracking-wider text-brand-navy bg-brand-gold/15 border border-brand-gold/40 rounded-full uppercase mb-3 shadow-2xs">
+          <span class="w-2 h-2 rounded-full bg-brand-gold animate-pulse"></span>
+          Formulario Oficial de Inscripción
         </div>
 
-        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-brand-navy mb-2">
+        <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-brand-navy mb-2.5">
           Registro de Participante
         </h1>
-        <p class="text-sm sm:text-base text-slate-600 leading-relaxed">
-          Por favor, completa tus datos personales para completar tu inscripción.
+        <p class="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
+          Completa tus datos personales, de contacto y artísticos para reservar tu plaza en el Encuentro Nacional de
+          Magos Infantiles (ENMI).
         </p>
       </header>
 
       @if (!isSubmitted()) {
-      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-5" novalidate id="registrationForm">
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-8" novalidate id="registrationForm">
+
+        <!-- Banner de Error de Servidor -->
         @if (serverError()) {
         <div
-          class="flex items-start gap-3 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm shadow-sm transition-all"
+          class="flex items-start gap-3.5 p-4 sm:p-5 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm shadow-sm transition-all"
           role="alert">
           <svg class="w-5 h-5 text-red-500 shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -40,124 +44,783 @@
             <line x1="12" y1="8" x2="12" y2="12"></line>
             <line x1="12" y1="16" x2="12.01" y2="16"></line>
           </svg>
-          <span class="font-medium leading-snug">{{ serverError() }}</span>
+          <div>
+            <strong class="font-bold block">No se pudo procesar la inscripción</strong>
+            <span class="font-normal leading-snug">{{ serverError() }}</span>
+          </div>
         </div>
         }
 
-        <!-- Campo Nombre -->
-        <div class="flex flex-col gap-1.5">
-          <label for="nombre" class="text-sm font-semibold text-brand-navy inline-flex items-center gap-1">
-            Nombre <span class="text-red-500 font-bold" aria-hidden="true">*</span>
-          </label>
-          <div class="relative">
-            <input #nombreInput type="text" id="nombre" formControlName="nombre"
-              class="w-full px-4 py-3 text-sm sm:text-base text-brand-navy bg-brand-white border rounded-xl placeholder:text-brand-silver-muted outline-none transition-all duration-200 focus:ring-4"
-              [class.border-brand-silver]="!isFieldInvalid('nombre')"
-              [class.hover:border-brand-silver-muted]="!isFieldInvalid('nombre')"
-              [class.focus:border-brand-navy]="!isFieldInvalid('nombre')"
-              [class.focus:ring-brand-gold/30]="!isFieldInvalid('nombre')"
-              [class.border-red-400]="isFieldInvalid('nombre')" [class.bg-red-50/30]="isFieldInvalid('nombre')"
-              [class.focus:border-red-500]="isFieldInvalid('nombre')"
-              [class.focus:ring-red-500/20]="isFieldInvalid('nombre')" placeholder="Ej. María" autocomplete="given-name"
-              [attr.aria-invalid]="isFieldInvalid('nombre')" aria-describedby="nombreError">
-          </div>
-          <div class="min-h-[1.25rem]">
-            @if (isFieldInvalid('nombre')) {
-            <span class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600" id="nombreError"
-              role="alert">
-              <svg class="w-3.5 h-3.5 shrink-0 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
-                fill="currentColor">
-                <path fill-rule="evenodd"
-                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                  clip-rule="evenodd" />
-              </svg>
-              {{ getErrorMessage('nombre') }}
-            </span>
-            }
-          </div>
-        </div>
+        <!-- ============================================================ -->
+        <!-- SECCIÓN 1: DATOS PERSONALES E IDENTIDAD MÁGICA               -->
+        <!-- ============================================================ -->
+        <fieldset class="border border-brand-silver/30 rounded-2xl p-5 sm:p-6 bg-slate-50/40">
+          <legend
+            class="px-3 text-xs sm:text-sm font-bold uppercase tracking-wider text-brand-navy bg-brand-white border border-brand-silver/40 rounded-xl shadow-2xs inline-flex items-center gap-2">
+            <svg class="w-4 h-4 text-brand-gold-dark" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+              stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+            </svg>
+            1. Datos Personales y Artísticos
+          </legend>
 
-        <!-- Campo Apellidos -->
-        <div class="flex flex-col gap-1.5">
-          <label for="apellidos" class="text-sm font-semibold text-brand-navy inline-flex items-center gap-1">
-            Apellidos <span class="text-red-500 font-bold" aria-hidden="true">*</span>
-          </label>
-          <div class="relative">
-            <input #apellidosInput type="text" id="apellidos" formControlName="apellidos"
-              class="w-full px-4 py-3 text-sm sm:text-base text-brand-navy bg-brand-white border rounded-xl placeholder:text-brand-silver-muted outline-none transition-all duration-200 focus:ring-4"
-              [class.border-brand-silver]="!isFieldInvalid('apellidos')"
-              [class.hover:border-brand-silver-muted]="!isFieldInvalid('apellidos')"
-              [class.focus:border-brand-navy]="!isFieldInvalid('apellidos')"
-              [class.focus:ring-brand-gold/30]="!isFieldInvalid('apellidos')"
-              [class.border-red-400]="isFieldInvalid('apellidos')" [class.bg-red-50/30]="isFieldInvalid('apellidos')"
-              [class.focus:border-red-500]="isFieldInvalid('apellidos')"
-              [class.focus:ring-red-500/20]="isFieldInvalid('apellidos')" placeholder="Ej. García Rodríguez"
-              autocomplete="family-name" [attr.aria-invalid]="isFieldInvalid('apellidos')"
-              aria-describedby="apellidosError">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mt-3">
+
+            <!-- Campo Nombre -->
+            <div class="flex flex-col gap-1.5">
+              <label for="nombre" class="text-sm font-semibold text-brand-navy inline-flex items-center gap-1">
+                Nombre de pila <span class="text-red-500 font-bold" aria-hidden="true">*</span>
+              </label>
+              <div class="relative">
+                <input #nombreInput type="text" id="nombre" formControlName="nombre"
+                  class="w-full px-4 py-3 text-sm sm:text-base text-brand-navy bg-brand-white border rounded-xl placeholder:text-slate-400 outline-none transition-all duration-200 focus:ring-4"
+                  [class.border-brand-silver]="!isFieldInvalid('nombre')"
+                  [class.hover:border-brand-silver-muted]="!isFieldInvalid('nombre')"
+                  [class.focus:border-brand-navy]="!isFieldInvalid('nombre')"
+                  [class.focus:ring-brand-gold/30]="!isFieldInvalid('nombre')"
+                  [class.border-red-400]="isFieldInvalid('nombre')" [class.bg-red-50/30]="isFieldInvalid('nombre')"
+                  [class.focus:border-red-500]="isFieldInvalid('nombre')"
+                  [class.focus:ring-red-500/20]="isFieldInvalid('nombre')" placeholder="Ej. Félix"
+                  autocomplete="given-name" [attr.aria-invalid]="isFieldInvalid('nombre')"
+                  aria-describedby="nombreError">
+              </div>
+              <div class="min-h-[1.25rem]">
+                @if (isFieldInvalid('nombre')) {
+                <span class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600" id="nombreError"
+                  role="alert">
+                  <svg class="w-3.5 h-3.5 shrink-0 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                    fill="currentColor">
+                    <path fill-rule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                      clip-rule="evenodd" />
+                  </svg>
+                  {{ getErrorMessage('nombre') }}
+                </span>
+                }
+              </div>
+            </div>
+
+            <!-- Campo Apellidos -->
+            <div class="flex flex-col gap-1.5">
+              <label for="apellidos" class="text-sm font-semibold text-brand-navy inline-flex items-center gap-1">
+                Apellidos <span class="text-red-500 font-bold" aria-hidden="true">*</span>
+              </label>
+              <div class="relative">
+                <input #apellidosInput type="text" id="apellidos" formControlName="apellidos"
+                  class="w-full px-4 py-3 text-sm sm:text-base text-brand-navy bg-brand-white border rounded-xl placeholder:text-slate-400 outline-none transition-all duration-200 focus:ring-4"
+                  [class.border-brand-silver]="!isFieldInvalid('apellidos')"
+                  [class.hover:border-brand-silver-muted]="!isFieldInvalid('apellidos')"
+                  [class.focus:border-brand-navy]="!isFieldInvalid('apellidos')"
+                  [class.focus:ring-brand-gold/30]="!isFieldInvalid('apellidos')"
+                  [class.border-red-400]="isFieldInvalid('apellidos')"
+                  [class.bg-red-50/30]="isFieldInvalid('apellidos')"
+                  [class.focus:border-red-500]="isFieldInvalid('apellidos')"
+                  [class.focus:ring-red-500/20]="isFieldInvalid('apellidos')" placeholder="Ej. Velayos Lucas"
+                  autocomplete="family-name" [attr.aria-invalid]="isFieldInvalid('apellidos')"
+                  aria-describedby="apellidosError">
+              </div>
+              <div class="min-h-[1.25rem]">
+                @if (isFieldInvalid('apellidos')) {
+                <span class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600" id="apellidosError"
+                  role="alert">
+                  <svg class="w-3.5 h-3.5 shrink-0 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                    fill="currentColor">
+                    <path fill-rule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                      clip-rule="evenodd" />
+                  </svg>
+                  {{ getErrorMessage('apellidos') }}
+                </span>
+                }
+              </div>
+            </div>
+
+            <!-- Campo Nombre Artístico -->
+            <div class="flex flex-col gap-1.5">
+              <label for="nombre_artistico"
+                class="text-sm font-semibold text-brand-navy inline-flex items-center justify-between">
+                <span>Nombre artístico</span>
+                <span class="text-xs font-normal text-slate-500 italic">Opcional</span>
+              </label>
+              <div class="relative">
+                <input type="text" id="nombre_artistico" formControlName="nombre_artistico"
+                  class="w-full px-4 py-3 text-sm sm:text-base text-brand-navy bg-brand-white border border-brand-silver rounded-xl placeholder:text-slate-400 outline-none transition-all duration-200 hover:border-brand-silver-muted focus:border-brand-navy focus:ring-4 focus:ring-brand-gold/30"
+                  placeholder="Ej. Mago Félix / Magic Luna">
+              </div>
+              <span class="text-[11px] text-slate-500">Nombre de escena o alias como ilusionista.</span>
+            </div>
+
+            <!-- Campo NIF / CIF / Pasaporte -->
+            <div class="flex flex-col gap-1.5">
+              <label for="nif_pasaporte" class="text-sm font-semibold text-brand-navy inline-flex items-center gap-1">
+                NIF / CIF / Pasaporte <span class="text-red-500 font-bold" aria-hidden="true">*</span>
+              </label>
+              <div class="relative">
+                <input #nifInput type="text" id="nif_pasaporte" formControlName="nif_pasaporte"
+                  class="w-full px-4 py-3 text-sm sm:text-base text-brand-navy bg-brand-white border rounded-xl placeholder:text-slate-400 uppercase outline-none transition-all duration-200 focus:ring-4"
+                  [class.border-brand-silver]="!isFieldInvalid('nif_pasaporte')"
+                  [class.hover:border-brand-silver-muted]="!isFieldInvalid('nif_pasaporte')"
+                  [class.focus:border-brand-navy]="!isFieldInvalid('nif_pasaporte')"
+                  [class.focus:ring-brand-gold/30]="!isFieldInvalid('nif_pasaporte')"
+                  [class.border-red-400]="isFieldInvalid('nif_pasaporte')"
+                  [class.bg-red-50/30]="isFieldInvalid('nif_pasaporte')"
+                  [class.focus:border-red-500]="isFieldInvalid('nif_pasaporte')"
+                  [class.focus:ring-red-500/20]="isFieldInvalid('nif_pasaporte')"
+                  placeholder="Ej. 12345678Z o Pasaporte" autocomplete="off"
+                  [attr.aria-invalid]="isFieldInvalid('nif_pasaporte')" aria-describedby="nifError">
+              </div>
+              <div class="min-h-[1.25rem]">
+                @if (isFieldInvalid('nif_pasaporte')) {
+                <span class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600" id="nifError"
+                  role="alert">
+                  <svg class="w-3.5 h-3.5 shrink-0 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                    fill="currentColor">
+                    <path fill-rule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                      clip-rule="evenodd" />
+                  </svg>
+                  {{ getErrorMessage('nif_pasaporte') }}
+                </span>
+                }
+              </div>
+            </div>
+
           </div>
-          <div class="min-h-[1.25rem]">
-            @if (isFieldInvalid('apellidos')) {
-            <span class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600" id="apellidosError"
-              role="alert">
-              <svg class="w-3.5 h-3.5 shrink-0 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
-                fill="currentColor">
-                <path fill-rule="evenodd"
-                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                  clip-rule="evenodd" />
+        </fieldset>
+
+        <!-- ============================================================ -->
+        <!-- SECCIÓN 2: CONTACTO Y PROCEDENCIA                           -->
+        <!-- ============================================================ -->
+        <fieldset class="border border-brand-silver/30 rounded-2xl p-5 sm:p-6 bg-slate-50/40">
+          <legend
+            class="px-3 text-xs sm:text-sm font-bold uppercase tracking-wider text-brand-navy bg-brand-white border border-brand-silver/40 rounded-xl shadow-2xs inline-flex items-center gap-2">
+            <svg class="w-4 h-4 text-brand-gold-dark" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+              stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
+            </svg>
+            2. Contacto y Residencia
+          </legend>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mt-3">
+
+            <!-- Campo Correo Electrónico -->
+            <div class="flex flex-col gap-1.5">
+              <label for="email" class="text-sm font-semibold text-brand-navy inline-flex items-center gap-1">
+                Correo electrónico <span class="text-red-500 font-bold" aria-hidden="true">*</span>
+              </label>
+              <div class="relative">
+                <input #emailInput type="email" id="email" formControlName="email"
+                  class="w-full px-4 py-3 text-sm sm:text-base text-brand-navy bg-brand-white border rounded-xl placeholder:text-slate-400 outline-none transition-all duration-200 focus:ring-4"
+                  [class.border-brand-silver]="!isFieldInvalid('email')"
+                  [class.hover:border-brand-silver-muted]="!isFieldInvalid('email')"
+                  [class.focus:border-brand-navy]="!isFieldInvalid('email')"
+                  [class.focus:ring-brand-gold/30]="!isFieldInvalid('email')"
+                  [class.border-red-400]="isFieldInvalid('email')" [class.bg-red-50/30]="isFieldInvalid('email')"
+                  [class.focus:border-red-500]="isFieldInvalid('email')"
+                  [class.focus:ring-red-500/20]="isFieldInvalid('email')" placeholder="ejemplo@mago.es"
+                  autocomplete="email" [attr.aria-invalid]="isFieldInvalid('email')" aria-describedby="emailError">
+              </div>
+              <div class="min-h-[1.25rem]">
+                @if (isFieldInvalid('email')) {
+                <span class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600" id="emailError"
+                  role="alert">
+                  <svg class="w-3.5 h-3.5 shrink-0 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                    fill="currentColor">
+                    <path fill-rule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                      clip-rule="evenodd" />
+                  </svg>
+                  {{ getErrorMessage('email') }}
+                </span>
+                }
+              </div>
+            </div>
+
+            <!-- Campo Teléfono Móvil -->
+            <div class="flex flex-col gap-1.5">
+              <label for="telefono" class="text-sm font-semibold text-brand-navy inline-flex items-center gap-1">
+                Teléfono móvil <span class="text-red-500 font-bold" aria-hidden="true">*</span>
+              </label>
+              <div class="relative">
+                <input #telefonoInput type="tel" id="telefono" formControlName="telefono"
+                  class="w-full px-4 py-3 text-sm sm:text-base text-brand-navy bg-brand-white border rounded-xl placeholder:text-slate-400 outline-none transition-all duration-200 focus:ring-4"
+                  [class.border-brand-silver]="!isFieldInvalid('telefono')"
+                  [class.hover:border-brand-silver-muted]="!isFieldInvalid('telefono')"
+                  [class.focus:border-brand-navy]="!isFieldInvalid('telefono')"
+                  [class.focus:ring-brand-gold/30]="!isFieldInvalid('telefono')"
+                  [class.border-red-400]="isFieldInvalid('telefono')" [class.bg-red-50/30]="isFieldInvalid('telefono')"
+                  [class.focus:border-red-500]="isFieldInvalid('telefono')"
+                  [class.focus:ring-red-500/20]="isFieldInvalid('telefono')" placeholder="Ej. 612 345 678 o +34..."
+                  autocomplete="tel" [attr.aria-invalid]="isFieldInvalid('telefono')" aria-describedby="telefonoError">
+              </div>
+              <div class="min-h-[1.25rem]">
+                @if (isFieldInvalid('telefono')) {
+                <span class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600" id="telefonoError"
+                  role="alert">
+                  <svg class="w-3.5 h-3.5 shrink-0 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                    fill="currentColor">
+                    <path fill-rule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                      clip-rule="evenodd" />
+                  </svg>
+                  {{ getErrorMessage('telefono') }}
+                </span>
+                }
+              </div>
+            </div>
+
+            <!-- Campo Localidad / Provincia / País de residencia -->
+            <div class="flex flex-col gap-1.5">
+              <label for="origen" class="text-sm font-semibold text-brand-navy inline-flex items-center gap-1">
+                Localidad / Provincia / País de residencia <span class="text-red-500 font-bold"
+                  aria-hidden="true">*</span>
+              </label>
+              <div class="relative">
+                <input #origenInput type="text" id="origen" formControlName="origen"
+                  class="w-full px-4 py-3 text-sm sm:text-base text-brand-navy bg-brand-white border rounded-xl placeholder:text-slate-400 outline-none transition-all duration-200 focus:ring-4"
+                  [class.border-brand-silver]="!isFieldInvalid('origen')"
+                  [class.hover:border-brand-silver-muted]="!isFieldInvalid('origen')"
+                  [class.focus:border-brand-navy]="!isFieldInvalid('origen')"
+                  [class.focus:ring-brand-gold/30]="!isFieldInvalid('origen')"
+                  [class.border-red-400]="isFieldInvalid('origen')" [class.bg-red-50/30]="isFieldInvalid('origen')"
+                  [class.focus:border-red-500]="isFieldInvalid('origen')"
+                  [class.focus:ring-red-500/20]="isFieldInvalid('origen')" placeholder="Ej. Segovia / Madrid / España"
+                  [attr.aria-invalid]="isFieldInvalid('origen')" aria-describedby="origenError">
+              </div>
+              <div class="min-h-[1.25rem]">
+                @if (isFieldInvalid('origen')) {
+                <span class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600" id="origenError"
+                  role="alert">
+                  <svg class="w-3.5 h-3.5 shrink-0 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                    fill="currentColor">
+                    <path fill-rule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                      clip-rule="evenodd" />
+                  </svg>
+                  {{ getErrorMessage('origen') }}
+                </span>
+                }
+              </div>
+            </div>
+
+            <!-- Campo Asociación o círculo mágico -->
+            <div class="flex flex-col gap-1.5">
+              <label for="asociacion"
+                class="text-sm font-semibold text-brand-navy inline-flex items-center justify-between">
+                <span>Asociación o círculo mágico</span>
+                <span class="text-xs font-normal text-slate-500 italic">Opcional</span>
+              </label>
+              <div class="relative">
+                <input type="text" id="asociacion" formControlName="asociacion"
+                  class="w-full px-4 py-3 text-sm sm:text-base text-brand-navy bg-brand-white border border-brand-silver rounded-xl placeholder:text-slate-400 outline-none transition-all duration-200 hover:border-brand-silver-muted focus:border-brand-navy focus:ring-4 focus:ring-brand-gold/30"
+                  placeholder="Ej. HME, SEI Madrid, Círculo de Ilusionistas...">
+              </div>
+              <span class="text-[11px] text-slate-500">Club, asociación o círculo de magia al que perteneces.</span>
+            </div>
+
+          </div>
+        </fieldset>
+
+        <!-- ============================================================ -->
+        <!-- SECCIÓN 3: PARTICIPACIÓN ACTIVA EN EL ENCUENTRO             -->
+        <!-- ============================================================ -->
+        <fieldset class="border border-brand-gold/40 rounded-2xl p-5 sm:p-6 bg-brand-gold-light/40 shadow-2xs">
+          <legend
+            class="px-3 text-xs sm:text-sm font-bold uppercase tracking-wider text-brand-navy bg-brand-white border border-brand-gold/40 rounded-xl shadow-2xs inline-flex items-center gap-2">
+            <svg class="w-4 h-4 text-brand-gold-dark" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+              stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+            </svg>
+            3. Participación en el Evento
+          </legend>
+
+          <div
+            class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2 bg-brand-white p-4 rounded-xl border border-brand-gold/30">
+            <div class="flex items-start gap-3">
+              <input type="checkbox" id="quiero_participar" formControlName="quiero_participar"
+                class="mt-1 w-5 h-5 rounded-md text-brand-gold border-brand-silver focus:ring-brand-gold focus:ring-2 cursor-pointer transition-all">
+              <label for="quiero_participar" class="cursor-pointer select-none">
+                <span class="text-sm sm:text-base font-bold text-brand-navy block">
+                  Quiero participar activamente en el Encuentro
+                </span>
+                <span class="text-xs text-slate-600 block mt-0.5 leading-relaxed">
+                  Si deseas presentar número, participar en concursos, conferencias, stands o soporte, marca esta
+                  casilla.
+                </span>
+              </label>
+            </div>
+
+            <!-- Botón de Información con Modal -->
+            <button type="button" (click)="openParticipacionModal()"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-brand-navy bg-brand-gold/20 hover:bg-brand-gold/30 border border-brand-gold/50 rounded-xl transition-colors shrink-0 cursor-pointer shadow-2xs self-start sm:self-center"
+              title="Ver todas las modalidades de participación">
+              <svg class="w-4 h-4 text-brand-gold-dark" xmlns="http://www.w3.org/2000/svg" fill="none"
+                viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
               </svg>
-              {{ getErrorMessage('apellidos') }}
-            </span>
-            }
+              <span>Modalidades y detalles</span>
+            </button>
           </div>
-        </div>
+
+          <p class="text-[11px] text-slate-500 mt-2.5 px-1">
+            * <em>Nota: Tras registrarte, nuestro equipo de organización y dirección artística se pondrá en contacto
+              contigo para coordinar tu propuesta.</em>
+          </p>
+        </fieldset>
+
+        <!-- ============================================================ -->
+        <!-- SECCIÓN 4: COMENTARIOS ADICIONALES                          -->
+        <!-- ============================================================ -->
+        <fieldset class="border border-brand-silver/30 rounded-2xl p-5 sm:p-6 bg-slate-50/40">
+          <legend
+            class="px-3 text-xs sm:text-sm font-bold uppercase tracking-wider text-brand-navy bg-brand-white border border-brand-silver/40 rounded-xl shadow-2xs inline-flex items-center gap-2">
+            <svg class="w-4 h-4 text-brand-gold-dark" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+              stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
+            </svg>
+            4. Comentarios Adicionales
+          </legend>
+
+          <div class="flex flex-col gap-1.5 mt-3">
+            <label for="comentarios"
+              class="text-sm font-semibold text-brand-navy inline-flex items-center justify-between">
+              <span>Observaciones, necesidades especiales o mensaje</span>
+              <span class="text-xs font-normal text-slate-500 italic">Opcional</span>
+            </label>
+            <textarea id="comentarios" formControlName="comentarios" rows="3"
+              class="w-full px-4 py-3 text-sm sm:text-base text-brand-navy bg-brand-white border border-brand-silver rounded-xl placeholder:text-slate-400 outline-none transition-all duration-200 hover:border-brand-silver-muted focus:border-brand-navy focus:ring-4 focus:ring-brand-gold/30 resize-y"
+              placeholder="Indícanos si requieres adaptaciones de accesibilidad, alergias alimentarias, preferencias o notas para la organización..."></textarea>
+            <span class="text-[11px] text-slate-500">Máximo 1000 caracteres.</span>
+          </div>
+        </fieldset>
+
+        <!-- ============================================================ -->
+        <!-- SECCIÓN 5: CONSENTIMIENTOS Y TÉRMINOS LEGALES               -->
+        <!-- ============================================================ -->
+        <fieldset class="border border-brand-silver/40 rounded-2xl p-5 sm:p-6 bg-slate-100/60">
+          <legend
+            class="px-3 text-xs sm:text-sm font-bold uppercase tracking-wider text-brand-navy bg-brand-white border border-brand-silver/40 rounded-xl shadow-2xs inline-flex items-center gap-2">
+            <svg class="w-4 h-4 text-brand-gold-dark" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+              stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+            </svg>
+            5. Consentimientos Legales
+          </legend>
+
+          <div class="flex flex-col gap-4 mt-2">
+
+            <!-- Checkbox 1: Política de Privacidad / RGPD (Obligatorio) -->
+            <div class="flex flex-col gap-1">
+              <div class="flex items-start gap-3">
+                <input type="checkbox" id="acepta_privacidad" formControlName="acepta_privacidad"
+                  class="mt-1 w-5 h-5 rounded-md text-brand-navy border-brand-silver focus:ring-brand-navy focus:ring-2 cursor-pointer transition-all"
+                  [class.border-red-500]="isFieldInvalid('acepta_privacidad')">
+                <label for="acepta_privacidad"
+                  class="text-xs sm:text-sm text-slate-700 select-none cursor-pointer leading-relaxed">
+                  <span class="font-bold text-brand-navy">He leído y acepto la Política de Privacidad y el tratamiento
+                    de mis datos personales</span>
+                  conforme al RGPD y la LOPDGDD para la gestión de la inscripción en ENMI. <span
+                    class="text-red-500 font-bold">*</span>
+                  <button type="button" (click)="openPrivacidadModal()"
+                    class="text-brand-navy font-bold underline hover:text-brand-gold-dark ml-1 inline-flex items-center gap-0.5 cursor-pointer">
+                    (Leer texto legal completo)
+                  </button>
+                </label>
+              </div>
+              <div class="min-h-[1.25rem] ml-8">
+                @if (isFieldInvalid('acepta_privacidad')) {
+                <span class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600" role="alert">
+                  <svg class="w-3.5 h-3.5 shrink-0 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                    fill="currentColor">
+                    <path fill-rule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                      clip-rule="evenodd" />
+                  </svg>
+                  {{ getErrorMessage('acepta_privacidad') }}
+                </span>
+                }
+              </div>
+            </div>
+
+            <!-- Checkbox 2: Consentimiento de Derechos de Imagen (Opcional/Consentimiento) -->
+            <div class="flex items-start gap-3">
+              <input type="checkbox" id="consentimiento_imagen" formControlName="consentimiento_imagen"
+                class="mt-1 w-5 h-5 rounded-md text-brand-navy border-brand-silver focus:ring-brand-navy focus:ring-2 cursor-pointer transition-all">
+              <label for="consentimiento_imagen"
+                class="text-xs sm:text-sm text-slate-700 select-none cursor-pointer leading-relaxed">
+                <span class="font-semibold text-slate-900">Consentimiento de derechos de imagen:</span>
+                Autorizo la captación y publicación de fotografías y grabaciones audiovisuales tomadas durante las
+                actividades públicas del encuentro exclusivamente con fines divulgativos y promocionales de ENMI.
+              </label>
+            </div>
+
+          </div>
+        </fieldset>
 
         <!-- Botón de Envío -->
-        <button type="submit" id="submitBtn"
-          class="group relative inline-flex items-center justify-center gap-2.5 w-full mt-3 px-6 py-3.5 text-base font-semibold text-white bg-brand-navy hover:bg-brand-navy-dark active:bg-brand-navy-dark border border-brand-gold/30 rounded-xl shadow-lg shadow-brand-navy/20 hover:shadow-brand-navy/30 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:pointer-events-none disabled:shadow-none transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-navy cursor-pointer"
-          [disabled]="isLoading()">
-          @if (isLoading()) {
-          <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-brand-gold" xmlns="http://www.w3.org/2000/svg" fill="none"
-            viewBox="0 0 24 24" aria-hidden="true">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-            </path>
-          </svg>
-          <span>Guardando inscripción...</span>
-          } @else {
-          <span>Completar inscripción</span>
-          <svg class="w-4 h-4 text-brand-gold transition-transform duration-200 group-hover:translate-x-1"
-            xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M5 12h14"></path>
-            <path d="m12 5 7 7-7 7"></path>
-          </svg>
-          }
-        </button>
+        <div class="pt-2">
+          <button type="submit" id="submitBtn"
+            class="group relative inline-flex items-center justify-center gap-3 w-full px-8 py-4 text-base sm:text-lg font-bold text-white bg-brand-navy hover:bg-brand-navy-dark active:bg-brand-navy-dark border border-brand-gold/40 rounded-2xl shadow-xl shadow-brand-navy/20 hover:shadow-brand-navy/35 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:pointer-events-none disabled:shadow-none transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-navy cursor-pointer"
+            [disabled]="isLoading()">
+            @if (isLoading()) {
+            <svg class="animate-spin -ml-1 mr-2 h-6 w-6 text-brand-gold" xmlns="http://www.w3.org/2000/svg" fill="none"
+              viewBox="0 0 24 24" aria-hidden="true">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+              </path>
+            </svg>
+            <span>Procesando y guardando inscripción...</span>
+            } @else {
+            <span>Completar Inscripción en ENMI</span>
+            <svg class="w-5 h-5 text-brand-gold transition-transform duration-200 group-hover:translate-x-1"
+              xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14"></path>
+              <path d="m12 5 7 7-7 7"></path>
+            </svg>
+            }
+          </button>
+        </div>
+
       </form>
       } @else {
-      <!-- Mensaje de confirmación tras el envío -->
-      <div id="successState" class="text-center py-6">
+
+      <!-- ============================================================ -->
+      <!-- MENSAJE DE CONFIRMACIÓN TRAS EL ENVÍO                       -->
+      <!-- ============================================================ -->
+      <div id="successState" class="text-center py-8 px-4 animate-in zoom-in-95 duration-300">
         <div
-          class="w-16 h-16 rounded-full bg-brand-gold/15 text-brand-gold-dark border border-brand-gold/30 ring-8 ring-brand-gold/20 flex items-center justify-center mx-auto mb-6">
-          <svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          class="w-20 h-20 rounded-full bg-brand-gold/15 text-brand-gold-dark border border-brand-gold/30 ring-8 ring-brand-gold/20 flex items-center justify-center mx-auto mb-6">
+          <svg class="w-10 h-10" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         </div>
-        <h2 class="text-2xl font-bold tracking-tight text-brand-navy mb-2">¡Inscripción recibida!</h2>
-        <p class="text-slate-600 text-sm sm:text-base leading-relaxed mb-6">
-          Gracias, <strong id="registeredName" class="font-semibold text-brand-navy">{{ registeredFullName()
-            }}</strong>.
-          Tu registro ha sido procesado con éxito.
+        <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-brand-navy mb-2">¡Inscripción Recibida con
+          Éxito!</h2>
+        <p class="text-slate-600 text-sm sm:text-base max-w-lg mx-auto leading-relaxed mb-6">
+          Gracias, <strong id="registeredName" class="font-bold text-brand-navy">{{ registeredFullName() }}</strong>
+          @if (registeredArtistName()) {
+          (<span class="text-brand-gold-dark font-semibold">{{ registeredArtistName() }}</span>)
+          }.
+          Tu solicitud de inscripción ha sido registrada en el sistema del Encuentro Nacional de Magos Infantiles.
         </p>
+
+        <div
+          class="bg-brand-navy-soft/60 border border-brand-navy/10 rounded-2xl p-4 max-w-md mx-auto mb-8 text-xs text-slate-700 text-left space-y-2">
+          <div class="flex items-center gap-2 font-bold text-brand-navy">
+            <svg class="w-4 h-4 text-brand-gold-dark" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+              stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+            </svg>
+            Próximos pasos:
+          </div>
+          <p>Los organizadores revisarán tu solicitud. Si marcaste la opción de participación activa, nos pondremos en
+            contacto por email o teléfono para ultimar detalles.</p>
+        </div>
+
         <button type="button" id="resetBtn"
-          class="inline-flex items-center justify-center px-6 py-2.5 rounded-xl border border-brand-silver text-sm font-semibold text-brand-navy bg-brand-white hover:bg-brand-silver-light hover:border-brand-navy active:bg-brand-silver/20 transition-all duration-200 shadow-sm cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-navy"
+          class="inline-flex items-center justify-center px-6 py-3 rounded-xl border border-brand-silver text-sm font-semibold text-brand-navy bg-brand-white hover:bg-brand-silver-light hover:border-brand-navy active:bg-brand-silver/20 transition-all duration-200 shadow-sm cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-navy"
           (click)="onReset()">
-          Registrar a otra persona
+          Registrar a otro participante
         </button>
       </div>
       }
+
     </div>
   </section>
 </div>
+
+<!-- ===================================================================== -->
+<!-- MODAL 1: MODALIDADES DE PARTICIPACIÓN                                 -->
+<!-- ===================================================================== -->
+@if (showParticipacionModal()) {
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200"
+  role="dialog" aria-modal="true" aria-labelledby="participacionModalTitle" (click)="closeParticipacionModal()">
+
+  <div
+    class="bg-brand-white rounded-3xl border border-brand-gold/40 shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+    (click)="$event.stopPropagation()">
+
+    <!-- Cabecera del Modal -->
+    <div class="bg-brand-navy p-5 sm:p-6 text-white flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div
+          class="w-10 h-10 rounded-xl bg-brand-gold text-brand-navy flex items-center justify-center font-extrabold text-base shadow-xs">
+          🎭
+        </div>
+        <div>
+          <span class="text-[11px] font-bold uppercase tracking-widest text-brand-gold block">
+            Encuentro Nacional de Magos Infantiles
+          </span>
+          <h3 id="participacionModalTitle" class="text-lg sm:text-xl font-extrabold text-white">
+            Modalidades de Participación
+          </h3>
+        </div>
+      </div>
+      <button type="button" (click)="closeParticipacionModal()"
+        class="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+        title="Cerrar modal">
+        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+          stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Contenido con Scroll -->
+    <div class="p-6 overflow-y-auto space-y-4 text-slate-700 text-sm">
+      <p class="text-slate-600 leading-relaxed">
+        El ENMI es un espacio colaborativo donde los magos e ilusionistas pueden formar parte activa del programa. Si
+        marcas la casilla <strong>"Quiero participar"</strong>, podrás colaborar en cualquiera de las siguientes
+        modalidades:
+      </p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+
+        <!-- Modalidad 1 -->
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40">
+          <div class="flex items-center gap-2 font-bold text-brand-navy text-sm mb-1">
+            <span class="text-base">🏆</span>
+            <span>Concurso Oficial</span>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Participación en el certamen oficial de magia infantil / familiar ante el jurado calificador y público
+            congresista.
+          </p>
+        </div>
+
+        <!-- Modalidad 2 -->
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40">
+          <div class="flex items-center gap-2 font-bold text-brand-navy text-sm mb-1">
+            <span class="text-base">🎩</span>
+            <span>Gala de Escena</span>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Presentación de un número unipersonal o en conjunto en el escenario principal del auditorio.
+          </p>
+        </div>
+
+        <!-- Modalidad 3 -->
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40">
+          <div class="flex items-center gap-2 font-bold text-brand-navy text-sm mb-1">
+            <span class="text-base">🪄</span>
+            <span>Gala de Cerca / Infantil</span>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Actuaciones de proximidad en salas habilitadas para grupos reducidos y formato participativo.
+          </p>
+        </div>
+
+        <!-- Modalidad 4 -->
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40">
+          <div class="flex items-center gap-2 font-bold text-brand-navy text-sm mb-1">
+            <span class="text-base">🎪</span>
+            <span>Feria de Dealers / Stand</span>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Espacio expositivo para fabricantes, creadores, librerías mágicas y tiendas especializadas.
+          </p>
+        </div>
+
+        <!-- Modalidad 5 -->
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40">
+          <div class="flex items-center gap-2 font-bold text-brand-navy text-sm mb-1">
+            <span class="text-base">💡</span>
+            <span>Microconferencia / Charla</span>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Ponencias teóricas o talleres prácticos sobre pedagogía mágica, psicología, construcción o puesta en escena.
+          </p>
+        </div>
+
+        <!-- Modalidad 6 -->
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40">
+          <div class="flex items-center gap-2 font-bold text-brand-navy text-sm mb-1">
+            <span class="text-base">🤝</span>
+            <span>Apoyo Logístico</span>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Colaboración voluntaria con el equipo de organización en control de accesos, regiduría técnica o recepción.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Aviso de Contacto -->
+      <div class="p-4 rounded-2xl bg-brand-gold-light border border-brand-gold/40 flex items-start gap-3">
+        <svg class="w-5 h-5 text-brand-gold-dark shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" fill="none"
+          viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+        </svg>
+        <div class="text-xs text-slate-700 leading-relaxed">
+          <strong class="text-brand-navy font-bold block mb-0.5">Nos pondremos en contacto contigo:</strong>
+          Una vez registrado, nuestro equipo de coordinación se comunicará contigo a través de tu correo electrónico o
+          teléfono para acordar disponibilidad, condiciones técnicas y horarios.
+        </div>
+      </div>
+    </div>
+
+    <!-- Pie del Modal -->
+    <div class="bg-slate-50 p-4 px-6 border-t border-brand-silver/30 flex items-center justify-end">
+      <button type="button" (click)="closeParticipacionModal()"
+        class="px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-brand-navy hover:bg-brand-navy-dark rounded-xl shadow-xs transition-colors cursor-pointer">
+        Entendido
+      </button>
+    </div>
+
+  </div>
+</div>
+}
+
+<!-- ===================================================================== -->
+<!-- MODAL 2: POLÍTICA DE PRIVACIDAD / RGPD                               -->
+<!-- ===================================================================== -->
+@if (showPrivacidadModal()) {
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200"
+  role="dialog" aria-modal="true" aria-labelledby="privacidadModalTitle" (click)="closePrivacidadModal()">
+
+  <div
+    class="bg-brand-white rounded-3xl border border-brand-silver/40 shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+    (click)="$event.stopPropagation()">
+
+    <!-- Cabecera del Modal -->
+    <div class="bg-brand-navy p-5 sm:p-6 text-white flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div
+          class="w-10 h-10 rounded-xl bg-brand-gold text-brand-navy flex items-center justify-center font-extrabold text-base shadow-xs">
+          📜
+        </div>
+        <div>
+          <span class="text-[11px] font-bold uppercase tracking-widest text-brand-gold block">
+            Protección de Datos y RGPD
+          </span>
+          <h3 id="privacidadModalTitle" class="text-lg sm:text-xl font-extrabold text-white">
+            Política de Privacidad y Tratamiento de Datos
+          </h3>
+        </div>
+      </div>
+      <button type="button" (click)="closePrivacidadModal()"
+        class="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+        title="Cerrar modal">
+        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+          stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Contenido Legal con Scroll -->
+    <div class="p-6 sm:p-8 overflow-y-auto space-y-4 text-slate-700 text-xs sm:text-sm leading-relaxed">
+
+      <div class="p-4 rounded-2xl bg-blue-50/70 border border-blue-200 text-blue-950 mb-4">
+        <strong class="font-bold block mb-1">Información Básica sobre Protección de Datos (Reglamento UE 2016/679 - RGPD
+          y LOPDGDD 3/2018)</strong>
+        <p class="text-xs text-blue-900 leading-relaxed">
+          En cumplimiento de la normativa europea y nacional de protección de datos, le informamos del tratamiento de
+          los datos personales facilitados en este formulario.
+        </p>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-brand-navy text-sm uppercase tracking-wider mb-1">1. Responsable del Tratamiento</h4>
+        <p>
+          El responsable del tratamiento de sus datos es el <strong>Comité Organizador del Encuentro Nacional de Magos
+            Infantiles (ENMI)</strong>. Puede contactar con la organización a través del formulario oficial o dirección
+          postal facilitada en la web.
+        </p>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-brand-navy text-sm uppercase tracking-wider mb-1">2. Finalidad del Tratamiento</h4>
+        <p>
+          Los datos personales solicitados (nombre, apellidos, nombre artístico, documento de identidad, correo
+          electrónico, teléfono, lugar de residencia y asociación) se recopilan con las siguientes finalidades:
+        </p>
+        <ul class="list-disc pl-5 mt-1.5 space-y-1 text-slate-600">
+          <li>Gestionar la reserva de plaza y tramitación de la inscripción en el encuentro.</li>
+          <li>Emitir acreditaciones y credenciales para el acceso a las instalaciones y eventos.</li>
+          <li>Envío de comunicaciones operativas y logísticas relativas a horarios, galas y novedades del programa.</li>
+          <li>En caso de solicitar participación activa, coordinar la propuesta artística con la dirección del festival.
+          </li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-brand-navy text-sm uppercase tracking-wider mb-1">3. Legitimación</h4>
+        <p>
+          La base legal para el tratamiento de sus datos es el <strong>consentimiento expreso</strong> otorgado al
+          cumplimentar y enviar el formulario de inscripción, así como la relación precontractual / contractual de
+          participación en el evento.
+        </p>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-brand-navy text-sm uppercase tracking-wider mb-1">4. Conservación de los Datos</h4>
+        <p>
+          Los datos serán conservados durante el tiempo estrictamente necesario para el desarrollo del encuentro y la
+          gestión de la edición correspondiente, así como para atender posibles responsabilidades legales.
+        </p>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-brand-navy text-sm uppercase tracking-wider mb-1">5. Cesión y Destinatarios</h4>
+        <p>
+          No se cederán datos a terceros salvo por imperativo legal o a proveedores técnicos indispensables para la
+          prestación de servicios (como el alojamiento web y el sistema de envío de correo electrónico seguro).
+        </p>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-brand-navy text-sm uppercase tracking-wider mb-1">6. Derechos del Usuario (ARCO-POL)
+        </h4>
+        <p>
+          Tiene derecho a solicitar el <strong>acceso</strong> a sus datos personales, su
+          <strong>rectificación</strong>, <strong>supresión</strong>, <strong>limitación del tratamiento</strong>,
+          <strong>oposición</strong> y <strong>portabilidad</strong>. Para ejercer sus derechos, puede contactar en
+          cualquier momento con la organización de ENMI.
+        </p>
+      </div>
+
+      <div>
+        <h4 class="font-bold text-brand-navy text-sm uppercase tracking-wider mb-1">7. Derechos de Imagen y Difusión
+        </h4>
+        <p>
+          Durante el evento se podrán realizar fotografías y grabaciones de vídeo en espacios públicos y auditorios con
+          fines de archivo histórico, divulgación y promoción cultural en canales oficiales del festival.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Pie del Modal -->
+    <div
+      class="bg-slate-50 p-4 px-6 border-t border-brand-silver/30 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <span class="text-xs text-slate-500">Al pulsar en aceptar, confirmas que has leído y comprendido los
+        términos.</span>
+      <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+        <button type="button" (click)="closePrivacidadModal()"
+          class="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-brand-silver/60 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer">
+          Cerrar
+        </button>
+        <button type="button" (click)="acceptPrivacidadFromModal()"
+          class="px-5 py-2 text-xs font-bold text-brand-navy bg-brand-gold hover:bg-brand-gold-hover rounded-xl shadow-xs transition-colors cursor-pointer">
+          He leído y acepto la política
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+}

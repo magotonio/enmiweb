@@ -6,7 +6,7 @@ import { Inscripcion, InscripcionesStats } from '../../models/inscripcion.model'
 import { InscripcionService } from '../../services/inscripcion.service';
 import { AuthService } from '../../services/auth.service';
 
-type SortField = 'id' | 'nombre' | 'apellidos' | 'fecha_creacion' | 'estado';
+type SortField = 'id' | 'nombre' | 'apellidos' | 'nombre_artistico' | 'email' | 'nif_pasaporte' | 'origen' | 'quiero_participar' | 'fecha_creacion' | 'estado';
 type SortDirection = 'ASC' | 'DESC';
 
 @Component({
@@ -22,7 +22,7 @@ export class AdminInscripcionesComponent implements OnInit {
 
   // Estados reactivos principales
   readonly rawInscripciones = signal<Inscripcion[]>([]);
-  readonly stats = signal<InscripcionesStats>({ total: 0, hoy: 0, activos: 0 });
+  readonly stats = signal<InscripcionesStats>({ total: 0, hoy: 0, activos: 0, quieren_participar: 0 });
   readonly isLoading = signal(true);
   readonly isRefreshing = signal(false);
   readonly errorMessage = signal<string | null>(null);
@@ -44,20 +44,30 @@ export class AdminInscripcionesComponent implements OnInit {
     const query = this.searchQuery().trim().toLowerCase();
     const status = this.statusFilter();
 
-    // Filtro por texto (nombre, apellidos, id o IP)
+    // Filtro por texto enriquecido
     if (query) {
       list = list.filter(item =>
         item.nombre.toLowerCase().includes(query) ||
         item.apellidos.toLowerCase().includes(query) ||
         `${item.nombre} ${item.apellidos}`.toLowerCase().includes(query) ||
+        (item.nombre_artistico && item.nombre_artistico.toLowerCase().includes(query)) ||
+        (item.email && item.email.toLowerCase().includes(query)) ||
+        (item.nif_pasaporte && item.nif_pasaporte.toLowerCase().includes(query)) ||
+        (item.telefono && item.telefono.toLowerCase().includes(query)) ||
+        (item.origen && item.origen.toLowerCase().includes(query)) ||
+        (item.asociacion && item.asociacion.toLowerCase().includes(query)) ||
         item.id.toString().includes(query) ||
         (item.ip_registro && item.ip_registro.toLowerCase().includes(query))
       );
     }
 
-    // Filtro por estado
+    // Filtro por estado / participación
     if (status !== 'todos') {
-      list = list.filter(item => (item.estado || 'activo').toLowerCase() === status.toLowerCase());
+      if (status === 'participa') {
+        list = list.filter(item => !!item.quiero_participar);
+      } else {
+        list = list.filter(item => (item.estado || 'activo').toLowerCase() === status.toLowerCase());
+      }
     }
 
     // Ordenación
@@ -72,6 +82,16 @@ export class AdminInscripcionesComponent implements OnInit {
         comparison = a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' });
       } else if (field === 'apellidos') {
         comparison = a.apellidos.localeCompare(b.apellidos, 'es', { sensitivity: 'base' });
+      } else if (field === 'nombre_artistico') {
+        comparison = (a.nombre_artistico || '').localeCompare(b.nombre_artistico || '', 'es', { sensitivity: 'base' });
+      } else if (field === 'email') {
+        comparison = (a.email || '').localeCompare(b.email || '', 'es', { sensitivity: 'base' });
+      } else if (field === 'nif_pasaporte') {
+        comparison = (a.nif_pasaporte || '').localeCompare(b.nif_pasaporte || '', 'es');
+      } else if (field === 'origen') {
+        comparison = (a.origen || '').localeCompare(b.origen || '', 'es', { sensitivity: 'base' });
+      } else if (field === 'quiero_participar') {
+        comparison = (a.quiero_participar ? 1 : 0) - (b.quiero_participar ? 1 : 0);
       } else if (field === 'estado') {
         comparison = (a.estado || 'activo').localeCompare(b.estado || 'activo', 'es');
       } else if (field === 'fecha_creacion') {
@@ -139,7 +159,8 @@ export class AdminInscripcionesComponent implements OnInit {
             const total = response.data.length;
             const hoyStr = new Date().toISOString().slice(0, 10);
             const hoy = response.data.filter(item => item.fecha_creacion?.startsWith(hoyStr)).length;
-            this.stats.set({ total, hoy, activos: total });
+            const quieren_participar = response.data.filter(item => item.quiero_participar).length;
+            this.stats.set({ total, hoy, activos: total, quieren_participar });
           }
         } else {
           this.errorMessage.set(response.message || 'No se pudieron recuperar los registros.');
@@ -172,7 +193,7 @@ export class AdminInscripcionesComponent implements OnInit {
   }
 
   /**
-   * Cambia el filtro de estado.
+   * Cambia el filtro de estado / participación.
    */
   onStatusFilterChange(status: string): void {
     this.statusFilter.set(status);

@@ -14,13 +14,26 @@ CREATE TABLE IF NOT EXISTS `enmi_inscripciones` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `nombre` VARCHAR(100) NOT NULL,
   `apellidos` VARCHAR(150) NOT NULL,
+  `nombre_artistico` VARCHAR(100) DEFAULT NULL,
+  `nif_pasaporte` VARCHAR(30) NOT NULL DEFAULT '',
+  `email` VARCHAR(255) NOT NULL DEFAULT '',
+  `telefono` VARCHAR(30) NOT NULL DEFAULT '',
+  `origen` VARCHAR(150) NOT NULL DEFAULT '',
+  `asociacion` VARCHAR(150) DEFAULT NULL,
+  `quiero_participar` TINYINT(1) NOT NULL DEFAULT 0,
+  `acepta_privacidad` TINYINT(1) NOT NULL DEFAULT 0,
+  `consentimiento_imagen` TINYINT(1) NOT NULL DEFAULT 0,
+  `comentarios` TEXT DEFAULT NULL,
   `estado` VARCHAR(20) NOT NULL DEFAULT 'activo',
   `ip_registro` VARCHAR(45) DEFAULT NULL,
   `fecha_creacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `fecha_actualizacion` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   INDEX `idx_enmi_inscripciones_fecha` (`fecha_creacion`),
-  INDEX `idx_enmi_inscripciones_apellidos` (`apellidos`)
+  INDEX `idx_enmi_inscripciones_apellidos` (`apellidos`),
+  INDEX `idx_enmi_inscripciones_email` (`email`),
+  INDEX `idx_enmi_inscripciones_nif` (`nif_pasaporte`),
+  INDEX `idx_enmi_inscripciones_participar` (`quiero_participar`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
