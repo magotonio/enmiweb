@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -14,6 +14,7 @@ export class LoginComponent {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly loginForm: FormGroup = this.fb.group({
     login: ['', [Validators.required]],
@@ -25,9 +26,10 @@ export class LoginComponent {
   readonly errorMessage = signal<string | null>(null);
 
   constructor() {
-    // Si ya está conectado, redirigir al inicio
+    // Si ya está conectado, redirigir a la administración o al inicio
     if (this.authService.isLoggedIn()) {
-      this.router.navigate(['/']);
+      const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/admin/inscritos';
+      this.router.navigateByUrl(returnUrl);
     }
   }
 
@@ -50,7 +52,8 @@ export class LoginComponent {
       next: (response) => {
         this.isLoading.set(false);
         if (response.success) {
-          this.router.navigate(['/']);
+          const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/admin/inscritos';
+          this.router.navigateByUrl(returnUrl);
         } else {
           this.errorMessage.set(response.message || 'No se pudo iniciar sesión.');
         }

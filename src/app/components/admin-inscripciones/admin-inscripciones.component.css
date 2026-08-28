@@ -1,0 +1,29 @@
+/* Estilos para impresión y exportación en PDF */
+@media print {
+  body {
+    background-color: white !important;
+  }
+
+  header,
+  footer,
+  nav,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  th, td {
+    border: 1px solid #d1d5db !important;
+    padding: 6px 8px !important;
+  }
+}

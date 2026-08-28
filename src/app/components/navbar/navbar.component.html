@@ -1,5 +1,7 @@
 <header
   class="sticky top-0 z-50 w-full bg-brand-white/95 backdrop-blur-md border-b border-brand-silver/30 shadow-xs transition-all duration-200">
+
+  <!-- Barra de Navegación Principal Superior -->
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between h-20">
 
@@ -25,7 +27,6 @@
       <nav class="hidden md:flex items-center gap-1.5 lg:gap-2">
         <a routerLink="/" [routerLinkActiveOptions]="{exact: true}"
           routerLinkActive="text-brand-navy bg-brand-navy-soft font-semibold shadow-xs"
-          [routerLinkActive]="'text-brand-navy bg-brand-navy-soft font-semibold'"
           class="px-4 py-2 text-sm font-medium text-slate-600 rounded-xl transition-all duration-200 hover:text-brand-navy hover:bg-slate-100/80">
           Inicio
         </a>
@@ -33,37 +34,6 @@
 
       <!-- Desktop Actions Area -->
       <div class="hidden md:flex items-center gap-3">
-        
-        <!-- Estado Conectado: Nombre de usuario y botón Desconectar -->
-        @if (isLoggedIn()) {
-        <div class="flex items-center gap-2 pl-2 border-l border-slate-200">
-          
-          <!-- User Badge -->
-          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-brand-navy/5 border border-brand-navy/10 text-brand-navy text-xs font-semibold">
-            <span class="w-6 h-6 rounded-lg bg-brand-navy text-brand-gold flex items-center justify-center text-xs font-bold uppercase shadow-2xs">
-              {{ currentUser()?.login?.charAt(0) || 'U' }}
-            </span>
-            <span class="max-w-[120px] truncate" [title]="currentUser()?.login">
-              {{ currentUser()?.login }}
-            </span>
-          </div>
-
-          <!-- Botón Desconectar -->
-          <button
-            type="button"
-            (click)="logout()"
-            class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 rounded-xl transition-colors cursor-pointer"
-            title="Cerrar sesión"
-          >
-            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
-            </svg>
-            <span>Desconectar</span>
-          </button>
-
-        </div>
-        }
-
         <!-- Botón Inscribirme -->
         <a routerLink="/registro"
           class="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-brand-navy bg-gradient-to-r from-brand-gold to-brand-gold-hover hover:from-brand-gold-hover hover:to-brand-gold-dark hover:text-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0">
@@ -74,7 +44,6 @@
             <path d="m12 5 7 7-7 7"></path>
           </svg>
         </a>
-
       </div>
 
       <!-- Mobile Hamburger Button -->
@@ -99,34 +68,132 @@
     </div>
   </div>
 
+  <!-- Menú Horizontal de Administrador (Sub-barra en color diferenciado debajo de la principal) -->
+  @if (isLoggedIn()) {
+  <div class="w-full bg-brand-navy-dark text-white border-t border-brand-gold/30 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-12 gap-3">
+
+        <!-- Lateral Izquierdo: Badge de Administrador y Navegación Horizontal -->
+        <div class="flex items-center gap-3 sm:gap-4 overflow-x-auto py-1 scrollbar-none">
+
+          <!-- Badge de Panel Administrador -->
+          <div
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-brand-gold/15 border border-brand-gold/30 text-brand-gold text-xs font-bold uppercase tracking-wider shrink-0 shadow-2xs">
+            <svg class="w-3.5 h-3.5 text-brand-gold" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+            <span>Administración</span>
+          </div>
+
+          <!-- Enlaces / Opciones del Menú Horizontal de Administrador -->
+          <nav class="flex items-center gap-1.5">
+            <a routerLink="/admin/inscritos" (click)="closeMobileMenu()"
+              routerLinkActive="bg-brand-gold text-brand-navy font-bold shadow-xs"
+              class="px-3 py-1.5 text-xs font-medium text-slate-200 hover:text-white hover:bg-white/15 rounded-lg transition-all duration-150 whitespace-nowrap flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+              </svg>
+              <span>Inscritos</span>
+            </a>
+
+            <a routerLink="/registro" (click)="closeMobileMenu()"
+              routerLinkActive="bg-brand-gold text-brand-navy font-bold shadow-xs"
+              class="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              <span>Nueva Inscripción</span>
+            </a>
+          </nav>
+        </div>
+
+        <!-- Lateral Derecho: Elemento de Usuario y Botón Desconectar -->
+        <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+
+          <!-- Elemento Usuario -->
+          <div
+            class="inline-flex items-center gap-2 px-2.5 sm:px-3 py-1 rounded-lg bg-white/10 border border-white/15 text-xs font-medium text-white shadow-2xs">
+            <span
+              class="w-5 h-5 rounded-md bg-brand-gold text-brand-navy flex items-center justify-center text-xs font-black uppercase shadow-xs shrink-0">
+              {{ currentUser()?.login?.charAt(0) || 'U' }}
+            </span>
+            <span class="max-w-[90px] sm:max-w-[150px] truncate text-slate-100 font-semibold"
+              [title]="currentUser()?.email || currentUser()?.login">
+              {{ currentUser()?.login }}
+            </span>
+          </div>
+
+          <!-- Elemento Desconectar -->
+          <button type="button" (click)="logout()"
+            class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-rose-200 bg-rose-500/20 hover:bg-rose-500/35 border border-rose-500/40 rounded-lg transition-all duration-150 cursor-pointer shadow-2xs hover:shadow-xs active:scale-95 shrink-0"
+            title="Cerrar sesión">
+            <svg class="w-3.5 h-3.5 text-rose-300 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none"
+              viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+            </svg>
+            <span class="hidden xs:inline sm:inline">Desconectar</span>
+          </button>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+  }
+
   <!-- Mobile Dropdown Menu -->
   @if (isMobileMenuOpen()) {
   <div
     class="md:hidden border-t border-brand-silver/30 bg-brand-white/95 px-4 pt-3 pb-6 space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
-    
-    <!-- Info de usuario en móvil si está conectado -->
+
+    <!-- Sección de Administración en móvil si está conectado -->
     @if (isLoggedIn()) {
-    <div class="p-3 mb-2 rounded-2xl bg-brand-navy/5 border border-brand-navy/10 flex items-center justify-between">
-      <div class="flex items-center gap-2.5">
-        <span class="w-8 h-8 rounded-xl bg-brand-navy text-brand-gold flex items-center justify-center text-sm font-bold uppercase shadow-2xs">
+    <div class="p-3.5 mb-3 rounded-2xl bg-brand-navy-dark border border-brand-gold/30 text-white shadow-sm space-y-3">
+      <div class="flex items-center justify-between">
+        <div
+          class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-brand-gold/20 text-brand-gold text-[11px] font-bold uppercase tracking-wider">
+          <svg class="w-3 h-3 text-brand-gold" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+          <span>Administración</span>
+        </div>
+        <button type="button" (click)="logout()"
+          class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-rose-200 bg-rose-500/20 hover:bg-rose-500/35 border border-rose-500/40 rounded-lg transition-colors cursor-pointer">
+          <svg class="w-3 h-3 text-rose-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+            stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+          </svg>
+          <span>Desconectar</span>
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2.5 pt-1 border-t border-white/10">
+        <span
+          class="w-7 h-7 rounded-lg bg-brand-gold text-brand-navy flex items-center justify-center text-xs font-bold uppercase shadow-2xs shrink-0">
           {{ currentUser()?.login?.charAt(0) || 'U' }}
         </span>
-        <div class="flex flex-col">
-          <span class="text-xs font-bold text-brand-navy leading-tight">
+        <div class="flex flex-col min-w-0">
+          <span class="text-xs font-bold text-white leading-tight truncate">
             {{ currentUser()?.login }}
           </span>
-          <span class="text-[11px] text-slate-500 truncate max-w-[170px]">
+          <span class="text-[11px] text-slate-300 truncate">
             {{ currentUser()?.email }}
           </span>
         </div>
       </div>
-      <button
-        type="button"
-        (click)="logout()"
-        class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors cursor-pointer"
-      >
-        <span>Desconectar</span>
-      </button>
+
+      <div class="pt-2 border-t border-white/10 space-y-1">
+        <a routerLink="/admin/inscritos" (click)="closeMobileMenu()"
+          routerLinkActive="bg-brand-gold text-brand-navy font-bold"
+          class="block px-3 py-2 text-xs font-medium text-slate-200 hover:bg-white/10 rounded-lg transition-colors">
+          Revisar Inscritos
+        </a>
+      </div>
     </div>
     }
 

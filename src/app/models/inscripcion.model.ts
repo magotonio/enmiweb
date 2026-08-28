@@ -1,11 +1,11 @@
 export interface Inscripcion {
-  id?: number;
+  id: number;
   nombre: string;
   apellidos: string;
   estado?: string;
-  ip_registro?: string;
-  fecha_creacion?: Date | string;
-  fecha_actualizacion?: Date | string;
+  ip_registro?: string | null;
+  fecha_creacion: string;
+  fecha_actualizacion?: string | null;
 }
 
 export interface InscripcionFormData {
@@ -24,3 +24,23 @@ export interface InscripcionApiResponse {
   errors?: Record<string, string>;
 }
 
+export interface InscripcionesStats {
+  total: number;
+  hoy: number;
+  activos: number;
+}
+
+export interface InscripcionesListResponse {
+  success: boolean;
+  count: number;
+  stats?: InscripcionesStats;
+  data: Inscripcion[];
+  message?: string;
+}
+
+export interface InscripcionesFilterParams {
+  q?: string;
+  estado?: string;
+  sort?: 'id' | 'nombre' | 'apellidos' | 'fecha_creacion' | 'estado';
+  order?: 'ASC' | 'DESC';
+}

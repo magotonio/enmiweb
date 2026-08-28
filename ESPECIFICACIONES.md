@@ -5,7 +5,7 @@ Documento de especificaciones funcionales y técnicas del sistema de inscripció
 ---
 
 ## 1. Visión General
-Aplicación web moderna, accesible y modular construida con **Angular 21** conectada a un backend ligero en **PHP 8** y base de datos **MariaDB**, diseñada para la captación y registro de participantes con persistencia de datos segura.
+Aplicación web moderna, accesible y modular construida con **Angular 21** conectada a un backend ligero en **PHP 8** y base de datos **MariaDB**, diseñada para la captación y registro de participantes con persistencia de datos segura, así como un panel de administración exclusivo para la consulta, filtrado, auditoría y exportación de registros de asistentes.
 
 ---
 
@@ -22,7 +22,11 @@ Aplicación web moderna, accesible y modular construida con **Angular 21** conec
 ├── ESPECIFICACIONES.md                          # Documento vivo de especificaciones del proyecto
 ├── api/                                         # Backend / API REST en PHP (desplegable en hosting)
 │   ├── config.php                               # Conexión PDO a MariaDB y utilidades de respuesta JSON
+│   ├── config.env.local.php                     # Configuración de entorno de desarrollo (LOCAL)
+│   ├── config.env.pro.php                       # Plantilla de entorno de producción (PRO)
 │   ├── inscribir.php                            # Endpoint POST para registrar inscripciones
+│   ├── inscripciones.php                        # Endpoint GET para listar y auditar inscripciones con estadísticas
+│   ├── login.php                                # Endpoint POST para autenticación de administradores
 │   └── test_db.php                              # Endpoint de diagnóstico y salud de la base de datos
 ├── public/                                      # Activos estáticos públicos (favicon, etc.)
 ├── src/                                         # Código fuente de la aplicación Angular
@@ -30,17 +34,24 @@ Aplicación web moderna, accesible y modular construida con **Angular 21** conec
 │   ├── main.ts                                  # Punto de entrada de la aplicación
 │   ├── styles.css                               # Sistema de diseño, variables CSS y estilos globales
 │   └── app/
-│       ├── app.config.ts                        # Proveedores globales (HttpClient con fetch, detección de cambios)
+│       ├── app.config.ts                        # Proveedores globales (HttpClient con fetch, Locale 'es')
+│       ├── app.routes.ts                        # Rutas de la aplicación con guards de autenticación
 │       ├── app.component.ts/.html/.css          # Componente principal contenedor
 │       ├── models/
-│       │   └── inscripcion.model.ts             # Interfaces TypeScript (datos y respuestas de API)
+│       │   ├── inscripcion.model.ts             # Interfaces TypeScript (inscripciones, respuestas y filtros)
+│       │   └── usuario.model.ts                 # Interfaces TypeScript (usuarios, login, credenciales)
 │       ├── services/
-│       │   └── inscripcion.service.ts           # Servicio HTTP para comunicación con la API PHP
+│       │   ├── auth.service.ts                  # Servicio de autenticación y gestión de sesión
+│       │   └── inscripcion.service.ts           # Servicio HTTP para registro, consulta y exportación CSV
+│       ├── guards/
+│       │   └── auth.guard.ts                    # Guard funcional para proteger rutas administrativas
 │       └── components/
-│           └── registration-form/               # Componente Standalone del Formulario
-│               ├── registration-form.component.ts
-│               ├── registration-form.component.html
-│               └── registration-form.component.css
+│           ├── navbar/                          # Barra superior con menú horizontal de administrador
+│           ├── footer/                          # Pie de página institucional
+│           ├── home/                            # Portada y presentación del encuentro
+│           ├── login/                           # Formulario de acceso de administradores
+│           ├── registration-form/               # Formulario de inscripción pública
+│           └── admin-inscripciones/             # Panel de revisión, búsqueda y exportación de inscritos
 └── db/                                          # Gestión de base de datos y versiones
     ├── schema.sql                               # Esquema completo consolidado actual (MariaDB)
     └── migrations/                              # Scripts incrementales versionados
@@ -51,18 +62,20 @@ Aplicación web moderna, accesible y modular construida con **Angular 21** conec
 
 ## 3. Stack Tecnológico e Infraestructura
 - **Frontend**:
-  - **Framework**: **Angular 21** (Standalone Components, Signals, Control Flow moderno `@if`/`@else`).
+  - **Framework**: **Angular 21** (Standalone Components, Signals, Control Flow moderno `@if`/`@else`/`@for`).
+  - **Seguridad**: Guards funcionales `CanActivateFn` con redirección inteligente y memoria de URL previa.
   - **Formularios**: **Reactive Forms** (`ReactiveFormsModule`, `FormBuilder`, `Validators`).
   - **Comunicación HTTP**: `@angular/common/http` (`provideHttpClient(withFetch())`).
   - **Lenguaje**: **TypeScript 5.9+** (Modo estricto).
   - **Estilos**: **Tailwind CSS v4** (`@tailwindcss/postcss`, clases de utilidad modernas, diseño responsive, microinteracciones y estados dinámicos).
+  - **Internacionalización**: Locale nativo `es` (`registerLocaleData(localeEs, 'es')`) para formateo con `DatePipe`.
   - **Tipografía**: *Plus Jakarta Sans* (Google Fonts).
-  - **Accesibilidad**: Atributos `aria-*`, alertas `role="alert"`, navegación completa por teclado y autofoco inteligente.
+  - **Accesibilidad**: Atributos `aria-*`, alertas `role="alert"`, modales `role="dialog"`, navegación completa por teclado.
 - **Backend**:
   - **Lenguaje/Entorno**: **PHP 8.2+** sin dependencias externas pesadas (despliegue directo en hosting compartido).
   - **Persistencia**: **PDO (PHP Data Objects)** con juego de caracteres `utf8mb4` y sentencias preparadas contra inyecciones SQL.
   - **Servicio de Email**: Configuración SMTP compatible con Dinahosting (puerto 465 SSL / 587 TLS) cargada dinámicamente mediante cascada de entornos (`config.env.php` > `config.env.local.php` > `getenv()`).
-  - **Formato de Comunicación**: JSON REST con cabeceras CORS y códigos de estado HTTP estándar (201, 400, 405, 500).
+  - **Formato de Comunicación**: JSON REST con cabeceras CORS y códigos de estado HTTP estándar (200, 201, 400, 401, 403, 405, 500).
 - **Infraestructura y Hosting**:
   - **Entorno Local**: **Docker Compose** con 3 servicios:
     - `api`: PHP 8.2 Apache en `http://localhost:8000`.
@@ -140,14 +153,36 @@ Registra una nueva inscripción en la base de datos `enmi_inscripciones`.
     }
   }
   ```
-- **Respuesta de Error (HTTP 400 / 500)**:
+
+### `GET /api/inscripciones.php`
+Consulta y recupera el listado completo de participantes inscritos con estadísticas agregadas y parámetros opcionales de búsqueda y ordenación.
+
+- **Parámetros URL Opcionales**:
+  - `q`: Búsqueda textual por nombre o apellidos.
+  - `estado`: Filtrado por estado (`activo`, etc.).
+  - `sort`: Campo de ordenación (`fecha_creacion`, `nombre`, `apellidos`, `id`).
+  - `order`: Sentido de ordenación (`ASC` o `DESC`).
+- **Respuesta de Éxito (HTTP 200 OK)**:
   ```json
   {
-    "success": false,
-    "message": "Errores de validación en el formulario.",
-    "errors": {
-      "nombre": "El nombre debe tener al menos 2 caracteres."
-    }
+    "success": true,
+    "count": 2,
+    "stats": {
+      "total": 2,
+      "hoy": 1,
+      "activos": 2
+    },
+    "data": [
+      {
+        "id": 2,
+        "nombre": "Carlos",
+        "apellidos": "Gómez Pérez",
+        "estado": "activo",
+        "ip_registro": "127.0.0.1",
+        "fecha_creacion": "2026-08-27 20:15:00",
+        "fecha_actualizacion": null
+      }
+    ]
   }
   ```
 
@@ -173,13 +208,6 @@ Autentica un usuario contra la base de datos `enmi_usuarios`.
       "email": "admin@enmi2027.es"
     },
     "token": "a1b2c3d4e5f6..."
-  }
-  ```
-- **Respuesta de Error (HTTP 401 Unauthorized / 403 Forbidden)**:
-  ```json
-  {
-    "success": false,
-    "message": "Usuario o contraseña incorrectos."
   }
   ```
 
@@ -227,32 +255,6 @@ CREATE TABLE IF NOT EXISTS `enmi_usuarios` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
-### 6.3. Tabla de Recuperación de Contraseñas: `enmi_recuperacion_passwords`
-
-```sql
-CREATE TABLE IF NOT EXISTS `enmi_recuperacion_passwords` (
-  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `usuario_id` INT UNSIGNED NOT NULL,
-  `email` VARCHAR(255) NOT NULL,
-  `token_hash` VARCHAR(64) NOT NULL COMMENT 'Hash SHA-256 del token seguro enviado por email',
-  `expira_en` DATETIME NOT NULL COMMENT 'Fecha y hora de expiración del enlace (ej. 30 o 60 min)',
-  `utilizado` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0: Pendiente / No utilizado, 1: Ya utilizado',
-  `ip_solicitud` VARCHAR(45) DEFAULT NULL COMMENT 'Dirección IP desde la que se solicitó el restablecimiento',
-  `fecha_creacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `fecha_utilizacion` DATETIME DEFAULT NULL COMMENT 'Fecha y hora en que se canjeó el token',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_enmi_recuperacion_token` (`token_hash`),
-  INDEX `idx_enmi_recuperacion_usuario` (`usuario_id`),
-  INDEX `idx_enmi_recuperacion_email` (`email`),
-  INDEX `idx_enmi_recuperacion_expira` (`expira_en`),
-  CONSTRAINT `fk_enmi_recuperacion_usuario` 
-    FOREIGN KEY (`usuario_id`) 
-    REFERENCES `enmi_usuarios` (`id`) 
-    ON DELETE CASCADE 
-    ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
 ---
 
 ## 7. Requisitos Funcionales (RF)
@@ -269,28 +271,32 @@ CREATE TABLE IF NOT EXISTS `enmi_recuperacion_passwords` (
   - Al completarse el registro en MariaDB, se conmuta el estado mediante Signals (`isSubmitted`) y se despliega el mensaje de éxito con el nombre registrado.
 - **RF-06: Registro Continuo**:
   - Botón *"Registrar a otra persona"* que limpia el formulario y enfoca de nuevo el campo *Nombre*.
+- **RF-07: Control de Acceso y Protección de Rutas Administrativas**:
+  - Rutas bajo `/admin/*` protegidas por `authGuard`. Redirección al login y retorno a la ruta previa al autenticarse.
+- **RF-08: Panel de Revisión de Inscritos**:
+  - Interfaz de administración con métricas rápidas (KPIs), tabla con ordenación por columnas, buscador en tiempo real, paginación configurable y modal de detalle.
+- **RF-09: Exportación de Datos a CSV**:
+  - Generación en cliente de archivo CSV con BOM UTF-8 (\uFEFF) para compatibilidad con Microsoft Excel y caracteres en español.
 
 ---
 
 ## 8. Registro de Cambios (Changelog)
 
-### v2.2.0 (Actual)
+### v2.3.0 (Actual)
+- **Panel de Administración de Inscritos**: Implementación de la página `/admin/inscritos` con diseño premium en tonos azul marino y dorado.
+- **Endpoint GET `/api/inscripciones.php`**: Creación del servicio PHP con filtros de búsqueda, ordenación por columnas y cálculo de métricas en tiempo real.
+- **Seguridad en Rutas (AuthGuard)**: Creación de guard funcional `authGuard` en Angular para proteger el acceso a administradores autenticados.
+- **Exportación CSV**: Soporte de descarga de listados filtrados con codificación UTF-8 BOM.
+- **Internacionalización**: Configuración del locale en español en `app.config.ts` para visualización precisa de fechas.
+
+### v2.2.0
 - **Infraestructura Docker Compose**: Configuración completa con servicios MariaDB 10.11, PHP 8.2 Apache y phpMyAdmin.
 - **Backend API REST en PHP**: Creación de endpoints `api/config.php`, `api/inscribir.php` (inserción con PDO parametrizada) y `api/test_db.php`.
 - **Integración HTTP en Angular**: Implementación de `InscripcionService`, `provideHttpClient(withFetch())`, configuración de proxy `proxy.conf.json`.
-- **UX del Formulario**: Gestión de estados de carga (`isLoading`), banner de errores del servidor (`serverError`), spinner y botones deshabilitados reactivamente.
-
-### v2.1.0
-- Actualización a **Angular 21** (`@angular/core@21.2.20`, `@angular/cli@21.2.21`) y **TypeScript 5.9**.
-- Verificación y compilación de producción optimizada.
-
-### v2.0.0
-- Migración a arquitectura Standalone Components en Angular.
 
 ---
 
 ## 9. Backlog / Próximas Mejoras Propuestas
 - [ ] Incorporación de campos adicionales (Correo electrónico, Teléfono, Fecha de nacimiento).
 - [ ] Envío de correo de confirmación automático (vía PHPMailer / SMTP).
-- [ ] Panel de administración protegido para consultar listado de inscritos y exportar a CSV/Excel.
 - [ ] Modo oscuro / selector de tema.
