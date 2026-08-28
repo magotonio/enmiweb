@@ -184,3 +184,171 @@ function getClientIp(): ?string {
     }
     return $_SERVER['REMOTE_ADDR'] ?? null;
 }
+
+/**
+ * Obtiene el nivel mínimo de severidad para el registro de logs (ej: DEBUG, INFO, WARNING, ERROR).
+ * Prioridad:
+ *  1. Variable de entorno del sistema / Docker: getenv('LOG_LEVEL')
+ *  2. Archivo de configuración: config.env.php / config.env.local.php
+ *  3. 'INFO' por defecto
+ *
+ * @return string
+ */
+function getLogLevel(): string {
+    $envLevel = getenv('LOG_LEVEL');
+    if ($envLevel !== false && trim($envLevel) !== '') {
+        return strtoupper(trim($envLevel));
+    }
+    $customConfig = getAppConfig();
+    return strtoupper((string)($customConfig['LOG_LEVEL'] ?? 'INFO'));
+}
+
+/**
+ * Determina si el entorno permite mostrar detalles técnicos del error al cliente en la respuesta JSON.
+ * Activo en desarrollo (LOCAL), desactivado en producción (PRO).
+ * Prioridad:
+ *  1. Variable de entorno del sistema / Docker: getenv('SHOW_ERROR_DETAILS')
+ *  2. Archivo de configuración: config.env.php / config.env.local.php
+ *  3. false por defecto
+ *
+ * @return bool
+ */
+function shouldShowErrorDetails(): bool {
+    $envVal = getenv('SHOW_ERROR_DETAILS');
+    if ($envVal !== false && trim((string)$envVal) !== '') {
+        return filter_var($envVal, FILTER_VALIDATE_BOOLEAN);
+    }
+    $customConfig = getAppConfig();
+    if (isset($customConfig['SHOW_ERROR_DETAILS'])) {
+        return (bool)$customConfig['SHOW_ERROR_DETAILS'];
+    }
+    return false;
+}
+
+// Cargar servicio centralizado de logs y auditoría
+require_once __DIR__ . '/logger.php';
+
+/**
+ * Manejador global de excepciones no capturadas.
+ * Registra automáticamente el error en la tabla enmi_logs y devuelve una respuesta JSON limpia (500).
+ */
+function globalExceptionHandler(Throwable $exception): void {
+    $mensaje = $exception->getMessage();
+    $archivo = $exception->getFile();
+    $linea = $exception->getLine();
+    $traza = $exception->getTraceAsString();
+
+    $contexto = [
+        'exception_class' => get_class($exception),
+        'file'            => $archivo,
+        'line'            => $linea,
+        'trace'           => $traza,
+        'method'          => $_SERVER['REQUEST_METHOD'] ?? 'UNKNOWN',
+        'uri'             => $_SERVER['REQUEST_URI'] ?? '',
+        'query'           => $_GET ?? []
+    ];
+
+    if (function_exists('logError')) {
+        logError('api_error', 'unhandled_exception', "Excepción no capturada: {$mensaje}", $contexto);
+    }
+
+    $response = [
+        'success' => false,
+        'message' => 'Error interno en el servidor.'
+    ];
+
+    if (shouldShowErrorDetails()) {
+        $response['debug'] = [
+            'error'     => $mensaje,
+            'exception' => get_class($exception),
+            'file'      => $archivo,
+            'line'      => $linea
+        ];
+    }
+
+    sendJsonResponse($response, 500);
+}
+
+/**
+ * Manejador global de errores estándar de PHP (E_WARNING, E_NOTICE, etc.).
+ */
+function globalErrorHandler(int $errno, string $errstr, string $errfile, int $errline): bool {
+    if (!(error_reporting() & $errno)) {
+        return false;
+    }
+
+    $nivel = match ($errno) {
+        E_USER_ERROR, E_RECOVERABLE_ERROR => 'ERROR',
+        E_WARNING, E_USER_WARNING         => 'WARNING',
+        E_NOTICE, E_USER_NOTICE           => 'NOTICE',
+        E_DEPRECATED, E_USER_DEPRECATED   => 'DEBUG',
+        default                           => 'WARNING'
+    };
+
+    if (function_exists('logEvent')) {
+        logEvent($nivel, 'php_runtime', 'runtime_warning', "PHP [{$errno}]: {$errstr}", [
+            'errno' => $errno,
+            'file'  => $errfile,
+            'line'  => $errline,
+            'uri'   => $_SERVER['REQUEST_URI'] ?? ''
+        ]);
+    }
+
+    if ($errno === E_USER_ERROR || $errno === E_RECOVERABLE_ERROR) {
+        $response = [
+            'success' => false,
+            'message' => 'Error de ejecución en el servidor.'
+        ];
+        if (shouldShowErrorDetails()) {
+            $response['debug'] = [
+                'error' => $errstr,
+                'file'  => $errfile,
+                'line'  => $errline
+            ];
+        }
+        sendJsonResponse($response, 500);
+    }
+
+    return false;
+}
+
+/**
+ * Manejador de apagado (shutdown) para capturar errores fatales de PHP (ej: E_ERROR, E_PARSE).
+ */
+function globalShutdownHandler(): void {
+    $error = error_get_last();
+    if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        if (function_exists('logError')) {
+            logError('php_fatal', 'fatal_error', "Error fatal de PHP: {$error['message']}", [
+                'type' => $error['type'],
+                'file' => $error['file'],
+                'line' => $error['line'],
+                'uri'  => $_SERVER['REQUEST_URI'] ?? ''
+            ]);
+        }
+
+        if (!headers_sent()) {
+            http_response_code(500);
+            header('Content-Type: application/json; charset=UTF-8');
+            $response = [
+                'success' => false,
+                'message' => 'Error fatal del servidor.'
+            ];
+            if (shouldShowErrorDetails()) {
+                $response['debug'] = [
+                    'error' => $error['message'],
+                    'file'  => $error['file'],
+                    'line'  => $error['line']
+                ];
+            }
+            echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+    }
+}
+
+// Registrar manejadores globales para control integral de errores en la API
+set_exception_handler('globalExceptionHandler');
+set_error_handler('globalErrorHandler');
+register_shutdown_function('globalShutdownHandler');
+
+

@@ -24,6 +24,7 @@ Aplicación web moderna, accesible y modular construida con **Angular 21** conec
 │   ├── config.php                               # Conexión PDO a MariaDB y utilidades de respuesta JSON
 │   ├── config.env.local.php                     # Configuración de entorno de desarrollo (LOCAL)
 │   ├── config.env.pro.php                       # Plantilla de entorno de producción (PRO)
+│   ├── logger.php                               # Servicio centralizado de registro de logs y auditoría
 │   ├── mailer.php                               # Servicio SMTP nativo y plantillas de notificación por correo
 │   ├── inscribir.php                            # Endpoint POST para registrar inscripciones y disparar alertas
 │   ├── inscripciones.php                        # Endpoint GET para listar y auditar inscripciones con estadísticas
@@ -56,7 +57,10 @@ Aplicación web moderna, accesible y modular construida con **Angular 21** conec
 └── db/                                          # Gestión de base de datos y versiones
     ├── schema.sql                               # Esquema completo consolidado actual (MariaDB)
     └── migrations/                              # Scripts incrementales versionados
-        └── 001_create_enmi_inscripciones.sql
+        ├── 001_create_enmi_inscripciones.sql
+        ├── 002_create_enmi_usuarios.sql
+        ├── 003_create_enmi_recuperacion_passwords.sql
+        └── 004_create_enmi_logs.sql
 ```
 
 ---
@@ -73,8 +77,8 @@ Aplicación web moderna, accesible y modular construida con **Angular 21** conec
   - **Tipografía**: *Plus Jakarta Sans* (Google Fonts).
   - **Accesibilidad**: Atributos `aria-*`, alertas `role="alert"`, modales `role="dialog"`, navegación completa por teclado.
 - **Backend**:
-  - **Lenguaje/Entorno**: **PHP 8.2+** sin dependencias externas pesadas (despliegue directo en hosting compartido).
-  - **Persistencia**: **PDO (PHP Data Objects)** con juego de caracteres `utf8mb4` y sentencias preparadas contra inyecciones SQL.
+  - **Servicio de Logs, Auditoría y Niveles (`api/logger.php`)**: Filtrado inteligente por severidad (`LOG_LEVEL`: `DEBUG` [100], `INFO` [200], `NOTICE` [250], `WARNING` [300], `ERROR` [400], `CRITICAL` [500]) con descarte automático de eventos menores al umbral y captura de contexto, IP, User-Agent y origen.
+  - **Manejo Global de Errores en API (`api/config.php`)**: Capturador de excepciones (`set_exception_handler`), errores de runtime (`set_error_handler`) y errores fatales (`register_shutdown_function`) con registro en `enmi_logs` y respuestas JSON 500 normalizadas con detalle de depuración condicional (`SHOW_ERROR_DETAILS`).
   - **Servicio de Email y Notificaciones**: Configuración SMTP compatible con Dinahosting (puerto 465 SSL / 587 TLS) y array de direcciones para notificaciones (`NOTIFICATION_EMAILS`), cargadas dinámicamente mediante cascada de entornos (`config.env.php` > `config.env.local.php` > `getenv()`).
   - **Formato de Comunicación**: JSON REST con cabeceras CORS y códigos de estado HTTP estándar (200, 201, 400, 401, 403, 405, 500).
 - **Infraestructura, Entornos y URLs**:
@@ -259,6 +263,36 @@ CREATE TABLE IF NOT EXISTS `enmi_usuarios` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
+### 6.3. Tabla de Logs y Auditoría: `enmi_logs`
+
+```sql
+CREATE TABLE IF NOT EXISTS `enmi_logs` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `nivel` VARCHAR(20) NOT NULL DEFAULT 'INFO' COMMENT 'Nivel de severidad: DEBUG, INFO, NOTICE, WARNING, ERROR, CRITICAL, ALERT, EMERGENCY',
+  `categoria` VARCHAR(50) NOT NULL DEFAULT 'general' COMMENT 'Módulo o categoría: auth, inscripciones, email, api, bd, seguridad, sistema',
+  `accion` VARCHAR(100) NOT NULL COMMENT 'Identificador de la acción (ej: login_exitoso, login_fallido, registro_creado, email_enviado, error_sql)',
+  `mensaje` TEXT NOT NULL COMMENT 'Descripción legible o detalle del evento',
+  `contexto` JSON DEFAULT NULL COMMENT 'Datos complementarios, payload o stack trace en formato JSON',
+  `usuario_id` INT UNSIGNED DEFAULT NULL COMMENT 'ID del usuario autenticado si aplica',
+  `ip` VARCHAR(45) DEFAULT NULL COMMENT 'Dirección IP del cliente (IPv4 o IPv6)',
+  `user_agent` VARCHAR(255) DEFAULT NULL COMMENT 'Navegador o cliente HTTP que originó la petición',
+  `origen` VARCHAR(100) DEFAULT NULL COMMENT 'Fichero o endpoint de origen (ej: inscribir.php, mailer.php)',
+  `fecha_creacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha y hora exacta del registro',
+  PRIMARY KEY (`id`),
+  INDEX `idx_enmi_logs_nivel` (`nivel`),
+  INDEX `idx_enmi_logs_categoria` (`categoria`),
+  INDEX `idx_enmi_logs_accion` (`accion`),
+  INDEX `idx_enmi_logs_usuario` (`usuario_id`),
+  INDEX `idx_enmi_logs_fecha` (`fecha_creacion`),
+  INDEX `idx_enmi_logs_cat_fecha` (`categoria`, `fecha_creacion`),
+  CONSTRAINT `fk_enmi_logs_usuario` 
+    FOREIGN KEY (`usuario_id`) 
+    REFERENCES `enmi_usuarios` (`id`) 
+    ON DELETE SET NULL 
+    ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
 ---
 
 ## 7. Requisitos Funcionales (RF)
@@ -286,7 +320,15 @@ CREATE TABLE IF NOT EXISTS `enmi_usuarios` (
 
 ## 8. Registro de Cambios (Changelog)
 
-### v2.4.0 (Actual)
+### v2.5.0 (Actual)
+- **Tabla de Logs y Auditoría (`enmi_logs`)**: Creación de la migración `004_create_enmi_logs.sql` y actualización del esquema consolidado `schema.sql` para registro de eventos, errores, notificaciones y auditoría de accesos.
+- **Niveles de Log Configurables**: Filtrado por nivel de severidad (`LOG_LEVEL`: `DEBUG`, `INFO`, `NOTICE`, `WARNING`, `ERROR`, `CRITICAL`) configurable en `config.env.*.php` y variables de entorno.
+- **Control Global de Errores en API**: Handlers globales para excepciones, errores de ejecución PHP y errores fatales en `api/config.php` con registro automático en `enmi_logs` y modo depuración (`SHOW_ERROR_DETAILS`).
+- **Servicio Centralizado de Logs (`api/logger.php`)**: Funciones PHP reutilizables (`logEvent`, `logDebug`, `logInfo`, `logNotice`, `logWarning`, `logError`, `logCritical`, `logNotification`, `logAuth`) con captura automática de IP, User-Agent y origen, almacenamiento JSON y mecanismo de fallback seguro.
+- **Integración de Logs en Endpoints**: Auditoría de inicios de sesión en `login.php` e inscripciones/notificaciones en `inscribir.php`.
+- **Diagnóstico en `test_db.php`**: Monitorización del estado de tablas `enmi_inscripciones`, `enmi_usuarios`, `enmi_logs` y visualización de la configuración activa de logs.
+
+### v2.4.0
 - **Servicio SMTP Nativo y Notificaciones (`api/mailer.php`)**: Implementación de cliente SMTP ligero en PHP 8.2 compatible con Dinahosting (SSL/TLS con autenticación) para envío de correos sin dependencias de terceros.
 - **Notificación por Nueva Inscripción**: Envío automático de correo con plantilla HTML moderna y versión texto a las direcciones configuradas en `NOTIFICATION_EMAILS` al procesar `POST /api/inscribir.php`.
 - **Configuración Multidirección de Emails**: Soporte para array de destinatarios en `config.env.*.php` y función auxiliar `getNotificationEmails()`.

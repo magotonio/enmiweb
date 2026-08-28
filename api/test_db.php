@@ -14,24 +14,59 @@ try {
     $version = $versionStmt->fetch()['version'] ?? 'Desconocida';
 
     // Verificar existencia de la tabla enmi_inscripciones y total de registros
-    $countStmt = $pdo->query("SELECT COUNT(*) as total FROM `enmi_inscripciones`");
-    $totalInscripciones = (int)$countStmt->fetch()['total'];
+    $countInscripciones = 0;
+    try {
+        $countStmt = $pdo->query("SELECT COUNT(*) as total FROM `enmi_inscripciones`");
+        $countInscripciones = (int)$countStmt->fetch()['total'];
+    } catch (Exception $e) {
+        $countInscripciones = -1;
+    }
+
+    // Verificar existencia de la tabla enmi_usuarios
+    $countUsuarios = 0;
+    try {
+        $countUsersStmt = $pdo->query("SELECT COUNT(*) as total FROM `enmi_usuarios`");
+        $countUsuarios = (int)$countUsersStmt->fetch()['total'];
+    } catch (Exception $e) {
+        $countUsuarios = -1;
+    }
+
+    // Verificar existencia de la tabla enmi_logs
+    $countLogs = 0;
+    try {
+        $countLogsStmt = $pdo->query("SELECT COUNT(*) as total FROM `enmi_logs`");
+        $countLogs = (int)$countLogsStmt->fetch()['total'];
+    } catch (Exception $e) {
+        $countLogs = -1;
+    }
 
     // Listar las últimas 5 inscripciones para verificación
-    $latestStmt = $pdo->query("
-        SELECT id, nombre, apellidos, estado, ip_registro, fecha_creacion 
-        FROM `enmi_inscripciones` 
-        ORDER BY id DESC 
-        LIMIT 5
-    ");
-    $ultimasInscripciones = $latestStmt->fetchAll();
+    $ultimasInscripciones = [];
+    try {
+        $latestStmt = $pdo->query("
+            SELECT id, nombre, apellidos, estado, ip_registro, fecha_creacion 
+            FROM `enmi_inscripciones` 
+            ORDER BY id DESC 
+            LIMIT 5
+        ");
+        $ultimasInscripciones = $latestStmt->fetchAll();
+    } catch (Exception $e) {
+        $ultimasInscripciones = [];
+    }
 
     sendJsonResponse([
         'status'               => 'ok',
         'database'             => 'conectada',
         'mariadb_version'      => $version,
-        'tabla'                => 'enmi_inscripciones',
-        'total_inscripciones'  => $totalInscripciones,
+        'tablas'               => [
+            'enmi_inscripciones' => $countInscripciones >= 0 ? ['estado' => 'ok', 'total' => $countInscripciones] : ['estado' => 'no_creada'],
+            'enmi_usuarios'      => $countUsuarios >= 0 ? ['estado' => 'ok', 'total' => $countUsuarios] : ['estado' => 'no_creada'],
+            'enmi_logs'          => $countLogs >= 0 ? ['estado' => 'ok', 'total' => $countLogs] : ['estado' => 'no_creada'],
+        ],
+        'configuracion'        => [
+            'log_level'          => getLogLevel(),
+            'show_error_details' => shouldShowErrorDetails()
+        ],
         'ultimos_registros'    => $ultimasInscripciones,
         'timestamp'            => date('Y-m-d H:i:s')
     ], 200);

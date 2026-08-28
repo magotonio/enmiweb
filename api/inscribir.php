@@ -80,6 +80,13 @@ try {
 
     $insertedId = (int)$pdo->lastInsertId();
 
+    // Registrar log de nueva inscripción
+    logInfo('inscripciones', 'registro_creado', "Nueva inscripción ID #{$insertedId} registrada para {$nombre} {$apellidos}", [
+        'id'        => $insertedId,
+        'nombre'    => $nombre,
+        'apellidos' => $apellidos
+    ]);
+
     // Enviar notificación por correo electrónico a los administradores
     $emailResult = sendRegistrationNotification([
         'id'          => $insertedId,
@@ -88,6 +95,14 @@ try {
         'ip_registro' => $ipRegistro,
         'fecha'       => date('d/m/Y H:i:s')
     ]);
+
+    // Registrar log del resultado del envío de notificación
+    logNotification(
+        'notificacion_inscripcion',
+        $emailResult['message'] ?? 'Envío de correo de notificación',
+        ['inscripcion_id' => $insertedId, 'detalle' => $emailResult],
+        $emailResult['success'] ?? false
+    );
 
     sendJsonResponse([
         'success'      => true,
@@ -104,8 +119,13 @@ try {
     ], 201);
 
 } catch (PDOException $e) {
+    logError('inscripciones', 'error_bd_inscripcion', $e->getMessage(), [
+        'nombre'    => $nombre,
+        'apellidos' => $apellidos
+    ]);
     sendJsonResponse([
         'success' => false,
         'message' => 'Error al registrar la inscripción en la base de datos: ' . $e->getMessage()
     ], 500);
 }
+

@@ -33,4 +33,9 @@ return [
     'NOTIFICATION_EMAILS' => [
         'enmi@eutikea.com',
     ],
+
+    // Configuración de Logs y Auditoría
+    // Niveles: DEBUG (100), INFO (200), NOTICE (250), WARNING (300), ERROR (400), CRITICAL (500)
+    'LOG_LEVEL'          => 'DEBUG', // En local registramos todos los niveles desde DEBUG
+    'SHOW_ERROR_DETAILS' => true,    // En local se muestran trazas de error en respuestas JSON para depuración
 ];

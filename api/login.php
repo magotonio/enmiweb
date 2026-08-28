@@ -69,6 +69,7 @@ try {
 
     // Comprobar si el usuario existe
     if (!$user) {
+        logAuth('login_fallido', "Intento de inicio de sesión fallido: usuario no encontrado", ['login' => $loginInput], false);
         sendJsonResponse([
             'success' => false,
             'message' => 'Usuario o contraseña incorrectos.'
@@ -77,6 +78,7 @@ try {
 
     // Comprobar si la cuenta está bloqueada
     if ((int)$user['bloqueado'] === 1) {
+        logAuth('login_bloqueado', "Intento de acceso con cuenta bloqueada: {$user['login']}", ['login' => $user['login']], false, (int)$user['id']);
         sendJsonResponse([
             'success' => false,
             'message' => 'La cuenta de usuario está bloqueada. Contacte con el administrador.'
@@ -85,6 +87,7 @@ try {
 
     // Verificar la contraseña con el hash almacenado
     if (!password_verify($password, $user['password_hash'])) {
+        logAuth('login_password_invalido', "Contraseña incorrecta para usuario: {$user['login']}", ['login' => $user['login']], false, (int)$user['id']);
         sendJsonResponse([
             'success' => false,
             'message' => 'Usuario o contraseña incorrectos.'
@@ -98,6 +101,9 @@ try {
         WHERE `id` = :id
     ");
     $updateStmt->execute([':id' => $user['id']]);
+
+    // Registrar log de acceso exitoso
+    logAuth('login_exitoso', "Inicio de sesión exitoso para usuario: {$user['login']}", ['login' => $user['login']], true, (int)$user['id']);
 
     // Generar token de sesión (32 bytes aleatorios en hexadecimal)
     $sessionToken = bin2hex(random_bytes(32));
@@ -114,8 +120,10 @@ try {
     ], 200);
 
 } catch (PDOException $e) {
+    logError('auth', 'error_bd_login', $e->getMessage(), ['login' => $loginInput]);
     sendJsonResponse([
         'success' => false,
         'message' => 'Error en el servidor al autenticar el usuario: ' . $e->getMessage()
     ], 500);
 }
+
