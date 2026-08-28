@@ -44,6 +44,21 @@ function getAppConfig(): array {
 }
 
 /**
+ * Obtiene la URL base de la aplicación web según el entorno (PRO o LOCAL).
+ * Prioridad de configuración:
+ *  1. Archivo de producción: api/config.env.php (PRO)
+ *  2. Archivo de entorno local: api/config.env.local.php (LOCAL)
+ *  3. Variables de entorno: getenv('APP_URL')
+ *  4. Valor por defecto de producción
+ * 
+ * @return string
+ */
+function getAppUrl(): string {
+    $customConfig = getAppConfig();
+    return (string)($customConfig['APP_URL'] ?? getenv('APP_URL') ?: 'https://enmi.eutikea.com');
+}
+
+/**
  * Obtiene la conexión PDO a la base de datos MariaDB.
  * Prioridad de configuración:
  *  1. Archivo de producción no versionado: api/config.env.php (PRO)
@@ -97,14 +112,48 @@ function getSmtpConfig(): array {
     $customConfig = getAppConfig();
 
     return [
-        'host'       => (string)($customConfig['SMTP_HOST'] ?? getenv('SMTP_HOST') ?: 'eutikea-com.correoseguro.dinaserver.com'),
-        'port'       => (int)($customConfig['SMTP_PORT'] ?? getenv('SMTP_PORT') ?: 465),
-        'secure'     => (string)($customConfig['SMTP_SECURE'] ?? getenv('SMTP_SECURE') ?: 'ssl'),
-        'auth'       => (bool)($customConfig['SMTP_AUTH'] ?? (getenv('SMTP_AUTH') !== false ? filter_var(getenv('SMTP_AUTH'), FILTER_VALIDATE_BOOLEAN) : true)),
-        'user'       => (string)($customConfig['SMTP_USER'] ?? getenv('SMTP_USER') ?: 'enmi@eutikea'),
-        'pass'       => (string)($customConfig['SMTP_PASS'] ?? (getenv('SMTP_PASS') !== false ? getenv('SMTP_PASS') : 'enmI.2702$Tk')),
-        'from_email' => (string)($customConfig['SMTP_FROM_EMAIL'] ?? getenv('SMTP_FROM_EMAIL') ?: 'enmi@eutikea'),
-        'from_name'  => (string)($customConfig['SMTP_FROM_NAME'] ?? getenv('SMTP_FROM_NAME') ?: 'ENMI Web'),
+        'host'                => (string)($customConfig['SMTP_HOST'] ?? getenv('SMTP_HOST') ?: 'eutikea-com.correoseguro.dinaserver.com'),
+        'port'                => (int)($customConfig['SMTP_PORT'] ?? getenv('SMTP_PORT') ?: 465),
+        'secure'              => (string)($customConfig['SMTP_SECURE'] ?? getenv('SMTP_SECURE') ?: 'ssl'),
+        'auth'                => (bool)($customConfig['SMTP_AUTH'] ?? (getenv('SMTP_AUTH') !== false ? filter_var(getenv('SMTP_AUTH'), FILTER_VALIDATE_BOOLEAN) : true)),
+        'user'                => (string)($customConfig['SMTP_USER'] ?? getenv('SMTP_USER') ?: 'enmi@eutikea'),
+        'pass'                => (string)($customConfig['SMTP_PASS'] ?? (getenv('SMTP_PASS') !== false ? getenv('SMTP_PASS') : 'enmI.2702$Tk')),
+        'from_email'          => (string)($customConfig['SMTP_FROM_EMAIL'] ?? getenv('SMTP_FROM_EMAIL') ?: 'enmi@eutikea'),
+        'from_name'           => (string)($customConfig['SMTP_FROM_NAME'] ?? getenv('SMTP_FROM_NAME') ?: 'ENMI Web'),
+        'notification_emails' => getNotificationEmails(),
+    ];
+}
+
+/**
+ * Obtiene el listado de direcciones de correo electrónico para notificaciones.
+ * Prioridad de configuración:
+ *  1. Archivo de producción: api/config.env.php (PRO)
+ *  2. Archivo de entorno local: api/config.env.local.php (LOCAL)
+ *  3. Variables de entorno: getenv('NOTIFICATION_EMAILS') (array o string separado por comas)
+ *  4. Valores por defecto
+ * 
+ * @return array
+ */
+function getNotificationEmails(): array {
+    $customConfig = getAppConfig();
+
+    if (isset($customConfig['NOTIFICATION_EMAILS'])) {
+        $emails = $customConfig['NOTIFICATION_EMAILS'];
+        if (is_array($emails)) {
+            return array_values(array_filter(array_map('trim', $emails)));
+        }
+        if (is_string($emails)) {
+            return array_values(array_filter(array_map('trim', explode(',', $emails))));
+        }
+    }
+
+    $envEmails = getenv('NOTIFICATION_EMAILS');
+    if ($envEmails !== false && trim($envEmails) !== '') {
+        return array_values(array_filter(array_map('trim', explode(',', $envEmails))));
+    }
+
+    return [
+        'enmi@eutikea.com'
     ];
 }
 

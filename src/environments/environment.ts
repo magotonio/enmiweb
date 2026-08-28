@@ -6,5 +6,6 @@
  */
 export const environment = {
   production: true,
+  appUrl: 'https://enmi.eutikea.com',
   apiUrl: './api'
 };

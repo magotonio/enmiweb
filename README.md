@@ -102,6 +102,7 @@ Esto descargará/construirá e iniciará 3 contenedores:
 | **Base de Datos** | `enmi_mariadb` | `localhost:3306` | MariaDB 10.11 (inicializa `db/schema.sql`) | DB: `enmi_db`<br>User: `enmi_user` / Pass: `enmi_password`<br>Root Pass: `rootpassword` |
 | **Backend API** | `enmi_api` | `http://localhost:8000` | Apache + PHP 8.2 con PDO MySQL | N/A |
 | **phpMyAdmin** | `enmi_phpmyadmin` | `http://localhost:8080` | Gestor visual web de la base de datos | Servidor: `db`<br>Usuario: `root` o `enmi_user`<br>Contraseña: `rootpassword` o `enmi_password` |
+| **Admin Web (Default)** | Angular App | `http://localhost:4200/login` | Acceso al panel administrativo | Usuario: `admin` o `admin@enmi2027.es`<br>Contraseña: `Admin.123` |
 
 ### 2. Iniciar el Frontend de Angular
 
@@ -163,6 +164,13 @@ Respuesta esperada (HTTP 201 Created):
   }
 }
 ```
+
+#### E. Acceso al Panel de Administración
+1. Navega a [http://localhost:4200/login](http://localhost:4200/login).
+2. Introduce las credenciales por defecto:
+   - **Usuario / Email**: `admin` (o `admin@enmi2027.es`)
+   - **Contraseña**: `Admin.123`
+3. Serás redirigido al panel de gestión de inscritos (`/admin/inscritos`), donde podrás auditar, buscar y exportar los registros.
 
 ---
 

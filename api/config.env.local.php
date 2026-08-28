@@ -9,6 +9,9 @@
  */
 
 return [
+    // URL Base de la Aplicación Web (Desarrollo)
+    'APP_URL' => 'http://localhost:4200',
+
     // Base de Datos MariaDB / MySQL
     'DB_HOST' => 'db',              // Nombre del servicio MariaDB en Docker Compose
     'DB_PORT' => '3306',            // Puerto estándar de MariaDB/MySQL
@@ -17,12 +20,17 @@ return [
     'DB_PASS' => 'enmi_password',    // Contraseña de base de datos
 
     // Envío de Correos Electrónicos (SMTP - Local / Pruebas)
-    'SMTP_HOST'       => 'localhost',
-    'SMTP_PORT'       => 1025,                              // Puerto típico para simuladores locales (ej. Mailpit / Mailhog) o 465/587
-    'SMTP_SECURE'     => '',                                // '', 'ssl' o 'tls'
-    'SMTP_AUTH'       => false,
-    'SMTP_USER'       => '',
-    'SMTP_PASS'       => '',
-    'SMTP_FROM_EMAIL' => 'no-reply@enmi.local',
-    'SMTP_FROM_NAME'  => 'ENMI (Local)',
+    'SMTP_HOST'       => 'eutikea-com.correoseguro.dinaserver.com', // Servidor de correo saliente
+    'SMTP_PORT'       => 465,                                      // Puerto estándar SSL/SMTPS para hosting PHP (465) o TLS (587)
+    'SMTP_SECURE'     => 'ssl',                                    // Protocolo de seguridad: 'ssl' (puerto 465) o 'tls' (puerto 587)
+    'SMTP_AUTH'       => true,                                     // Requiere autenticación SMTP
+    'SMTP_USER'       => 'enmi@eutikea.com',                       // Usuario / Buzón de correo
+    'SMTP_PASS'       => 'enmI.2702$Tk',                           // Contraseña del buzón de correo
+    'SMTP_FROM_EMAIL' => 'enmi@eutikea.com',                       // Remitente predeterminado
+    'SMTP_FROM_NAME'  => 'ENMI Web',                               // Nombre mostrado del remitente
+
+    // Listado de direcciones de correo electrónico para notificaciones
+    'NOTIFICATION_EMAILS' => [
+        'enmi@eutikea.com',
+    ],
 ];

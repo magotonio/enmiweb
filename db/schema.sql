@@ -68,3 +68,14 @@ CREATE TABLE IF NOT EXISTS `enmi_recuperacion_passwords` (
     ON DELETE CASCADE 
     ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- Datos Iniciales / Semilla Base
+-- Usuario Administrador por Defecto
+-- Login: admin | Password: Admin.123 | Email: admin@enmi2027.es
+-- ---------------------------------------------------------------------
+INSERT INTO `enmi_usuarios` (`id`, `login`, `email`, `password_hash`, `bloqueado`, `fecha_creacion`)
+VALUES (1, 'admin', 'admin@enmi2027.es', '$2y$10$vWg6eKP9o8s0CbkaPJzTXu07kj32K90OjWZriyVYzOh20X7Q4WNEG', 0, NOW())
+ON DUPLICATE KEY UPDATE 
+  `email` = VALUES(`email`),
+  `password_hash` = VALUES(`password_hash`);

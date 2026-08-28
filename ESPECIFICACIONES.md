@@ -24,7 +24,8 @@ Aplicación web moderna, accesible y modular construida con **Angular 21** conec
 │   ├── config.php                               # Conexión PDO a MariaDB y utilidades de respuesta JSON
 │   ├── config.env.local.php                     # Configuración de entorno de desarrollo (LOCAL)
 │   ├── config.env.pro.php                       # Plantilla de entorno de producción (PRO)
-│   ├── inscribir.php                            # Endpoint POST para registrar inscripciones
+│   ├── mailer.php                               # Servicio SMTP nativo y plantillas de notificación por correo
+│   ├── inscribir.php                            # Endpoint POST para registrar inscripciones y disparar alertas
 │   ├── inscripciones.php                        # Endpoint GET para listar y auditar inscripciones con estadísticas
 │   ├── login.php                                # Endpoint POST para autenticación de administradores
 │   └── test_db.php                              # Endpoint de diagnóstico y salud de la base de datos
@@ -74,15 +75,18 @@ Aplicación web moderna, accesible y modular construida con **Angular 21** conec
 - **Backend**:
   - **Lenguaje/Entorno**: **PHP 8.2+** sin dependencias externas pesadas (despliegue directo en hosting compartido).
   - **Persistencia**: **PDO (PHP Data Objects)** con juego de caracteres `utf8mb4` y sentencias preparadas contra inyecciones SQL.
-  - **Servicio de Email**: Configuración SMTP compatible con Dinahosting (puerto 465 SSL / 587 TLS) cargada dinámicamente mediante cascada de entornos (`config.env.php` > `config.env.local.php` > `getenv()`).
+  - **Servicio de Email y Notificaciones**: Configuración SMTP compatible con Dinahosting (puerto 465 SSL / 587 TLS) y array de direcciones para notificaciones (`NOTIFICATION_EMAILS`), cargadas dinámicamente mediante cascada de entornos (`config.env.php` > `config.env.local.php` > `getenv()`).
   - **Formato de Comunicación**: JSON REST con cabeceras CORS y códigos de estado HTTP estándar (200, 201, 400, 401, 403, 405, 500).
-- **Infraestructura y Hosting**:
-  - **Entorno Local**: **Docker Compose** con 3 servicios:
-    - `api`: PHP 8.2 Apache en `http://localhost:8000`.
-    - `db`: MariaDB 10.11 en `localhost:3306` (inicializado automáticamente con `db/schema.sql`).
-    - `phpmyadmin`: Administrador visual de BD en `http://localhost:8080`.
+- **Infraestructura, Entornos y URLs**:
+  - **Entorno Local (Desarrollo)**:
+    - URL Frontend: `http://localhost:4200` (`APP_URL` en `config.env.local.php` / `environment.development.ts`).
+    - **Docker Compose** con 3 servicios:
+      - `api`: PHP 8.2 Apache en `http://localhost:8000`.
+      - `db`: MariaDB 10.11 en `localhost:3306` (inicializado automáticamente con `db/schema.sql`).
+      - `phpmyadmin`: Administrador visual de BD en `http://localhost:8080`.
   - **Producción (Hosting Privado / Dinahosting)**:
-    - Despliegue de los archivos de `dist/enmi/browser/` en la raíz pública del dominio.
+    - URL Frontend: `https://enmi.eutikea.com` (`APP_URL` en `config.env.pro.php` / `environment.ts`).
+    - Despliegue de los archivos de `dist/enmi/browser/` en la raíz pública del dominio (`https://enmi.eutikea.com`).
     - Despliegue de la carpeta `api/` en el hosting PHP.
     - Base de datos MariaDB compartida.
   - **Convención de Tablas**: **Todas las tablas de este proyecto deben comenzar obligatoriamente con el prefijo `enmi_`**.
@@ -190,11 +194,11 @@ Consulta y recupera el listado completo de participantes inscritos con estadíst
 Autentica un usuario contra la base de datos `enmi_usuarios`.
 
 - **Cabeceras**: `Content-Type: application/json`
-- **Cuerpo (JSON)**:
+- **Cuerpo (JSON)** (Usuario por defecto creado en BD: `admin` / `Admin.123`):
   ```json
   {
     "login": "admin",
-    "password": "miPasswordSeguro"
+    "password": "Admin.123"
   }
   ```
 - **Respuesta de Éxito (HTTP 200 OK)**:
@@ -282,7 +286,12 @@ CREATE TABLE IF NOT EXISTS `enmi_usuarios` (
 
 ## 8. Registro de Cambios (Changelog)
 
-### v2.3.0 (Actual)
+### v2.4.0 (Actual)
+- **Servicio SMTP Nativo y Notificaciones (`api/mailer.php`)**: Implementación de cliente SMTP ligero en PHP 8.2 compatible con Dinahosting (SSL/TLS con autenticación) para envío de correos sin dependencias de terceros.
+- **Notificación por Nueva Inscripción**: Envío automático de correo con plantilla HTML moderna y versión texto a las direcciones configuradas en `NOTIFICATION_EMAILS` al procesar `POST /api/inscribir.php`.
+- **Configuración Multidirección de Emails**: Soporte para array de destinatarios en `config.env.*.php` y función auxiliar `getNotificationEmails()`.
+
+### v2.3.0
 - **Panel de Administración de Inscritos**: Implementación de la página `/admin/inscritos` con diseño premium en tonos azul marino y dorado.
 - **Endpoint GET `/api/inscripciones.php`**: Creación del servicio PHP con filtros de búsqueda, ordenación por columnas y cálculo de métricas en tiempo real.
 - **Seguridad en Rutas (AuthGuard)**: Creación de guard funcional `authGuard` en Angular para proteger el acceso a administradores autenticados.

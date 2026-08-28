@@ -6,6 +6,7 @@
  */
 
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/mailer.php';
 
 // Verificar que el método sea POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -79,13 +80,26 @@ try {
 
     $insertedId = (int)$pdo->lastInsertId();
 
+    // Enviar notificación por correo electrónico a los administradores
+    $emailResult = sendRegistrationNotification([
+        'id'          => $insertedId,
+        'nombre'      => $nombre,
+        'apellidos'   => $apellidos,
+        'ip_registro' => $ipRegistro,
+        'fecha'       => date('d/m/Y H:i:s')
+    ]);
+
     sendJsonResponse([
-        'success' => true,
-        'message' => 'Inscripción guardada correctamente.',
-        'id'      => $insertedId,
-        'data'    => [
+        'success'      => true,
+        'message'      => 'Inscripción guardada correctamente.',
+        'id'           => $insertedId,
+        'data'         => [
             'nombre'    => $nombre,
             'apellidos' => $apellidos
+        ],
+        'notificacion' => [
+            'enviada' => $emailResult['success'] ?? false,
+            'mensaje' => $emailResult['message'] ?? ''
         ]
     ], 201);
 
