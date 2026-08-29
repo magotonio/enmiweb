@@ -75,10 +75,18 @@ describe('RegistrationFormComponent', () => {
     expect(component.isSubmitted()).toBeTrue();
     expect(component.registeredFullName()).toBe('Carlos Gómez');
     expect(component.registeredArtistName()).toBe('Mago Carlos');
+    expect(component.registeredEmail()).toBe('carlos@mago.es');
+
+    fixture.detectChanges();
+    const noticeEl = fixture.nativeElement.querySelector('#emailConfirmationNotice');
+    expect(noticeEl).toBeTruthy();
+    expect(noticeEl.textContent).toContain('carlos@mago.es');
+    expect(noticeEl.textContent).toContain('Te hemos enviado un correo de confirmación');
 
     component.onReset();
     expect(component.isSubmitted()).toBeFalse();
     expect(component.registeredFullName()).toBe('');
+    expect(component.registeredEmail()).toBe('');
     expect(component.form.value.nombre).toBe('');
   });
 

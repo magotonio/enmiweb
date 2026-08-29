@@ -193,8 +193,13 @@ Registra una nueva inscripción en la base de datos `enmi_inscripciones`.
       "email": "elena@magia.es",
       "quiero_participar": true
     },
-    "notificacion": {
+    "notificacion_admin": {
       "enviada": true,
+      "mensaje": "Correo enviado exitosamente vía SMTP."
+    },
+    "email_participante": {
+      "enviado": true,
+      "destinatario": "elena@magia.es",
       "mensaje": "Correo enviado exitosamente vía SMTP."
     }
   }
@@ -325,16 +330,29 @@ CREATE TABLE IF NOT EXISTS `enmi_configuracion` (
     - Si el usuario **no** ha iniciado sesión, es redirigido de inmediato a la página de mantenimiento (`/mantenimiento`).
     - La ruta `/login` permanece accesible para permitir la autenticación de miembros del staff, supervisores y asistentes autorizados.
     - El endpoint de inscripciones públicas (`api/inscribir.php`) bloquea nuevos registros de visitantes no identificados con código HTTP 503.
+    - **Registro de participantes por usuarios autenticados**: Si un miembro autenticado de la organización accede al formulario de inscripción (`/registro`), `InscripcionService` adjunta automáticamente sus credenciales de operador (`operator_id`, `operator_login`, `operator_email`). El endpoint `api/inscribir.php` valida al operador y permite procesar el registro con normalidad, registrando el usuario autor en `enmi_logs` y disparando el correo de confirmación al participante.
     - La barra de navegación muestra un banner superior distintivo para los usuarios con sesión activa indicando el estado de mantenimiento.
   - Si el parámetro `mantenimiento` vale `"0"`:
     - La web opera en modo abierto estándar. Si se intenta acceder a `/mantenimiento`, el guard redirige a la portada (`/`).
   - Conmutación directa del modo mantenimiento desde el Panel de Administración (`AdminDashboardComponent`) **exclusiva para el perfil `superadministrador`**.
+- **RF-08: Confirmación de Inscripción por Correo al Participante y Aviso en la Web**:
+  - Tras procesar el registro en MariaDB (`api/inscribir.php`), se envía automáticamente un correo electrónico personalizado al participante (`sendParticipantRegistrationEmail` en `api/mailer.php`).
+  - El correo contiene un diseño HTML institucional y versión alternativa en texto plano con el resumen completo de los datos registrados (ID de registro, Nombre, Apellidos, Nombre Artístico, Documento de Identidad, Email, Teléfono, Lugar de Residencia, Asociación, Modalidad de participación activa, Consentimiento de imagen, Comentarios y Fecha/Hora).
+  - En la interfaz web (`RegistrationFormComponent`), tras el envío exitoso, se muestra un aviso visual destacado que confirma al participante que se le ha enviado un correo con todos los datos que ha registrado a su dirección de email, recomendando revisar la carpeta de spam o correo no deseado.
 
 ---
 
 ## 8. Registro de Cambios (Changelog)
 
-### v2.9.1 (Actual)
+### v2.9.2 (Actual)
+- **Envío de Correo de Confirmación al Participante (`api/mailer.php` & `api/inscribir.php`)**:
+  - Implementación de la función `sendParticipantRegistrationEmail(array $data)` con plantilla HTML y texto plano corporativa de ENMI / Eutikea.
+  - Integración en `api/inscribir.php` para disparar el envío directo al email del participante tras guardar en BD con registro en auditoría de logs (`confirmacion_inscripcion_participante`).
+- **Aviso en Pantalla de Envío de Email (`RegistrationFormComponent`)**:
+  - Visualización en la tarjeta de éxito de un bloque destacado con icono, dirección de correo del participante registrada y recordatorio de revisión de bandeja de entrada/spam.
+  - Almacenamiento y limpieza reactiva del email con Signal (`registeredEmail`).
+
+### v2.9.1
 - **Restricción de Auditoría de Logs y Modo Mantenimiento a Superadministradores**:
   - Exclusividad de la ruta `/admin/logs` y del endpoint `api/logs.php` (GET y POST) para el perfil `superadministrador`.
   - Exclusividad de la activación/desactivación del modo mantenimiento y actualización de configuración en `api/configuracion.php` y `AdminDashboardComponent` para el perfil `superadministrador`.

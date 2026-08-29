@@ -27,26 +27,39 @@ if (!is_array($data)) {
     ], 400);
 }
 
+// Comprobar si la petición proviene de un operador/usuario autenticado
+$operatorId    = isset($data['operator_id']) ? (int)$data['operator_id'] : null;
+$operatorLogin = isset($data['operator_login']) ? trim((string)$data['operator_login']) : null;
+$operatorEmail = isset($data['operator_email']) ? trim((string)$data['operator_email']) : null;
+$isAuthorizedOperator = false;
+$op = null;
+
+if ($operatorId || !empty($operatorLogin) || !empty($operatorEmail)) {
+    try {
+        $pdoCheck = getDbConnection();
+        $stmtOp = $pdoCheck->prepare("
+            SELECT id, login, email, rol, bloqueado 
+            FROM `enmi_usuarios` 
+            WHERE (id = :id OR login = :login OR email = :email) 
+              AND bloqueado = 0 
+            LIMIT 1
+        ");
+        $stmtOp->execute([
+            ':id'    => $operatorId,
+            ':login' => $operatorLogin,
+            ':email' => $operatorEmail ?: $operatorLogin
+        ]);
+        $op = $stmtOp->fetch(PDO::FETCH_ASSOC);
+        if ($op && (int)$op['bloqueado'] === 0) {
+            $isAuthorizedOperator = true;
+        }
+    } catch (Throwable $e) {
+        $isAuthorizedOperator = false;
+    }
+}
+
 // Comprobar si la web se encuentra en modo mantenimiento
 if (isMaintenanceMode()) {
-    $operatorId = isset($data['operator_id']) ? (int)$data['operator_id'] : null;
-    $operatorLogin = isset($data['operator_login']) ? trim((string)$data['operator_login']) : null;
-    $isAuthorizedOperator = false;
-
-    if ($operatorId || !empty($operatorLogin)) {
-        try {
-            $pdoCheck = getDbConnection();
-            $stmtOp = $pdoCheck->prepare("SELECT id, rol, bloqueado FROM `enmi_usuarios` WHERE (id = :id OR login = :login) AND bloqueado = 0 LIMIT 1");
-            $stmtOp->execute([':id' => $operatorId, ':login' => $operatorLogin]);
-            $op = $stmtOp->fetch();
-            if ($op) {
-                $isAuthorizedOperator = true;
-            }
-        } catch (Throwable $e) {
-            $isAuthorizedOperator = false;
-        }
-    }
-
     if (!$isAuthorizedOperator) {
         sendJsonResponse([
             'success'       => false,
@@ -176,6 +189,9 @@ try {
     if ($nombreArtistico) {
         $logMsg .= " ({$nombreArtistico})";
     }
+    if ($isAuthorizedOperator && !empty($op['login'])) {
+        $logMsg .= " [Registrado por operador: {$op['login']} ({$op['rol']})]";
+    }
 
     // Registrar log de nueva inscripción
     logInfo('inscripciones', 'registro_creado', $logMsg, [
@@ -184,11 +200,11 @@ try {
         'apellidos'         => $apellidos,
         'nombre_artistico'  => $nombreArtistico,
         'email'             => $email,
-        'quiero_participar' => $quieroParticipar
-    ]);
+        'quiero_participar' => $quieroParticipar,
+        'operador'          => $isAuthorizedOperator ? ($op['login'] ?? null) : null
+    ], $isAuthorizedOperator ? (int)($op['id'] ?? null) : null);
 
-    // Enviar notificación por correo electrónico a los administradores
-    $emailResult = sendRegistrationNotification([
+    $emailPayload = [
         'id'                    => $insertedId,
         'nombre'                => $nombre,
         'apellidos'             => $apellidos,
@@ -203,30 +219,49 @@ try {
         'comentarios'           => $comentarios,
         'ip_registro'           => $ipRegistro,
         'fecha'                 => date('d/m/Y H:i:s')
-    ]);
+    ];
 
-    // Registrar log del resultado del envío de notificación
+    // 1. Enviar notificación por correo electrónico a los administradores
+    $adminEmailResult = sendRegistrationNotification($emailPayload);
+
+    // Registrar log del resultado del envío a los administradores
     logNotification(
-        'notificacion_inscripcion',
-        $emailResult['message'] ?? 'Envío de correo de notificación',
-        ['inscripcion_id' => $insertedId, 'detalle' => $emailResult],
-        $emailResult['success'] ?? false
+        'notificacion_inscripcion_admin',
+        $adminEmailResult['message'] ?? 'Envío de correo de notificación a administradores',
+        ['inscripcion_id' => $insertedId, 'detalle' => $adminEmailResult],
+        $adminEmailResult['success'] ?? false
+    );
+
+    // 2. Enviar correo de confirmación con los datos registrados directamente al participante
+    $participantEmailResult = sendParticipantRegistrationEmail($emailPayload);
+
+    // Registrar log del resultado del envío al participante
+    logNotification(
+        'confirmacion_inscripcion_participante',
+        $participantEmailResult['message'] ?? 'Envío de correo de confirmación al participante',
+        ['inscripcion_id' => $insertedId, 'destinatario' => $email, 'detalle' => $participantEmailResult],
+        $participantEmailResult['success'] ?? false
     );
 
     sendJsonResponse([
-        'success'      => true,
-        'message'      => 'Inscripción guardada correctamente.',
-        'id'           => $insertedId,
-        'data'         => [
+        'success'            => true,
+        'message'            => 'Inscripción guardada correctamente.',
+        'id'                 => $insertedId,
+        'data'               => [
             'nombre'            => $nombre,
             'apellidos'         => $apellidos,
             'nombre_artistico'  => $nombreArtistico,
             'email'             => $email,
             'quiero_participar' => (bool)$quieroParticipar
         ],
-        'notificacion' => [
-            'enviada' => $emailResult['success'] ?? false,
-            'mensaje' => $emailResult['message'] ?? ''
+        'notificacion_admin' => [
+            'enviada' => $adminEmailResult['success'] ?? false,
+            'mensaje' => $adminEmailResult['message'] ?? ''
+        ],
+        'email_participante' => [
+            'enviado'      => $participantEmailResult['success'] ?? false,
+            'destinatario' => $email,
+            'mensaje'      => $participantEmailResult['message'] ?? ''
         ]
     ], 201);
 

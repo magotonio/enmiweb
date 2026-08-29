@@ -485,3 +485,270 @@ TEXT;
 
     return sendSmtpEmail($smtpConfig, $notificationEmails, $subject, $htmlBody, $textBody);
 }
+
+/**
+ * Construye la plantilla HTML y envía el correo de confirmación de inscripción al participante.
+ *
+ * @param array $data Datos completos de la inscripción realizada
+ * @return array Resultado del envío ['success' => bool, 'message' => string]
+ */
+function sendParticipantRegistrationEmail(array $data): array {
+    $participantEmail = trim((string)($data['email'] ?? ''));
+    if (empty($participantEmail) || !filter_var($participantEmail, FILTER_VALIDATE_EMAIL)) {
+        return [
+            'success' => false,
+            'message' => 'Dirección de correo electrónico del participante no válida o vacía.'
+        ];
+    }
+
+    $smtpConfig = getSmtpConfig();
+
+    $id = htmlspecialchars((string)($data['id'] ?? 'N/A'), ENT_QUOTES, 'UTF-8');
+    $nombre = htmlspecialchars((string)($data['nombre'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $apellidos = htmlspecialchars((string)($data['apellidos'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $nombreArtistico = !empty($data['nombre_artistico']) ? htmlspecialchars((string)$data['nombre_artistico'], ENT_QUOTES, 'UTF-8') : '';
+    $nifPasaporte = htmlspecialchars((string)($data['nif_pasaporte'] ?? 'N/D'), ENT_QUOTES, 'UTF-8');
+    $email = htmlspecialchars($participantEmail, ENT_QUOTES, 'UTF-8');
+    $telefono = htmlspecialchars((string)($data['telefono'] ?? 'N/D'), ENT_QUOTES, 'UTF-8');
+    $origen = htmlspecialchars((string)($data['origen'] ?? 'N/D'), ENT_QUOTES, 'UTF-8');
+    $asociacion = !empty($data['asociacion']) ? htmlspecialchars((string)$data['asociacion'], ENT_QUOTES, 'UTF-8') : 'Ninguna / No especificada';
+    $quieroParticipar = !empty($data['quiero_participar']);
+    $consentimientoImagen = !empty($data['consentimiento_imagen']);
+    $comentarios = !empty($data['comentarios']) ? nl2br(htmlspecialchars((string)$data['comentarios'], ENT_QUOTES, 'UTF-8')) : 'Sin comentarios adicionales';
+    $comentariosRaw = !empty($data['comentarios']) ? (string)$data['comentarios'] : 'Sin comentarios adicionales';
+    $fecha = !empty($data['fecha']) ? (string)$data['fecha'] : date('d/m/Y H:i:s');
+
+    $nombreCompleto = trim($nombre . ' ' . $apellidos);
+
+    $subjectTitle = $nombre;
+    if ($nombreArtistico !== '') {
+        $subjectTitle = "{$nombre} ({$nombreArtistico})";
+    }
+    $subject = "¡Inscripción Confirmada! - Encuentro Nacional de Magos Infantiles (ENMI)";
+
+    $participarHtml = $quieroParticipar
+        ? '<span style="display: inline-block; padding: 4px 10px; background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; border-radius: 9999px; font-weight: 700; font-size: 12px;">SÍ, HAS SOLICITADO PARTICIPAR ACTIVAMENTE</span>'
+        : '<span style="color: #64748b; font-size: 13px;">Asistente regular</span>';
+
+    $imagenHtml = $consentimientoImagen
+        ? '<span style="color: #16a34a; font-weight: 600;">Consentimiento otorgado</span>'
+        : '<span style="color: #64748b;">No otorgado</span>';
+
+    $artistaFilaHtml = '';
+    if ($nombreArtistico !== '') {
+        $artistaFilaHtml = <<<HTML
+        <tr>
+            <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+                Nombre Artístico
+            </td>
+            <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #001F5B; font-weight: 700;">
+                {$nombreArtistico}
+            </td>
+        </tr>
+HTML;
+    }
+
+    $htmlBody = <<<HTML
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmación de Inscripción - ENMI</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #334155; line-height: 1.6;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f1f5f9; padding: 30px 15px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="100%" style="max-width: 620px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08); border: 1px solid #e2e8f0;" cellspacing="0" cellpadding="0">
+                    <!-- Cabecera -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #001F5B 0%, #0d2c6e 100%); padding: 36px 28px; text-align: center;">
+                            <div style="display: inline-block; padding: 6px 14px; background-color: rgba(212, 175, 55, 0.2); border: 1px solid rgba(212, 175, 55, 0.4); border-radius: 9999px; margin-bottom: 14px;">
+                                <span style="color: #D4AF37; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;">Confirmación Oficial</span>
+                            </div>
+                            <h1 style="color: #ffffff; margin: 0 0 8px 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em;">¡Tu inscripción ha sido recibida!</h1>
+                            <p style="color: #cbd5e1; margin: 0; font-size: 14px;">Encuentro Nacional de Magos Infantiles (ENMI)</p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Cuerpo del contenido -->
+                    <tr>
+                        <td style="padding: 30px 28px 24px 28px;">
+                            <p style="margin: 0 0 16px 0; font-size: 16px; color: #1e293b; font-weight: 600;">
+                                ¡Hola, {$nombre}!
+                            </p>
+                            <p style="margin: 0 0 22px 0; font-size: 14px; color: #475569; leading-relaxed;">
+                                Te confirmamos que hemos recibido y registrado correctamente tus datos de inscripción para el <strong>Encuentro Nacional de Magos Infantiles (ENMI)</strong>. A continuación puedes consultar el resumen detallado de la información enviada:
+                            </p>
+                            
+                            <!-- Tarjeta de Datos Registrados -->
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 24px; font-size: 14px;">
+                                <tr>
+                                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; width: 38%; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+                                        Número de Registro
+                                    </td>
+                                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #001F5B; font-weight: 700; font-family: monospace; font-size: 15px;">
+                                        #{$id}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+                                        Nombre y Apellidos
+                                    </td>
+                                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #0f172a; font-weight: 600;">
+                                        {$nombreCompleto}
+                                    </td>
+                                </tr>
+                                {$artistaFilaHtml}
+                                <tr>
+                                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+                                        NIF / Pasaporte
+                                    </td>
+                                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #334155; font-family: monospace;">
+                                        {$nifPasaporte}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+                                        Correo Electrónico
+                                    </td>
+                                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #0f172a;">
+                                        {$email}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+                                        Teléfono Móvil
+                                    </td>
+                                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #0f172a; font-weight: 600;">
+                                        {$telefono}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+                                        Lugar de Residencia
+                                    </td>
+                                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #334155;">
+                                        {$origen}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+                                        Círculo / Asociación
+                                    </td>
+                                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #334155;">
+                                        {$asociacion}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+                                        Participación Activa
+                                    </td>
+                                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0;">
+                                        {$participarHtml}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+                                        Derechos de Imagen
+                                    </td>
+                                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #334155;">
+                                        {$imagenHtml}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+                                        Comentarios / Notas
+                                    </td>
+                                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #334155; font-style: italic;">
+                                        {$comentarios}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px 16px; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+                                        Fecha de Registro
+                                    </td>
+                                    <td style="padding: 12px 16px; color: #64748b; font-size: 12px;">
+                                        {$fecha}
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Bloque de Próximos Pasos -->
+                            <div style="background-color: #f8fafc; border-left: 4px solid #D4AF37; border-radius: 8px; padding: 16px 18px; margin-bottom: 24px;">
+                                <h3 style="color: #001F5B; margin: 0 0 6px 0; font-size: 14px; font-weight: 700;">
+                                    📌 ¿Cuáles son los siguientes pasos?
+                                </h3>
+                                <p style="margin: 0; font-size: 13px; color: #475569; line-height: 1.5;">
+                                    El equipo de organización de Eutikea revisará tu inscripción. Si indicaste tu interés en participar activamente (concurso, gala, stand o taller), nos pondremos en contacto contigo por teléfono o email para coordinar todos los detalles y resolver cualquier duda.
+                                </p>
+                            </div>
+
+                            <p style="margin: 0; font-size: 13px; color: #64748b; line-height: 1.5;">
+                                Si necesitas actualizar algún dato o tienes cualquier consulta, puedes responder directamente a este correo o escribirnos a <a href="mailto:enmi@eutikea.com" style="color: #0284c7; text-decoration: none; font-weight: 600;">enmi@eutikea.com</a>.
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Pie de página -->
+                    <tr>
+                        <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px 28px; text-align: center;">
+                            <p style="margin: 0 0 4px 0; font-size: 12px; font-weight: 600; color: #475569;">
+                                Encuentro Nacional de Magos Infantiles (ENMI)
+                            </p>
+                            <p style="margin: 0; font-size: 11px; color: #94a3b8;">
+                                Organizado por Eutikea &bull; Todos los derechos reservados
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+HTML;
+
+    $participarText = $quieroParticipar ? 'SÍ, HAS SOLICITADO PARTICIPAR ACTIVAMENTE' : 'Asistente regular';
+    $imagenText = $consentimientoImagen ? 'Consentimiento otorgado' : 'No otorgado';
+    $artistaText = $nombreArtistico !== '' ? "- Nombre Artístico: {$nombreArtistico}\n" : '';
+
+    $textBody = <<<TEXT
+==================================================
+¡TU INSCRIPCIÓN HA SIDO RECIBIDA! - ENMI
+==================================================
+
+¡Hola, {$nombre}!
+
+Te confirmamos que hemos recibido y registrado correctamente tus datos de inscripción para el Encuentro Nacional de Magos Infantiles (ENMI).
+
+A continuación tienes el resumen con los datos enviados:
+
+- ID de Registro: #{$id}
+- Nombre y Apellidos: {$nombreCompleto}
+{$artistaText}- NIF / Pasaporte: {$nifPasaporte}
+- Correo Electrónico: {$email}
+- Teléfono Móvil: {$telefono}
+- Lugar de Residencia: {$origen}
+- Círculo / Asociación: {$asociacion}
+- Participación Activa: {$participarText}
+- Consentimiento Derechos de Imagen: {$imagenText}
+- Comentarios: {$comentariosRaw}
+- Fecha de Registro: {$fecha}
+
+--------------------------------------------------
+¿CUÁLES SON LOS SIGUIENTES PASOS?
+--------------------------------------------------
+El equipo de organización de Eutikea revisará tu inscripción. Si indicaste tu interés en participar activamente, nos pondremos en contacto contigo por teléfono o email para coordinar los detalles.
+
+Si necesitas rectificar algún dato o tienes cualquier consulta, puedes responder a este correo o escribirnos a enmi@eutikea.com.
+
+---
+Encuentro Nacional de Magos Infantiles (ENMI)
+Organizado por Eutikea.
+TEXT;
+
+    return sendSmtpEmail($smtpConfig, [$participantEmail], $subject, $htmlBody, $textBody);
+}
+

@@ -28,6 +28,7 @@ export class RegistrationFormComponent {
   serverError = signal<string | null>(null);
   registeredFullName = signal<string>('');
   registeredArtistName = signal<string>('');
+  registeredEmail = signal<string>('');
 
   // Modales de información y legal
   showParticipacionModal = signal<boolean>(false);
@@ -131,6 +132,7 @@ export class RegistrationFormComponent {
           this.isLoading.set(false);
           this.registeredFullName.set(fullName);
           this.registeredArtistName.set(artistName);
+          this.registeredEmail.set(data.email.trim());
           this.isSubmitted.set(true);
           window.scrollTo({ top: 0, behavior: 'smooth' });
         },
@@ -182,6 +184,7 @@ export class RegistrationFormComponent {
     this.serverError.set(null);
     this.registeredFullName.set('');
     this.registeredArtistName.set('');
+    this.registeredEmail.set('');
 
     // Enfocar automáticamente el campo Nombre tras reiniciar
     setTimeout(() => {

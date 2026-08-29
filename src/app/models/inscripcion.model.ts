@@ -49,6 +49,15 @@ export interface InscripcionApiResponse {
     enviada: boolean;
     mensaje: string;
   };
+  notificacion_admin?: {
+    enviada: boolean;
+    mensaje: string;
+  };
+  email_participante?: {
+    enviado: boolean;
+    destinatario?: string;
+    mensaje: string;
+  };
 }
 
 export interface InscripcionesStats {

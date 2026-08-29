@@ -22,12 +22,31 @@ export class InscripcionService {
 
   /**
    * Envía los datos del formulario a la API PHP para su registro en MariaDB.
+   * Si el usuario actual está autenticado (personal de la organización), se adjuntan sus credenciales
+   * de operador para permitir el registro incluso cuando la web se encuentre en Modo Mantenimiento.
    * 
-   * @param data Datos del formulario (nombre, apellidos)
+   * @param data Datos del formulario de inscripción
    * @returns Observable con la respuesta estandarizada de la API
    */
   inscribir(data: InscripcionFormData): Observable<InscripcionApiResponse> {
-    return this.http.post<InscripcionApiResponse>(this.inscribirApiUrl, data);
+    const currentUser = this.authService.currentUser();
+    const payload: InscripcionFormData & { operator_id?: number; operator_login?: string; operator_email?: string } = {
+      ...data
+    };
+
+    if (currentUser) {
+      if (currentUser.id) {
+        payload.operator_id = currentUser.id;
+      }
+      if (currentUser.login) {
+        payload.operator_login = currentUser.login;
+      }
+      if (currentUser.email) {
+        payload.operator_email = currentUser.email;
+      }
+    }
+
+    return this.http.post<InscripcionApiResponse>(this.inscribirApiUrl, payload);
   }
 
   /**
