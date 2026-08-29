@@ -2,8 +2,8 @@
 /**
  * Endpoint de Configuración de la Web (Modo Mantenimiento y Parámetros del Sistema)
  * Métodos:
- *  - GET: Consulta pública del estado de mantenimiento (y listado completo para administradores)
- *  - POST: Actualización de parámetros de configuración (Exclusivo Superadmin y Supervisor)
+ *  - GET: Consulta pública del estado de mantenimiento (y listado completo para Superadministradores)
+ *  - POST: Actualización de parámetros de configuración (Exclusivo Superadministrador)
  */
 
 require_once __DIR__ . '/config.php';
@@ -12,7 +12,7 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $pdo = getDbConnection();
 
 /**
- * Verifica si el usuario operador posee permisos de administración (Supervisor o Superadministrador).
+ * Verifica si el usuario operador posee permisos de superadministrador.
  */
 function verifyConfigOperatorPermission(PDO $pdo, ?int $operatorId, ?string $operatorLogin): ?array {
     if (!$operatorId && empty($operatorLogin)) {
@@ -33,7 +33,7 @@ function verifyConfigOperatorPermission(PDO $pdo, ?int $operatorId, ?string $ope
         if ((int)$user['bloqueado'] === 1) return null;
 
         $rol = $user['rol'] ?? 'asistente';
-        if (in_array($rol, ['superadministrador', 'supervisor'], true)) {
+        if ($rol === 'superadministrador') {
             return $user;
         }
         return null;
@@ -118,7 +118,7 @@ if ($method === 'POST') {
 
         sendJsonResponse([
             'success' => false,
-            'message' => 'No tienes permisos suficientes para modificar la configuración de la web.'
+            'message' => 'No tienes permisos suficientes para modificar la configuración de la web. Exclusivo para Superadministradores.'
         ], 403);
     }
 

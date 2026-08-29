@@ -1,7 +1,7 @@
 <?php
 /**
  * Endpoint de Consulta de Logs y Auditoría del Sistema
- * Nivel de Seguridad: Superadministrador y Supervisor
+ * Nivel de Seguridad: Exclusivo para Superadministrador
  * Método: GET (Consultar), POST (Limpiar logs antiguos - Superadmin)
  */
 
@@ -10,10 +10,65 @@ require_once __DIR__ . '/config.php';
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $pdo = getDbConnection();
 
+/**
+ * Verifica si el usuario operador posee permisos de Superadministrador para consultar o depurar logs.
+ */
+function verifyLogsSuperAdminPermission(PDO $pdo, ?int $operatorId, ?string $operatorLogin): ?array {
+    if (!$operatorId && empty($operatorLogin)) {
+        if (isset($_SERVER['HTTP_X_USER_ID'])) {
+            $operatorId = (int)$_SERVER['HTTP_X_USER_ID'];
+        }
+        if (isset($_SERVER['HTTP_X_USER_LOGIN'])) {
+            $operatorLogin = trim((string)$_SERVER['HTTP_X_USER_LOGIN']);
+        }
+    }
+
+    if (!$operatorId && empty($operatorLogin)) {
+        return null;
+    }
+
+    try {
+        if ($operatorId) {
+            $stmt = $pdo->prepare("SELECT id, login, email, rol, bloqueado FROM `enmi_usuarios` WHERE id = :id LIMIT 1");
+            $stmt->execute([':id' => $operatorId]);
+        } else {
+            $stmt = $pdo->prepare("SELECT id, login, email, rol, bloqueado FROM `enmi_usuarios` WHERE login = :login LIMIT 1");
+            $stmt->execute([':login' => $operatorLogin]);
+        }
+
+        $user = $stmt->fetch();
+        if (!$user) return null;
+        if ((int)$user['bloqueado'] === 1) return null;
+
+        $rol = $user['rol'] ?? 'asistente';
+        if ($rol === 'superadministrador') {
+            return $user;
+        }
+        return null;
+    } catch (PDOException $e) {
+        return null;
+    }
+}
+
 // ---------------------------------------------------------------------
 // 1. GET: Consultar logs con filtros y estadísticas
 // ---------------------------------------------------------------------
 if ($method === 'GET') {
+    $operatorId    = isset($_GET['operator_id']) ? (int)$_GET['operator_id'] : null;
+    $operatorLogin = isset($_GET['operator_login']) ? trim((string)$_GET['operator_login']) : null;
+
+    $operator = verifyLogsSuperAdminPermission($pdo, $operatorId, $operatorLogin);
+    if (!$operator) {
+        logAuth('logs_acceso_denegado', 'Intento no autorizado de consultar logs del sistema', [
+            'operator_id'    => $operatorId,
+            'operator_login' => $operatorLogin
+        ], false, $operatorId);
+
+        sendJsonResponse([
+            'success' => false,
+            'message' => 'Acceso denegado. La auditoría de logs es exclusiva para Superadministradores.'
+        ], 403);
+    }
     try {
         $search    = isset($_GET['q']) ? trim((string)$_GET['q']) : '';
         $nivel     = isset($_GET['nivel']) ? strtoupper(trim((string)$_GET['nivel'])) : '';
@@ -149,6 +204,16 @@ if ($method === 'POST') {
     $inputRaw = file_get_contents('php://input');
     $data = json_decode($inputRaw, true);
     $action = $data['action'] ?? '';
+    $operatorId    = isset($data['operator_id']) ? (int)$data['operator_id'] : null;
+    $operatorLogin = isset($data['operator_login']) ? trim((string)$data['operator_login']) : null;
+
+    $operator = verifyLogsSuperAdminPermission($pdo, $operatorId, $operatorLogin);
+    if (!$operator) {
+        sendJsonResponse([
+            'success' => false,
+            'message' => 'Acceso denegado. La depuración de logs es exclusiva para Superadministradores.'
+        ], 403);
+    }
 
     if ($action === 'clear_old') {
         try {

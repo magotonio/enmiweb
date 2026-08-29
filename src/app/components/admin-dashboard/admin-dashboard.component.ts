@@ -114,10 +114,10 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   /**
-   * Conmuta el modo mantenimiento de la web (Superadmin y Supervisor).
+   * Conmuta el modo mantenimiento de la web (Exclusivo Superadministrador).
    */
   setMaintenanceMode(enabled: boolean): void {
-    if (!this.isSupervisor()) return;
+    if (!this.isSuperAdmin()) return;
     this.isUpdatingMaintenance.set(true);
     this.maintenanceSuccessMessage.set(null);
     this.errorMessage.set(null);

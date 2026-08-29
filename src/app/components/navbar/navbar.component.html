@@ -6,7 +6,7 @@
   <div class="bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 text-white text-xs font-bold py-1.5 px-4 text-center shadow-xs border-b border-amber-400/40 flex items-center justify-center gap-2 flex-wrap">
     <span class="w-2 h-2 rounded-full bg-white animate-pulse shrink-0"></span>
     <span>MODO MANTENIMIENTO ACTIVO · El sitio público está cerrado a visitantes. Acceso concedido por sesión iniciada.</span>
-    @if (isSupervisor()) {
+    @if (isSuperAdmin()) {
     <a routerLink="/admin" (click)="closeMobileMenu()" class="underline ml-1 font-extrabold hover:text-amber-100 cursor-pointer">
       Configurar en Panel
     </a>
@@ -148,8 +148,8 @@
             </a>
             }
 
-            <!-- Logs y Auditoría (Superadministrador y Supervisor) -->
-            @if (isSupervisor()) {
+            <!-- Logs y Auditoría (Exclusivo Superadministrador) -->
+            @if (isSuperAdmin()) {
             <a routerLink="/admin/logs" (click)="closeMobileMenu()"
               routerLinkActive="!bg-brand-gold !text-brand-navy font-bold shadow-xs"
               class="px-2.5 py-1.5 text-xs font-medium text-slate-200 hover:text-white hover:bg-white/15 rounded-lg transition-all duration-150 whitespace-nowrap flex items-center gap-1.5">
@@ -312,11 +312,13 @@
           Gestión de Usuarios (Superadmin)
         </a>
         }
+        @if (isSuperAdmin()) {
         <a routerLink="/admin/logs" (click)="closeMobileMenu()"
           routerLinkActive="!bg-brand-gold !text-brand-navy font-bold"
           class="block px-3 py-2 text-xs font-medium text-slate-200 hover:bg-white/10 rounded-lg transition-colors">
           Auditoría y Logs
         </a>
+        }
         } @else {
         <a routerLink="/asistente" (click)="closeMobileMenu()" [routerLinkActiveOptions]="{exact: true}"
           routerLinkActive="!bg-brand-gold !text-brand-navy font-bold"

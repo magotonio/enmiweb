@@ -24,10 +24,12 @@
         <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-brand-navy mb-2.5">
           Registro de Participante
         </h1>
+        @if (!isSubmitted()) {
         <p class="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
           Completa tus datos personales, de contacto y artísticos para reservar tu plaza en el Encuentro Nacional de
           Magos Infantiles (ENMI).
         </p>
+        }
       </header>
 
       @if (!isSubmitted()) {
@@ -737,8 +739,9 @@
       <div>
         <h4 class="font-bold text-brand-navy text-sm uppercase tracking-wider mb-1">1. Responsable del Tratamiento</h4>
         <p>
-          El responsable del tratamiento de sus datos es <strong>Eutikea</strong> (empresa organizadora del Encuentro Nacional de Magos
-            Infantiles - ENMI). Puede contactar con la entidad organizadora a través del formulario oficial o canales
+          El responsable del tratamiento de sus datos es <strong>Eutikea</strong> (empresa organizadora del Encuentro
+          Nacional de Magos
+          Infantiles - ENMI). Puede contactar con la entidad organizadora a través del formulario oficial o canales
           facilitados en la web.
         </p>
       </div>

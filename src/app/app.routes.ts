@@ -99,7 +99,7 @@ export const routes: Routes = [
     component: AdminLogsComponent,
     canActivate: [maintenanceGuard, roleGuard],
     data: {
-      roles: ['superadministrador', 'supervisor']
+      roles: ['superadministrador']
     },
     title: 'Auditoría y Logs del Sistema | ENMI 2027 Madrid'
   },

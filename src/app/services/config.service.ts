@@ -50,7 +50,7 @@ export class ConfigService {
   }
 
   /**
-   * Actualiza el parámetro de modo mantenimiento en la base de datos (Exclusivo Superadmin y Supervisor).
+   * Actualiza el parámetro de modo mantenimiento en la base de datos (Exclusivo Superadministrador).
    * @param enabled True para activar mantenimiento ('1'), False para desactivarlo ('0').
    */
   setMaintenanceMode(enabled: boolean): Observable<ConfigResponse> {

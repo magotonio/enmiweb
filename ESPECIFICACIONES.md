@@ -308,11 +308,11 @@ CREATE TABLE IF NOT EXISTS `enmi_configuracion` (
   - Listado enriquecido con identificación artística, filtro de participación, modal de ficha completa y exportación a Excel/CSV con todas las columnas.
 - **RF-05: Sistema de Perfiles y Niveles de Seguridad por Página (RBAC)**:
   - **3 Perfiles Diferenciados con Paneles Dedicados**:
-    - `superadministrador` (Nivel 3 - Máximo): Acceso total. Gestión de usuarios y staff (`/admin/usuarios`), cambio de roles, desbloqueo de cuentas, reseteo de claves, auditoría de logs (`/admin/logs`), gestión y exportación de inscritos (`/admin/inscritos`), panel general (`/admin`) y mostrador de recepción (`/asistente`).
-    - `supervisor` (Nivel 2 - Supervisión y Gestión): Panel de administración (`/admin`), gestión de inscritos con exportación CSV e informes (`/admin/inscritos`), auditoría y visor de logs (`/admin/logs`) y mostrador de recepción (`/asistente`).
+    - `superadministrador` (Nivel 3 - Máximo): Acceso total. Gestión de usuarios y staff (`/admin/usuarios`), cambio de roles, desbloqueo de cuentas, reseteo de claves, auditoría de logs (`/admin/logs`), activación y control del modo mantenimiento, gestión y exportación de inscritos (`/admin/inscritos`), panel general (`/admin`) y mostrador de recepción (`/asistente`).
+    - `supervisor` (Nivel 2 - Supervisión y Gestión): Panel de administración (`/admin`), gestión de inscritos con exportación CSV e informes (`/admin/inscritos`) y mostrador de recepción (`/asistente`). La auditoría de logs, gestión de usuarios y activación del modo mantenimiento quedan restringidas al Superadministrador.
     - `asistente` (Nivel 1 - Operativo / Recepción y Acreditaciones): **Panel exclusivo de asistentes (`/asistente`)** para búsqueda rápida por DNI/nombre/nombre artístico, verificación en sede, visualización de fichas de acreditación y registro in situ. El panel de administración (`/admin`) queda restringido.
   - **Guards de Seguridad en Angular**: `roleGuard` funcional que evalúa `route.data['roles']` o `route.data['minRole']`, redirigiendo usuarios no autorizados a `/acceso-denegado` (pantalla informativa 403) o a su panel correspondiente sin romper la sesión activa.
-  - **Endpoints Backend Seguros en PHP**: `api/usuarios.php` (exclusivo Superadmin), `api/logs.php` (Superadmin y Supervisor), y enriquecimiento de `api/login.php` y `api/check_session.php` con el perfil del usuario.
+  - **Endpoints Backend Seguros en PHP**: `api/usuarios.php` (exclusivo Superadmin), `api/logs.php` (exclusivo Superadmin), `api/configuracion.php` (modificación y configuración avanzada exclusiva Superadmin), y enriquecimiento de `api/login.php` y `api/check_session.php` con el perfil del usuario.
   - **Migración 007 (`007_add_rol_to_enmi_usuarios.sql`)**: Incorporación de columna `rol` en `enmi_usuarios` y usuarios semilla de prueba para los tres perfiles.
 - **RF-06: Configuración Dinámica y Centralizada en Base de Datos**:
   - Almacén de configuraciones en tabla `enmi_configuracion` con soporte clave-valor textual.
@@ -328,13 +328,19 @@ CREATE TABLE IF NOT EXISTS `enmi_configuracion` (
     - La barra de navegación muestra un banner superior distintivo para los usuarios con sesión activa indicando el estado de mantenimiento.
   - Si el parámetro `mantenimiento` vale `"0"`:
     - La web opera en modo abierto estándar. Si se intenta acceder a `/mantenimiento`, el guard redirige a la portada (`/`).
-  - Conmutación directa del modo mantenimiento desde el Panel de Administración (`AdminDashboardComponent`) para perfiles `superadministrador` y `supervisor`.
+  - Conmutación directa del modo mantenimiento desde el Panel de Administración (`AdminDashboardComponent`) **exclusiva para el perfil `superadministrador`**.
 
 ---
 
 ## 8. Registro de Cambios (Changelog)
 
-### v2.9.0 (Actual)
+### v2.9.1 (Actual)
+- **Restricción de Auditoría de Logs y Modo Mantenimiento a Superadministradores**:
+  - Exclusividad de la ruta `/admin/logs` y del endpoint `api/logs.php` (GET y POST) para el perfil `superadministrador`.
+  - Exclusividad de la activación/desactivación del modo mantenimiento y actualización de configuración en `api/configuracion.php` y `AdminDashboardComponent` para el perfil `superadministrador`.
+  - Ajuste de menús de navegación (`NavbarComponent`), dashboard administrativo (`AdminDashboardComponent`) e indicadores visuales de nivel jerárquico.
+
+### v2.9.0
 - **Modo Mantenimiento Dinámico (`mantenimiento = "1"`)**: Implementación del flujo completo de cierre y apertura temporal de la plataforma.
 - **Guard Funcional de Mantenimiento (`maintenanceGuard`)**: Redirección automática de visitantes no autenticados a `/mantenimiento` cuando la web está en mantenimiento, permitiendo el acceso irrestricto a usuarios autenticados.
 - **Página de Mantenimiento (`MantenimientoComponent` en `/mantenimiento`)**: Vista institucional de aviso de mantenimiento con botón de inicio de sesión para organizadores y comprobador de estado en tiempo real.
