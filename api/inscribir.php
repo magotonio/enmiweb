@@ -27,6 +27,35 @@ if (!is_array($data)) {
     ], 400);
 }
 
+// Comprobar si la web se encuentra en modo mantenimiento
+if (isMaintenanceMode()) {
+    $operatorId = isset($data['operator_id']) ? (int)$data['operator_id'] : null;
+    $operatorLogin = isset($data['operator_login']) ? trim((string)$data['operator_login']) : null;
+    $isAuthorizedOperator = false;
+
+    if ($operatorId || !empty($operatorLogin)) {
+        try {
+            $pdoCheck = getDbConnection();
+            $stmtOp = $pdoCheck->prepare("SELECT id, rol, bloqueado FROM `enmi_usuarios` WHERE (id = :id OR login = :login) AND bloqueado = 0 LIMIT 1");
+            $stmtOp->execute([':id' => $operatorId, ':login' => $operatorLogin]);
+            $op = $stmtOp->fetch();
+            if ($op) {
+                $isAuthorizedOperator = true;
+            }
+        } catch (Throwable $e) {
+            $isAuthorizedOperator = false;
+        }
+    }
+
+    if (!$isAuthorizedOperator) {
+        sendJsonResponse([
+            'success'       => false,
+            'mantenimiento' => true,
+            'message'       => 'La web se encuentra actualmente en modo mantenimiento. Las inscripciones públicas están temporalmente cerradas.'
+        ], 503);
+    }
+}
+
 // Extraer y sanitizar campos
 $nombre               = isset($data['nombre']) ? trim((string)$data['nombre']) : '';
 $apellidos            = isset($data['apellidos']) ? trim((string)$data['apellidos']) : '';

@@ -24,11 +24,14 @@ Aplicación web moderna, accesible y modular construida con **Angular 21** conec
 │   ├── config.php                               # Conexión PDO a MariaDB y utilidades de respuesta JSON
 │   ├── config.env.local.php                     # Configuración de entorno de desarrollo (LOCAL)
 │   ├── config.env.pro.php                       # Plantilla de entorno de producción (PRO)
+│   ├── configuracion.php                        # Endpoint REST para consulta y gestión de configuración / mantenimiento
 │   ├── logger.php                               # Servicio centralizado de registro de logs y auditoría
 │   ├── mailer.php                               # Servicio SMTP nativo y plantillas de notificación por correo
 │   ├── inscribir.php                            # Endpoint POST para registrar inscripciones y disparar alertas
 │   ├── inscripciones.php                        # Endpoint GET para listar y auditar inscripciones con estadísticas
 │   ├── login.php                                # Endpoint POST para autenticación de administradores
+│   ├── logs.php                                 # Endpoint GET para consulta y filtrado de auditoría del sistema
+│   ├── usuarios.php                             # Endpoint CRUD para gestión de usuarios, roles y bloqueos
 │   └── test_db.php                              # Endpoint de diagnóstico y salud de la base de datos
 ├── public/                                      # Activos estáticos públicos (favicon, etc.)
 ├── src/                                         # Código fuente de la aplicación Angular
@@ -36,24 +39,37 @@ Aplicación web moderna, accesible y modular construida con **Angular 21** conec
 │   ├── main.ts                                  # Punto de entrada de la aplicación
 │   ├── styles.css                               # Sistema de diseño, variables CSS y estilos globales
 │   └── app/
-│       ├── app.config.ts                        # Proveedores globales (HttpClient con fetch, Locale 'es')
-│       ├── app.routes.ts                        # Rutas de la aplicación con guards de autenticación
+│       ├── app.config.ts                        # Proveedores globales (HttpClient, Locale 'es', AppInitializer)
+│       ├── app.routes.ts                        # Rutas de la aplicación con guards de autenticación y mantenimiento
 │       ├── app.component.ts/.html/.css          # Componente principal contenedor
 │       ├── models/
+│       │   ├── configuracion.model.ts           # Interfaces TypeScript (parámetros de configuración del sistema)
 │       │   ├── inscripcion.model.ts             # Interfaces TypeScript (inscripciones, respuestas y filtros)
 │       │   └── usuario.model.ts                 # Interfaces TypeScript (usuarios, login, credenciales)
 │       ├── services/
 │       │   ├── auth.service.ts                  # Servicio de autenticación y gestión de sesión
-│       │   └── inscripcion.service.ts           # Servicio HTTP para registro, consulta y exportación CSV
+│       │   ├── config.service.ts                # Servicio reactivo de configuración y modo mantenimiento
+│       │   ├── inscripcion.service.ts           # Servicio HTTP para registro, consulta y exportación CSV
+│       │   ├── logs.service.ts                  # Servicio HTTP para consulta y auditoría de eventos
+│       │   └── usuario.service.ts               # Servicio HTTP para gestión de usuarios y credenciales
 │       ├── guards/
-│       │   └── auth.guard.ts                    # Guard funcional para proteger rutas administrativas
+│       │   ├── auth.guard.ts                    # Guard funcional para proteger rutas administrativas
+│       │   ├── maintenance.guard.ts             # Guard funcional para control y redirección en modo mantenimiento
+│       │   └── role.guard.ts                    # Guard funcional de control de acceso por roles (RBAC)
 │       └── components/
-│           ├── navbar/                          # Barra superior con menú horizontal de administrador
+│           ├── navbar/                          # Barra superior con banner de mantenimiento y menú staff
 │           ├── footer/                          # Pie de página institucional
 │           ├── home/                            # Portada y presentación del encuentro
 │           ├── login/                           # Formulario de acceso de administradores
+│           ├── mantenimiento/                   # Página pública de estado de mantenimiento
 │           ├── registration-form/               # Formulario de inscripción pública
-│           └── admin-inscripciones/             # Panel de revisión, búsqueda y exportación de inscritos
+│           ├── admin-dashboard/                 # Panel general de administración con control de mantenimiento
+│           ├── admin-inscripciones/             # Panel de revisión, búsqueda y exportación de inscritos
+│           ├── admin-usuarios/                  # Panel de gestión de usuarios y roles
+│           ├── admin-logs/                      # Panel de auditoría de logs del sistema
+│           ├── panel-asistente/                 # Espacio personal de consulta para asistentes
+│           ├── asistente-ficha/                 # Ficha completa de datos del asistente
+│           └── acceso-denegado/                 # Vista de advertencia por privilegios insuficientes
 └── db/                                          # Gestión de base de datos y versiones
     ├── schema.sql                               # Esquema completo consolidado actual (MariaDB)
     └── migrations/                              # Scripts incrementales versionados
@@ -302,12 +318,31 @@ CREATE TABLE IF NOT EXISTS `enmi_configuracion` (
   - Almacén de configuraciones en tabla `enmi_configuracion` con soporte clave-valor textual.
   - Parámetro de `mantenimiento` (valor `"1"` para activar el estado de mantenimiento / cierre temporal).
   - Parámetros completos del servicio de correo saliente SMTP (`smtp_host`, `smtp_port`, `smtp_secure`, `smtp_auth`, `smtp_user`, `smtp_pass`, `smtp_from_email`, `smtp_from_name`, `notification_emails` separados por comas).
+- **RF-07: Control de Acceso y Redirección en Modo Mantenimiento**:
+  - Si el parámetro `mantenimiento` vale `"1"`:
+    - La web se coloca automáticamente en **Modo Mantenimiento**.
+    - Cualquier página solo se puede visualizar si el usuario ha iniciado sesión (`isLoggedIn`).
+    - Si el usuario **no** ha iniciado sesión, es redirigido de inmediato a la página de mantenimiento (`/mantenimiento`).
+    - La ruta `/login` permanece accesible para permitir la autenticación de miembros del staff, supervisores y asistentes autorizados.
+    - El endpoint de inscripciones públicas (`api/inscribir.php`) bloquea nuevos registros de visitantes no identificados con código HTTP 503.
+    - La barra de navegación muestra un banner superior distintivo para los usuarios con sesión activa indicando el estado de mantenimiento.
+  - Si el parámetro `mantenimiento` vale `"0"`:
+    - La web opera en modo abierto estándar. Si se intenta acceder a `/mantenimiento`, el guard redirige a la portada (`/`).
+  - Conmutación directa del modo mantenimiento desde el Panel de Administración (`AdminDashboardComponent`) para perfiles `superadministrador` y `supervisor`.
 
 ---
 
 ## 8. Registro de Cambios (Changelog)
 
-### v2.8.0 (Actual)
+### v2.9.0 (Actual)
+- **Modo Mantenimiento Dinámico (`mantenimiento = "1"`)**: Implementación del flujo completo de cierre y apertura temporal de la plataforma.
+- **Guard Funcional de Mantenimiento (`maintenanceGuard`)**: Redirección automática de visitantes no autenticados a `/mantenimiento` cuando la web está en mantenimiento, permitiendo el acceso irrestricto a usuarios autenticados.
+- **Página de Mantenimiento (`MantenimientoComponent` en `/mantenimiento`)**: Vista institucional de aviso de mantenimiento con botón de inicio de sesión para organizadores y comprobador de estado en tiempo real.
+- **Endpoint de Configuración (`api/configuracion.php`)**: Consulta pública del estado de mantenimiento (`GET`) y actualización autorizada (`POST`) con registro en `enmi_logs`.
+- **Control desde el Panel de Administración**: Botones interactivos de activación/desactivación de mantenimiento en `AdminDashboardComponent` e indicador en la cabecera `NavbarComponent`.
+- **Protección en API de Inscripciones (`api/inscribir.php`)**: Rechazo automático (503) de inscripciones públicas cuando el mantenimiento está activo.
+
+### v2.8.0
 - **Tabla de Configuración de la Web (`enmi_configuracion`)**: Creación de la tabla clave-valor de texto para gestión dinámica de parámetros en MariaDB.
 - **Parámetro de Mantenimiento (`mantenimiento = "1"`)**: Incorporación del flag de control del estado de mantenimiento web en base de datos.
 - **Centralización de Configuración SMTP y Correo**: Traslado de las credenciales, host, puertos, remitentes y lista de correos de notificación (`notification_emails` separados por comas) desde los archivos de entorno hacia `enmi_configuracion`.

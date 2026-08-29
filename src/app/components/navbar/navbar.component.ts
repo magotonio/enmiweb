@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { ConfigService } from '../../services/config.service';
 
 @Component({
   selector: 'app-navbar',
@@ -11,8 +12,10 @@ import { AuthService } from '../../services/auth.service';
 })
 export class NavbarComponent {
   private readonly authService = inject(AuthService);
+  private readonly configService = inject(ConfigService);
 
   readonly isMobileMenuOpen = signal(false);
+  readonly isMaintenanceMode = this.configService.isMaintenanceMode;
   readonly currentUser = this.authService.currentUser;
   readonly isLoggedIn = this.authService.isLoggedIn;
   readonly userRole = this.authService.userRole;

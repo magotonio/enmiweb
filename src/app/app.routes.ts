@@ -9,28 +9,40 @@ import { AdminLogsComponent } from './components/admin-logs/admin-logs.component
 import { PanelAsistenteComponent } from './components/panel-asistente/panel-asistente.component';
 import { AsistenteFichaComponent } from './components/asistente-ficha/asistente-ficha.component';
 import { AccesoDenegadoComponent } from './components/acceso-denegado/acceso-denegado.component';
+import { MantenimientoComponent } from './components/mantenimiento/mantenimiento.component';
 import { roleGuard } from './guards/role.guard';
+import { maintenanceGuard } from './guards/maintenance.guard';
 
 export const routes: Routes = [
-  // Rutas Públicas (Nivel 0 - Abiertas)
+  // Rutas Públicas (Nivel 0 - Abiertas con control de Modo Mantenimiento)
   {
     path: '',
     component: HomeComponent,
+    canActivate: [maintenanceGuard],
     title: 'Inicio | ENMI 2027 Madrid'
   },
   {
     path: 'registro',
     component: RegistrationFormComponent,
+    canActivate: [maintenanceGuard],
     title: 'Inscripción | ENMI 2027 Madrid'
   },
   {
     path: 'login',
     component: LoginComponent,
+    canActivate: [maintenanceGuard],
     title: 'Acceso Staff | ENMI 2027 Madrid'
+  },
+  {
+    path: 'mantenimiento',
+    component: MantenimientoComponent,
+    canActivate: [maintenanceGuard],
+    title: 'En Mantenimiento | ENMI 2027 Madrid'
   },
   {
     path: 'acceso-denegado',
     component: AccesoDenegadoComponent,
+    canActivate: [maintenanceGuard],
     title: 'Acceso Restringido | ENMI 2027 Madrid'
   },
 
@@ -38,7 +50,7 @@ export const routes: Routes = [
   {
     path: 'asistente',
     component: PanelAsistenteComponent,
-    canActivate: [roleGuard],
+    canActivate: [maintenanceGuard, roleGuard],
     data: {
       roles: ['asistente', 'supervisor', 'superadministrador']
     },
@@ -47,7 +59,7 @@ export const routes: Routes = [
   {
     path: 'asistente/ficha',
     component: AsistenteFichaComponent,
-    canActivate: [roleGuard],
+    canActivate: [maintenanceGuard, roleGuard],
     data: {
       roles: ['asistente', 'supervisor', 'superadministrador']
     },
@@ -58,7 +70,7 @@ export const routes: Routes = [
   {
     path: 'admin',
     component: AdminDashboardComponent,
-    canActivate: [roleGuard],
+    canActivate: [maintenanceGuard, roleGuard],
     data: {
       roles: ['superadministrador', 'supervisor']
     },
@@ -67,7 +79,7 @@ export const routes: Routes = [
   {
     path: 'admin/inscritos',
     component: AdminInscripcionesComponent,
-    canActivate: [roleGuard],
+    canActivate: [maintenanceGuard, roleGuard],
     data: {
       roles: ['superadministrador', 'supervisor']
     },
@@ -76,7 +88,7 @@ export const routes: Routes = [
   {
     path: 'admin/usuarios',
     component: AdminUsuariosComponent,
-    canActivate: [roleGuard],
+    canActivate: [maintenanceGuard, roleGuard],
     data: {
       roles: ['superadministrador']
     },
@@ -85,7 +97,7 @@ export const routes: Routes = [
   {
     path: 'admin/logs',
     component: AdminLogsComponent,
-    canActivate: [roleGuard],
+    canActivate: [maintenanceGuard, roleGuard],
     data: {
       roles: ['superadministrador', 'supervisor']
     },
@@ -93,6 +105,11 @@ export const routes: Routes = [
   },
 
   // Alias y redirecciones amigables
+  {
+    path: 'en-mantenimiento',
+    redirectTo: 'mantenimiento',
+    pathMatch: 'full'
+  },
   {
     path: 'mi-ficha',
     redirectTo: 'asistente/ficha',
