@@ -36,7 +36,7 @@ $pdo = getDbConnection();
 try {
     if ($userId) {
         $stmt = $pdo->prepare("
-            SELECT id, login, email, bloqueado, ultimo_login
+            SELECT id, login, email, rol, bloqueado, ultimo_login
             FROM `enmi_usuarios`
             WHERE id = :id
             LIMIT 1
@@ -44,7 +44,7 @@ try {
         $stmt->execute([':id' => $userId]);
     } else {
         $stmt = $pdo->prepare("
-            SELECT id, login, email, bloqueado, ultimo_login
+            SELECT id, login, email, rol, bloqueado, ultimo_login
             FROM `enmi_usuarios`
             WHERE login = :login OR email = :email
             LIMIT 1
@@ -83,6 +83,7 @@ try {
             'id'                => (int)$user['id'],
             'login'             => $user['login'],
             'email'             => $user['email'],
+            'rol'               => $user['rol'] ?? 'asistente',
             'bloqueado'         => 0,
             'intentos_fallidos' => 0
         ]

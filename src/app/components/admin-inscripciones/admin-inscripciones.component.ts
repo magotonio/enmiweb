@@ -20,6 +20,10 @@ export class AdminInscripcionesComponent implements OnInit {
   private readonly inscripcionService = inject(InscripcionService);
   readonly authService = inject(AuthService);
 
+  readonly isSupervisor = this.authService.isSupervisor;
+  readonly userRoleLabel = this.authService.userRoleLabel;
+  readonly userRoleBadge = this.authService.userRoleBadge;
+
   // Estados reactivos principales
   readonly rawInscripciones = signal<Inscripcion[]>([]);
   readonly stats = signal<InscripcionesStats>({ total: 0, hoy: 0, activos: 0, quieren_participar: 0 });

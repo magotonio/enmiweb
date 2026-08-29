@@ -1,12 +1,17 @@
 <?php
 /**
- * Endpoint de Consulta de Inscripciones (Panel de Administración)
+ * Endpoint de Consulta de Inscripciones (Panel de Administración y Área de Asistente)
  * Método: GET
+ * Control de Privacidad y Roles:
+ *  - 'superadministrador' / 'supervisor': Acceso al listado completo de todos los participantes.
+ *  - 'asistente': Acceso EXCLUSIVO y restringido únicamente a su propia inscripción personal.
+ * 
  * Parámetros opcionales:
- *  - q: Búsqueda textual por nombre o apellidos
+ *  - q: Búsqueda textual por nombre o apellidos (solo para administradores/supervisores)
  *  - estado: Filtrar por estado ('activo', etc.)
  *  - sort: Campo de ordenación ('fecha_creacion', 'nombre', 'apellidos', 'id')
  *  - order: Dirección de ordenación ('ASC' | 'DESC')
+ *  - user_id / user_login / user_email: Identificación del usuario para control de acceso
  */
 
 require_once __DIR__ . '/config.php';
@@ -21,7 +26,52 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 $pdo = getDbConnection();
 
+/**
+ * Obtiene el usuario autenticado para aplicar las restricciones de seguridad por rol.
+ */
+function getAuthenticatedUser(PDO $pdo): ?array {
+    $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : null;
+    $userLogin = isset($_GET['user_login']) ? trim((string)$_GET['user_login']) : null;
+    $userEmail = isset($_GET['user_email']) ? trim((string)$_GET['user_email']) : null;
+
+    if (!$userId && isset($_SERVER['HTTP_X_USER_ID'])) {
+        $userId = (int)$_SERVER['HTTP_X_USER_ID'];
+    }
+    if (!$userLogin && isset($_SERVER['HTTP_X_USER_LOGIN'])) {
+        $userLogin = trim((string)$_SERVER['HTTP_X_USER_LOGIN']);
+    }
+
+    if (!$userId && empty($userLogin) && empty($userEmail)) {
+        return null;
+    }
+
+    try {
+        if ($userId) {
+            $stmt = $pdo->prepare("SELECT id, login, email, rol, bloqueado FROM `enmi_usuarios` WHERE id = :id LIMIT 1");
+            $stmt->execute([':id' => $userId]);
+        } elseif (!empty($userLogin)) {
+            $stmt = $pdo->prepare("SELECT id, login, email, rol, bloqueado FROM `enmi_usuarios` WHERE login = :login LIMIT 1");
+            $stmt->execute([':login' => $userLogin]);
+        } else {
+            $stmt = $pdo->prepare("SELECT id, login, email, rol, bloqueado FROM `enmi_usuarios` WHERE email = :email LIMIT 1");
+            $stmt->execute([':email' => $userEmail]);
+        }
+
+        $user = $stmt->fetch();
+        if (!$user || (int)$user['bloqueado'] === 1) {
+            return null;
+        }
+        return $user;
+    } catch (PDOException $e) {
+        return null;
+    }
+}
+
 try {
+    $authUser = getAuthenticatedUser($pdo);
+    $userRole = $authUser['rol'] ?? 'asistente';
+    $userEmail = $authUser['email'] ?? '';
+
     // Parámetros de consulta sanitizados
     $search = isset($_GET['q']) ? trim((string)$_GET['q']) : '';
     $estado = isset($_GET['estado']) ? trim((string)$_GET['estado']) : '';
@@ -49,27 +99,46 @@ try {
     $whereClauses = [];
     $params = [];
 
-    if ($search !== '') {
-        $whereClauses[] = '(nombre LIKE :search1 OR apellidos LIKE :search2 OR nombre_artistico LIKE :search3 OR email LIKE :search4 OR nif_pasaporte LIKE :search5 OR telefono LIKE :search6 OR origen LIKE :search7 OR asociacion LIKE :search8 OR id = :searchId OR ip_registro LIKE :searchIp)';
-        $searchWild = '%' . $search . '%';
-        $params[':search1'] = $searchWild;
-        $params[':search2'] = $searchWild;
-        $params[':search3'] = $searchWild;
-        $params[':search4'] = $searchWild;
-        $params[':search5'] = $searchWild;
-        $params[':search6'] = $searchWild;
-        $params[':search7'] = $searchWild;
-        $params[':search8'] = $searchWild;
-        $params[':searchIp'] = $searchWild;
-        $params[':searchId'] = is_numeric($search) ? (int)$search : 0;
-    }
+    // AISLAMIENTO DE DATOS PARA EL ROL ASISTENTE:
+    // Un asistente NUNCA puede ver la información de otros participantes.
+    if ($userRole === 'asistente') {
+        if (empty($userEmail)) {
+            // Si no se puede identificar el email del asistente, devolver lista vacía por seguridad
+            sendJsonResponse([
+                'success' => true,
+                'count'   => 0,
+                'stats'   => ['total' => 0, 'hoy' => 0, 'activos' => 0, 'quieren_participar' => 0],
+                'data'    => []
+            ], 200);
+        }
 
-    if ($estado !== '' && $estado !== 'todos') {
-        if ($estado === 'participa') {
-            $whereClauses[] = 'quiero_participar = 1';
-        } else {
-            $whereClauses[] = 'estado = :estado';
-            $params[':estado'] = $estado;
+        $whereClauses[] = '(email = :asistenteEmail OR login_usuario = :asistenteLogin)';
+        $params[':asistenteEmail'] = $userEmail;
+        $params[':asistenteLogin'] = $authUser['login'] ?? '';
+    } else {
+        // Para Superadministrador y Supervisor: permitir búsqueda y filtros globales
+        if ($search !== '') {
+            $whereClauses[] = '(nombre LIKE :search1 OR apellidos LIKE :search2 OR nombre_artistico LIKE :search3 OR email LIKE :search4 OR nif_pasaporte LIKE :search5 OR telefono LIKE :search6 OR origen LIKE :search7 OR asociacion LIKE :search8 OR id = :searchId OR ip_registro LIKE :searchIp)';
+            $searchWild = '%' . $search . '%';
+            $params[':search1'] = $searchWild;
+            $params[':search2'] = $searchWild;
+            $params[':search3'] = $searchWild;
+            $params[':search4'] = $searchWild;
+            $params[':search5'] = $searchWild;
+            $params[':search6'] = $searchWild;
+            $params[':search7'] = $searchWild;
+            $params[':search8'] = $searchWild;
+            $params[':searchIp'] = $searchWild;
+            $params[':searchId'] = is_numeric($search) ? (int)$search : 0;
+        }
+
+        if ($estado !== '' && $estado !== 'todos') {
+            if ($estado === 'participa') {
+                $whereClauses[] = 'quiero_participar = 1';
+            } else {
+                $whereClauses[] = 'estado = :estado';
+                $params[':estado'] = $estado;
+            }
         }
     }
 
@@ -130,23 +199,32 @@ try {
         ];
     }, $inscripciones);
 
-    // Métricas y estadísticas rápidas para el panel de administración
-    $statsStmt = $pdo->query("
-        SELECT 
-            COUNT(*) AS total,
-            SUM(CASE WHEN DATE(fecha_creacion) = CURDATE() THEN 1 ELSE 0 END) AS hoy,
-            SUM(CASE WHEN estado = 'activo' THEN 1 ELSE 0 END) AS activos,
-            SUM(CASE WHEN quiero_participar = 1 THEN 1 ELSE 0 END) AS quieren_participar
-        FROM `enmi_inscripciones`
-    ");
-    $statsData = $statsStmt->fetch() ?: [];
+    // Métricas y estadísticas
+    if ($userRole === 'asistente') {
+        $stats = [
+            'total'              => count($formattedInscripciones),
+            'hoy'                => 0,
+            'activos'            => count($formattedInscripciones),
+            'quieren_participar' => (count($formattedInscripciones) > 0 && $formattedInscripciones[0]['quiero_participar']) ? 1 : 0
+        ];
+    } else {
+        $statsStmt = $pdo->query("
+            SELECT 
+                COUNT(*) AS total,
+                SUM(CASE WHEN DATE(fecha_creacion) = CURDATE() THEN 1 ELSE 0 END) AS hoy,
+                SUM(CASE WHEN estado = 'activo' THEN 1 ELSE 0 END) AS activos,
+                SUM(CASE WHEN quiero_participar = 1 THEN 1 ELSE 0 END) AS quieren_participar
+            FROM `enmi_inscripciones`
+        ");
+        $statsData = $statsStmt->fetch() ?: [];
 
-    $stats = [
-        'total'              => (int)($statsData['total'] ?? count($formattedInscripciones)),
-        'hoy'                => (int)($statsData['hoy'] ?? 0),
-        'activos'            => (int)($statsData['activos'] ?? count($formattedInscripciones)),
-        'quieren_participar' => (int)($statsData['quieren_participar'] ?? 0)
-    ];
+        $stats = [
+            'total'              => (int)($statsData['total'] ?? count($formattedInscripciones)),
+            'hoy'                => (int)($statsData['hoy'] ?? 0),
+            'activos'            => (int)($statsData['activos'] ?? count($formattedInscripciones)),
+            'quieren_participar' => (int)($statsData['quieren_participar'] ?? 0)
+        ];
+    }
 
     sendJsonResponse([
         'success' => true,

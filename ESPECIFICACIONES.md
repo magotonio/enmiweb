@@ -269,12 +269,31 @@ CREATE TABLE IF NOT EXISTS `enmi_inscripciones` (
   - Contenedor responsive ancho (`max-w-4xl`) con rejilla de 2 columnas en desktop y fluido en móviles.
 - **RF-04: Gestión y Auditoría en Panel de Administración**:
   - Listado enriquecido con identificación artística, filtro de participación, modal de ficha completa y exportación a Excel/CSV con todas las columnas.
+- **RF-05: Sistema de Perfiles y Niveles de Seguridad por Página (RBAC)**:
+  - **3 Perfiles Diferenciados con Paneles Dedicados**:
+    - `superadministrador` (Nivel 3 - Máximo): Acceso total. Gestión de usuarios y staff (`/admin/usuarios`), cambio de roles, desbloqueo de cuentas, reseteo de claves, auditoría de logs (`/admin/logs`), gestión y exportación de inscritos (`/admin/inscritos`), panel general (`/admin`) y mostrador de recepción (`/asistente`).
+    - `supervisor` (Nivel 2 - Supervisión y Gestión): Panel de administración (`/admin`), gestión de inscritos con exportación CSV e informes (`/admin/inscritos`), auditoría y visor de logs (`/admin/logs`) y mostrador de recepción (`/asistente`).
+    - `asistente` (Nivel 1 - Operativo / Recepción y Acreditaciones): **Panel exclusivo de asistentes (`/asistente`)** para búsqueda rápida por DNI/nombre/nombre artístico, verificación en sede, visualización de fichas de acreditación y registro in situ. El panel de administración (`/admin`) queda restringido.
+  - **Guards de Seguridad en Angular**: `roleGuard` funcional que evalúa `route.data['roles']` o `route.data['minRole']`, redirigiendo usuarios no autorizados a `/acceso-denegado` (pantalla informativa 403) o a su panel correspondiente sin romper la sesión activa.
+  - **Endpoints Backend Seguros en PHP**: `api/usuarios.php` (exclusivo Superadmin), `api/logs.php` (Superadmin y Supervisor), y enriquecimiento de `api/login.php` y `api/check_session.php` con el perfil del usuario.
+  - **Migración 007 (`007_add_rol_to_enmi_usuarios.sql`)**: Incorporación de columna `rol` en `enmi_usuarios` y usuarios semilla de prueba para los tres perfiles.
 
 ---
 
 ## 8. Registro de Cambios (Changelog)
 
-### v2.6.0 (Actual)
+### v2.7.0 (Actual)
+- **Panel Exclusivo para Asistentes (`PanelAsistenteComponent` en `/asistente`)**: Módulo operativo para control de acceso, búsqueda predictiva de participantes y fichas completas de acreditación.
+- **Restricción del Panel de Administración (`/admin`)**: Exclusivo para Superadministrador y Supervisor.
+- **Sistema de Control de Acceso por Roles (RBAC)**: Implementación de perfiles `superadministrador`, `supervisor` y `asistente`.
+- **Niveles de Seguridad por Página**: Asignación granular de permisos en rutas con `roleGuard` y vista informativa `AccesoDenegadoComponent`.
+- **Panel de Gestión de Usuarios (`AdminUsuariosComponent`)**: Módulo para Superadministrador que permite crear usuarios, alternar roles, bloquear/desbloquear y resetear contraseñas.
+- **Panel de Auditoría de Logs (`AdminLogsComponent`)**: Visor en tiempo real con estadísticas y filtros para Superadministrador y Supervisor.
+- **Barra de Navegación y Dashboard Adaptativos**: Badges dinámicos de perfil y enlaces condicionados por privilegios de seguridad.
+- **Migración 007 de Base de Datos**: Adición del campo `rol` en `enmi_usuarios` y cuentas semilla de prueba.
+- **Nuevos Endpoints REST en PHP**: `api/usuarios.php` y `api/logs.php`.
+
+### v2.6.0
 - **Ampliación Integral del Formulario de Inscripción**: Inclusión de campos para nombre artístico, NIF/CIF/Pasaporte, email, teléfono, lugar de residencia, asociación, quiero participar, consentimiento de imagen y comentarios.
 - **Modales de Información y RGPD**: Modal de desglose de participación y modal de texto legal de protección de datos.
 - **Diseño Ancho y Adaptable**: Rejilla responsive de 2 columnas (`max-w-4xl`) con microinteracciones y secciones visuales.

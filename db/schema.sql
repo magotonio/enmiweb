@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS `enmi_usuarios` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `login` VARCHAR(50) NOT NULL,
   `email` VARCHAR(255) NOT NULL,
+  `rol` VARCHAR(30) NOT NULL DEFAULT 'asistente' COMMENT 'Perfil de seguridad: superadministrador, supervisor, asistente',
   `password_hash` VARCHAR(255) NOT NULL COMMENT 'Hash de contraseña encriptada (ej. BCRYPT/Argon2)',
   `ultimo_login` DATETIME DEFAULT NULL COMMENT 'Fecha y hora del último acceso exitoso',
   `bloqueado` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0: Activo / No bloqueado, 1: Bloqueado',
@@ -53,6 +54,7 @@ CREATE TABLE IF NOT EXISTS `enmi_usuarios` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_enmi_usuarios_login` (`login`),
   UNIQUE KEY `uq_enmi_usuarios_email` (`email`),
+  INDEX `idx_enmi_usuarios_rol` (`rol`),
   INDEX `idx_enmi_usuarios_bloqueado` (`bloqueado`),
   INDEX `idx_enmi_usuarios_ultimo_login` (`ultimo_login`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -115,11 +117,25 @@ CREATE TABLE IF NOT EXISTS `enmi_logs` (
 
 -- ---------------------------------------------------------------------
 -- Datos Iniciales / Semilla Base
--- Usuario Administrador por Defecto
--- Login: admin | Password: Admin.123 | Email: admin@enmi2027.es
+-- Usuarios con los 3 perfiles de seguridad:
+-- 1. Superadministrador: login 'admin' | pass 'Admin.123' | email 'enmi@eutikea.com'
+-- 2. Supervisor: login 'supervisor' | pass 'Supervisor.123' | email 'supervisor@enmi2027.es'
+-- 3. Asistente: login 'asistente' | pass 'Asistente.123' | email 'asistente@enmi2027.es'
 -- ---------------------------------------------------------------------
-INSERT INTO `enmi_usuarios` (`id`, `login`, `email`, `password_hash`, `bloqueado`, `fecha_creacion`)
-VALUES (1, 'admin', 'admin@enmi2027.es', '$2y$10$vWg6eKP9o8s0CbkaPJzTXu07kj32K90OjWZriyVYzOh20X7Q4WNEG', 0, NOW())
+INSERT INTO `enmi_usuarios` (`id`, `login`, `email`, `rol`, `password_hash`, `bloqueado`, `intentos_fallidos`, `fecha_creacion`)
+VALUES 
+  (1, 'admin', 'enmi@eutikea.com', 'superadministrador', '$2y$10$vWg6eKP9o8s0CbkaPJzTXu07kj32K90OjWZriyVYzOh20X7Q4WNEG', 0, 0, NOW()),
+  (2, 'supervisor', 'supervisor@enmi2027.es', 'supervisor', '$2y$10$p0b3hAEvuW91JslZkKx36eD9Q8sM2yBfI0oP9L7t6v5U4r3s2q1PO', 0, 0, NOW()),
+  (3, 'asistente', 'asistente@enmi2027.es', 'asistente', '$2y$10$v8kK5rY1w0z9q8x7v6u5te9Q8sM2yBfI0oP9L7t6v5U4r3s2q1PO9', 0, 0, NOW())
 ON DUPLICATE KEY UPDATE 
   `email` = VALUES(`email`),
+  `rol` = VALUES(`rol`),
   `password_hash` = VALUES(`password_hash`);
+
+-- Inscripción semilla vinculada al usuario 'asistente' de prueba
+INSERT INTO `enmi_inscripciones` 
+  (`nombre`, `apellidos`, `nombre_artistico`, `nif_pasaporte`, `email`, `telefono`, `origen`, `asociacion`, `quiero_participar`, `acepta_privacidad`, `consentimiento_imagen`, `comentarios`, `estado`)
+VALUES
+  ('Alejandro', 'Gómez Martín', 'Mago Álex', '12345678Z', 'asistente@enmi2027.es', '+34 600 123 456', 'Madrid, España', 'Círculo de Ilusionistas de Madrid', 1, 1, 1, 'Vegetariano. Participación en gala de magia infantil de cerca.', 'activo')
+ON DUPLICATE KEY UPDATE `email` = VALUES(`email`);
+

@@ -68,16 +68,17 @@
     </div>
   </div>
 
-  <!-- Menú Horizontal de Administrador (Sub-barra en color diferenciado debajo de la principal) -->
+  <!-- Menú Horizontal de Staff (Sub-barra en color diferenciado debajo de la principal) -->
   @if (isLoggedIn()) {
   <div class="w-full bg-brand-navy-dark text-white border-t border-brand-gold/30 shadow-md">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-12 gap-3">
 
-        <!-- Lateral Izquierdo: Badge de Administrador y Navegación Horizontal -->
-        <div class="flex items-center gap-3 sm:gap-4 overflow-x-auto py-1 scrollbar-none">
+        <!-- Lateral Izquierdo: Botón Principal según rol y Enlaces de Navegación -->
+        <div class="flex items-center gap-2 sm:gap-3 overflow-x-auto py-1 scrollbar-none">
 
-          <!-- Botón / Enlace de Panel Administrador -->
+          <!-- Para Superadmin y Supervisor: Enlace a Administración -->
+          @if (isSupervisor()) {
           <a routerLink="/admin" (click)="closeMobileMenu()"
             [routerLinkActiveOptions]="{exact: true}"
             routerLinkActive="!bg-brand-gold !text-brand-navy !border-brand-gold shadow-sm font-bold"
@@ -89,12 +90,29 @@
             </svg>
             <span>Administración</span>
           </a>
+          } @else {
+          <!-- Para Asistente: Enlace a su Acreditación Personal -->
+          <a routerLink="/asistente" (click)="closeMobileMenu()"
+            [routerLinkActiveOptions]="{exact: true}"
+            routerLinkActive="!bg-brand-gold !text-brand-navy !border-brand-gold shadow-sm font-bold"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-gold/20 hover:bg-brand-gold text-brand-gold hover:text-brand-navy border border-brand-gold/40 hover:border-brand-gold text-xs font-bold uppercase tracking-wider shrink-0 shadow-2xs transition-all duration-200 cursor-pointer group"
+            title="Ver mi Acreditación y Datos de Congresista">
+            <svg class="w-3.5 h-3.5 text-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <polyline points="16 11 18 13 22 9" />
+            </svg>
+            <span>Mi Acreditación</span>
+          </a>
+          }
 
-          <!-- Enlaces / Opciones del Menú Horizontal de Administrador -->
-          <nav class="flex items-center gap-1.5">
+          <!-- Enlaces / Opciones del Menú Horizontal de Staff -->
+          <nav class="flex items-center gap-1">
+            @if (isSupervisor()) {
+            <!-- Inscritos (Gestión General) -->
             <a routerLink="/admin/inscritos" (click)="closeMobileMenu()"
               routerLinkActive="!bg-brand-gold !text-brand-navy font-bold shadow-xs"
-              class="px-3 py-1.5 text-xs font-medium text-slate-200 hover:text-white hover:bg-white/15 rounded-lg transition-all duration-150 whitespace-nowrap flex items-center gap-1.5">
+              class="px-2.5 py-1.5 text-xs font-medium text-slate-200 hover:text-white hover:bg-white/15 rounded-lg transition-all duration-150 whitespace-nowrap flex items-center gap-1.5">
               <svg class="w-3.5 h-3.5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                 stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -103,9 +121,45 @@
               <span>Inscritos</span>
             </a>
 
+            <!-- Usuarios (Exclusivo Superadministrador) -->
+            @if (isSuperAdmin()) {
+            <a routerLink="/admin/usuarios" (click)="closeMobileMenu()"
+              routerLinkActive="!bg-brand-gold !text-brand-navy font-bold shadow-xs"
+              class="px-2.5 py-1.5 text-xs font-medium text-slate-200 hover:text-white hover:bg-white/15 rounded-lg transition-all duration-150 whitespace-nowrap flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-amber-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+              </svg>
+              <span>Usuarios</span>
+            </a>
+            }
+
+            <!-- Logs y Auditoría (Superadministrador y Supervisor) -->
+            @if (isSupervisor()) {
+            <a routerLink="/admin/logs" (click)="closeMobileMenu()"
+              routerLinkActive="!bg-brand-gold !text-brand-navy font-bold shadow-xs"
+              class="px-2.5 py-1.5 text-xs font-medium text-slate-200 hover:text-white hover:bg-white/15 rounded-lg transition-all duration-150 whitespace-nowrap flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-sky-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+              </svg>
+              <span>Auditoría</span>
+            </a>
+            }
+            } @else {
+            <!-- Enlaces específicos para Asistente -->
+            <a routerLink="/asistente" (click)="closeMobileMenu()"
+              routerLinkActive="!bg-brand-gold !text-brand-navy font-bold shadow-xs"
+              class="px-2.5 py-1.5 text-xs font-medium text-slate-200 hover:text-white hover:bg-white/15 rounded-lg transition-all duration-150 whitespace-nowrap flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+              </svg>
+              <span>Mi Ficha</span>
+            </a>
+            }
+
+            <!-- Nueva Inscripción (Para todos los roles) -->
             <a routerLink="/registro" (click)="closeMobileMenu()"
               routerLinkActive="!bg-brand-gold !text-brand-navy font-bold shadow-xs"
-              class="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5">
+              class="px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5">
               <svg class="w-3.5 h-3.5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                 stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -115,17 +169,24 @@
           </nav>
         </div>
 
-        <!-- Lateral Derecho: Elemento de Usuario y Botón Desconectar -->
-        <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+        <!-- Lateral Derecho: Badge de Perfil, Elemento de Usuario y Botón Desconectar -->
+        <div class="flex items-center gap-2 sm:gap-2.5 shrink-0">
+
+          <!-- Badge de Rol / Perfil -->
+          @if (userRoleBadge(); as badge) {
+          <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider border {{ badge.badge }}">
+            {{ userRoleLabel() }}
+          </span>
+          }
 
           <!-- Elemento Usuario -->
           <div
-            class="inline-flex items-center gap-2 px-2.5 sm:px-3 py-1 rounded-lg bg-white/10 border border-white/15 text-xs font-medium text-white shadow-2xs">
+            class="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1 rounded-lg bg-white/10 border border-white/15 text-xs font-medium text-white shadow-2xs">
             <span
               class="w-5 h-5 rounded-md bg-brand-gold text-brand-navy flex items-center justify-center text-xs font-black uppercase shadow-xs shrink-0">
               {{ currentUser()?.login?.charAt(0) || 'U' }}
             </span>
-            <span class="max-w-[90px] sm:max-w-[150px] truncate text-slate-100 font-semibold"
+            <span class="max-w-[80px] sm:max-w-[120px] truncate text-slate-100 font-semibold"
               [title]="currentUser()?.email || currentUser()?.login">
               {{ currentUser()?.login }}
             </span>
@@ -133,14 +194,14 @@
 
           <!-- Elemento Desconectar -->
           <button type="button" (click)="logout()"
-            class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-rose-200 bg-rose-500/20 hover:bg-rose-500/35 border border-rose-500/40 rounded-lg transition-all duration-150 cursor-pointer shadow-2xs hover:shadow-xs active:scale-95 shrink-0"
+            class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-rose-200 bg-rose-500/20 hover:bg-rose-500/35 border border-rose-500/40 rounded-lg transition-all duration-150 cursor-pointer shadow-2xs hover:shadow-xs active:scale-95 shrink-0"
             title="Cerrar sesión">
             <svg class="w-3.5 h-3.5 text-rose-300 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none"
               viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round"
                 d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
             </svg>
-            <span class="hidden xs:inline sm:inline">Desconectar</span>
+            <span class="hidden md:inline">Salir</span>
           </button>
 
         </div>
@@ -155,21 +216,38 @@
   <div
     class="md:hidden border-t border-brand-silver/30 bg-brand-white/95 px-4 pt-3 pb-6 space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
 
-    <!-- Sección de Administración en móvil si está conectado -->
+    <!-- Sección de Staff en móvil si está conectado -->
     @if (isLoggedIn()) {
     <div class="p-3.5 mb-3 rounded-2xl bg-brand-navy-dark border border-brand-gold/30 text-white shadow-sm space-y-3">
       <div class="flex items-center justify-between">
-        <a routerLink="/admin" (click)="closeMobileMenu()"
-          [routerLinkActiveOptions]="{exact: true}"
-          routerLinkActive="!bg-brand-gold !text-brand-navy !border-brand-gold font-bold shadow-xs"
-          class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-gold/20 hover:bg-brand-gold text-brand-gold hover:text-brand-navy border border-brand-gold/40 text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
-          title="Ir al Panel de Administración">
-          <svg class="w-3 h-3 text-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          </svg>
-          <span>Administración</span>
-        </a>
+        <div class="flex items-center gap-1.5">
+          @if (isSupervisor()) {
+          <a routerLink="/admin" (click)="closeMobileMenu()"
+            [routerLinkActiveOptions]="{exact: true}"
+            routerLinkActive="!bg-brand-gold !text-brand-navy !border-brand-gold font-bold shadow-xs"
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-gold/20 hover:bg-brand-gold text-brand-gold hover:text-brand-navy border border-brand-gold/40 text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
+            title="Ir al Panel de Administración">
+            <svg class="w-3 h-3 text-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+            <span>Administración</span>
+          </a>
+          } @else {
+          <a routerLink="/asistente" (click)="closeMobileMenu()"
+            [routerLinkActiveOptions]="{exact: true}"
+            routerLinkActive="!bg-brand-gold !text-brand-navy !border-brand-gold font-bold shadow-xs"
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/20 hover:bg-brand-gold text-emerald-300 hover:text-brand-navy border border-emerald-400/40 text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
+            title="Ir al Panel de Asistentes">
+            <span>Panel Asistente</span>
+          </a>
+          }
+          @if (userRoleBadge(); as badge) {
+          <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border {{ badge.badge }}">
+            {{ userRoleLabel() }}
+          </span>
+          }
+        </div>
         <button type="button" (click)="logout()"
           class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-rose-200 bg-rose-500/20 hover:bg-rose-500/35 border border-rose-500/40 rounded-lg transition-colors cursor-pointer">
           <svg class="w-3 h-3 text-rose-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -177,7 +255,7 @@
             <path stroke-linecap="round" stroke-linejoin="round"
               d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
           </svg>
-          <span>Desconectar</span>
+          <span>Salir</span>
         </button>
       </div>
 
@@ -197,16 +275,37 @@
       </div>
 
       <div class="pt-2 border-t border-white/10 space-y-1">
+        @if (isSupervisor()) {
         <a routerLink="/admin" (click)="closeMobileMenu()" [routerLinkActiveOptions]="{exact: true}"
           routerLinkActive="!bg-brand-gold !text-brand-navy font-bold"
           class="block px-3 py-2 text-xs font-medium text-slate-200 hover:bg-white/10 rounded-lg transition-colors">
-          Panel de Control
+          Panel de Administración
         </a>
         <a routerLink="/admin/inscritos" (click)="closeMobileMenu()"
           routerLinkActive="!bg-brand-gold !text-brand-navy font-bold"
           class="block px-3 py-2 text-xs font-medium text-slate-200 hover:bg-white/10 rounded-lg transition-colors">
           Revisar Inscritos
         </a>
+        }
+        <a routerLink="/asistente" (click)="closeMobileMenu()" [routerLinkActiveOptions]="{exact: true}"
+          routerLinkActive="!bg-brand-gold !text-brand-navy font-bold"
+          class="block px-3 py-2 text-xs font-medium text-slate-200 hover:bg-white/10 rounded-lg transition-colors">
+          Control de Acceso y Acreditaciones
+        </a>
+        @if (isSuperAdmin()) {
+        <a routerLink="/admin/usuarios" (click)="closeMobileMenu()"
+          routerLinkActive="!bg-brand-gold !text-brand-navy font-bold"
+          class="block px-3 py-2 text-xs font-medium text-slate-200 hover:bg-white/10 rounded-lg transition-colors">
+          Gestión de Usuarios (Superadmin)
+        </a>
+        }
+        @if (isSupervisor()) {
+        <a routerLink="/admin/logs" (click)="closeMobileMenu()"
+          routerLinkActive="!bg-brand-gold !text-brand-navy font-bold"
+          class="block px-3 py-2 text-xs font-medium text-slate-200 hover:bg-white/10 rounded-lg transition-colors">
+          Auditoría y Logs
+        </a>
+        }
       </div>
     </div>
     }

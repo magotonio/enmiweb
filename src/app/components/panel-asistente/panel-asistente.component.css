@@ -1,0 +1,4 @@
+/* Estilos para el panel de asistentes y mostrador de recepción */
+:host {
+  display: block;
+}

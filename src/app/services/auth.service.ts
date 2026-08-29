@@ -2,7 +2,7 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, of, tap, catchError } from 'rxjs';
-import { AuthUser, LoginCredentials, LoginResponse } from '../models/usuario.model';
+import { AuthUser, LoginCredentials, LoginResponse, UserRole, ROLE_HIERARCHY, ROLE_LABELS, ROLE_BADGE_CLASSES } from '../models/usuario.model';
 import { environment } from '../../environments/environment';
 
 const STORAGE_USER_KEY = 'enmi_auth_user';
@@ -19,10 +19,63 @@ export class AuthService {
 
   // Estado reactivo del usuario conectado
   readonly currentUser = signal<AuthUser | null>(this.getStoredUser());
+
   readonly isLoggedIn = computed(() => {
     const user = this.currentUser();
     return user !== null && !this.isBlocked(user);
   });
+
+  // Perfil / Rol actual del usuario
+  readonly userRole = computed<UserRole | null>(() => {
+    const user = this.currentUser();
+    return user ? user.rol : null;
+  });
+
+  readonly userRoleLabel = computed<string>(() => {
+    const role = this.userRole();
+    return role ? ROLE_LABELS[role] : '';
+  });
+
+  readonly userRoleBadge = computed(() => {
+    const role = this.userRole();
+    return role ? ROLE_BADGE_CLASSES[role] : null;
+  });
+
+  // Evaluaciones directas de privilegios
+  readonly isSuperAdmin = computed(() => this.userRole() === 'superadministrador');
+  readonly isSupervisor = computed(() => this.userRole() === 'supervisor' || this.userRole() === 'superadministrador');
+  readonly isAsistente = computed(() => !!this.userRole());
+
+  /**
+   * Comprueba si el usuario conectado posee uno de los roles especificados.
+   */
+  hasRole(roles: UserRole | UserRole[]): boolean {
+    const current = this.userRole();
+    if (!current) return false;
+    const targetRoles = Array.isArray(roles) ? roles : [roles];
+    return targetRoles.includes(current);
+  }
+
+  /**
+   * Comprueba si el usuario conectado tiene un nivel jerárquico igual o superior al rol mínimo requerido.
+   */
+  hasMinRole(minRole: UserRole): boolean {
+    const current = this.userRole();
+    if (!current) return false;
+    const currentLevel = ROLE_HIERARCHY[current] ?? 0;
+    const requiredLevel = ROLE_HIERARCHY[minRole] ?? 0;
+    return currentLevel >= requiredLevel;
+  }
+
+  /**
+   * Evalúa si el usuario conectado puede acceder a un recurso basándose en roles o rol mínimo.
+   */
+  canAccess(allowedRoles?: UserRole[], minRole?: UserRole): boolean {
+    if (!this.isLoggedIn()) return false;
+    if (minRole && !this.hasMinRole(minRole)) return false;
+    if (allowedRoles && allowedRoles.length > 0 && !this.hasRole(allowedRoles)) return false;
+    return true;
+  }
 
   /**
    * Comprueba si un usuario tiene la condición de bloqueado (bloqueado == 1 o true).
@@ -50,7 +103,7 @@ export class AuthService {
   }
 
   /**
-   * Valida en tiempo real contra el backend si la sesión sigue activa y si el usuario está bloqueado.
+   * Valida en tiempo real contra el backend si la sesión sigue activa y si el usuario está bloqueado o cambió de rol.
    * Si el usuario se encuentra bloqueado, cierra la sesión inmediatamente.
    */
   verifySession(): Observable<{ success: boolean; bloqueado?: boolean; user?: AuthUser; message?: string }> {
@@ -154,4 +207,3 @@ export class AuthService {
     return localStorage.getItem(STORAGE_TOKEN_KEY);
   }
 }
-

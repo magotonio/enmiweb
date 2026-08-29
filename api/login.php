@@ -54,7 +54,7 @@ $pdo = getDbConnection();
 try {
     // Buscar usuario por login o por email
     $stmt = $pdo->prepare("
-        SELECT id, login, email, password_hash, bloqueado, intentos_fallidos, ultimo_login 
+        SELECT id, login, email, rol, password_hash, bloqueado, intentos_fallidos, ultimo_login 
         FROM `enmi_usuarios` 
         WHERE login = :login OR email = :email 
         LIMIT 1
@@ -147,7 +147,7 @@ try {
     $updateStmt->execute([':id' => $user['id']]);
 
     // Registrar log de acceso exitoso
-    logAuth('login_exitoso', "Inicio de sesión exitoso para usuario: {$user['login']}", ['login' => $user['login']], true, (int)$user['id']);
+    logAuth('login_exitoso', "Inicio de sesión exitoso para usuario: {$user['login']} (Rol: " . ($user['rol'] ?? 'asistente') . ")", ['login' => $user['login'], 'rol' => $user['rol'] ?? 'asistente'], true, (int)$user['id']);
 
     // Generar token de sesión (32 bytes aleatorios en hexadecimal)
     $sessionToken = bin2hex(random_bytes(32));
@@ -159,6 +159,7 @@ try {
             'id'                => (int)$user['id'],
             'login'             => $user['login'],
             'email'             => $user['email'],
+            'rol'               => $user['rol'] ?? 'asistente',
             'bloqueado'         => 0,
             'intentos_fallidos' => 0
         ],

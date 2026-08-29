@@ -8,6 +8,7 @@ import {
   InscripcionesFilterParams,
   InscripcionesListResponse
 } from '../models/inscripcion.model';
+import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -15,6 +16,7 @@ import { environment } from '../../environments/environment';
 })
 export class InscripcionService {
   private readonly http = inject(HttpClient);
+  private readonly authService = inject(AuthService);
   private readonly inscribirApiUrl = `${environment.apiUrl}/inscribir.php`;
   private readonly inscripcionesApiUrl = `${environment.apiUrl}/inscripciones.php`;
 
@@ -30,12 +32,28 @@ export class InscripcionService {
 
   /**
    * Obtiene la lista de participantes inscritos con filtros y ordenación opcionales.
+   * Si el usuario tiene rol 'asistente', el backend restringirá los datos automáticamente
+   * a su propia inscripción personal.
    * 
    * @param filterParams Parámetros de búsqueda, filtro por estado y ordenación
    * @returns Observable con la lista de inscritos y métricas
    */
   getInscripciones(filterParams?: InscripcionesFilterParams): Observable<InscripcionesListResponse> {
     let params = new HttpParams();
+
+    // Adjuntar identificación del usuario actual para el control de acceso y privacidad
+    const currentUser = this.authService.currentUser();
+    if (currentUser) {
+      if (currentUser.id) {
+        params = params.set('user_id', currentUser.id.toString());
+      }
+      if (currentUser.login) {
+        params = params.set('user_login', currentUser.login);
+      }
+      if (currentUser.email) {
+        params = params.set('user_email', currentUser.email);
+      }
+    }
 
     if (filterParams) {
       if (filterParams.q) {

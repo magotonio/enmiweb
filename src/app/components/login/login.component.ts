@@ -35,10 +35,10 @@ export class LoginComponent implements OnInit {
       return;
     }
 
-    // Si ya está conectado y no está bloqueado, redirigir a la administración o al inicio
+    // Si ya está conectado y no está bloqueado, redirigir a su panel correspondiente
     if (this.authService.isLoggedIn()) {
-      const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/admin';
-      this.router.navigateByUrl(returnUrl);
+      const destination = this.getRedirectUrl(this.authService.userRole());
+      this.router.navigateByUrl(destination);
     }
   }
 
@@ -62,8 +62,9 @@ export class LoginComponent implements OnInit {
       next: (response) => {
         this.isLoading.set(false);
         if (response.success && !response.bloqueado && (!response.user || !this.authService.isBlocked(response.user))) {
-          const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/admin';
-          this.router.navigateByUrl(returnUrl);
+          const userRole = response.user?.rol || this.authService.userRole();
+          const destination = this.getRedirectUrl(userRole);
+          this.router.navigateByUrl(destination);
         } else {
           const blocked = !!response.bloqueado || (!!response.user && this.authService.isBlocked(response.user));
           this.isBlocked.set(blocked);
@@ -82,5 +83,19 @@ export class LoginComponent implements OnInit {
       }
     });
   }
-}
 
+  /**
+   * Obtiene la ruta de destino según el rol del usuario conectado.
+   */
+  private getRedirectUrl(role?: string | null): string {
+    const returnUrl = this.route.snapshot.queryParams['returnUrl'];
+    if (returnUrl) {
+      // Si el rol es asistente y el returnUrl era /admin o subruta admin, enviarlo a /asistente
+      if (role === 'asistente' && returnUrl.startsWith('/admin')) {
+        return '/asistente';
+      }
+      return returnUrl;
+    }
+    return role === 'asistente' ? '/asistente' : '/admin';
+  }
+}

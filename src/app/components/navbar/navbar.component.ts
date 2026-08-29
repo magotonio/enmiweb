@@ -15,6 +15,12 @@ export class NavbarComponent {
   readonly isMobileMenuOpen = signal(false);
   readonly currentUser = this.authService.currentUser;
   readonly isLoggedIn = this.authService.isLoggedIn;
+  readonly userRole = this.authService.userRole;
+  readonly userRoleLabel = this.authService.userRoleLabel;
+  readonly userRoleBadge = this.authService.userRoleBadge;
+  readonly isSuperAdmin = this.authService.isSuperAdmin;
+  readonly isSupervisor = this.authService.isSupervisor;
+  readonly isAsistente = this.authService.isAsistente;
 
   toggleMobileMenu(): void {
     this.isMobileMenuOpen.update(prev => !prev);

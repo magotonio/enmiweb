@@ -4,9 +4,14 @@ import { RegistrationFormComponent } from './components/registration-form/regist
 import { LoginComponent } from './components/login/login.component';
 import { AdminDashboardComponent } from './components/admin-dashboard/admin-dashboard.component';
 import { AdminInscripcionesComponent } from './components/admin-inscripciones/admin-inscripciones.component';
-import { authGuard } from './guards/auth.guard';
+import { AdminUsuariosComponent } from './components/admin-usuarios/admin-usuarios.component';
+import { AdminLogsComponent } from './components/admin-logs/admin-logs.component';
+import { PanelAsistenteComponent } from './components/panel-asistente/panel-asistente.component';
+import { AccesoDenegadoComponent } from './components/acceso-denegado/acceso-denegado.component';
+import { roleGuard } from './guards/role.guard';
 
 export const routes: Routes = [
+  // Rutas Públicas (Nivel 0 - Abiertas)
   {
     path: '',
     component: HomeComponent,
@@ -20,25 +25,81 @@ export const routes: Routes = [
   {
     path: 'login',
     component: LoginComponent,
-    title: 'Acceso | ENMI 2027 Madrid'
+    title: 'Acceso Staff | ENMI 2027 Madrid'
   },
+  {
+    path: 'acceso-denegado',
+    component: AccesoDenegadoComponent,
+    title: 'Acceso Restringido | ENMI 2027 Madrid'
+  },
+
+  // Panel Operativo de Asistentes y Acreditaciones (Nivel 1+)
+  {
+    path: 'asistente',
+    component: PanelAsistenteComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['asistente', 'supervisor', 'superadministrador']
+    },
+    title: 'Panel de Acreditaciones y Asistentes | ENMI 2027 Madrid'
+  },
+
+  // Rutas de Administración General (Nivel 2+ : Superadministrador y Supervisor)
   {
     path: 'admin',
     component: AdminDashboardComponent,
-    canActivate: [authGuard],
+    canActivate: [roleGuard],
+    data: {
+      roles: ['superadministrador', 'supervisor']
+    },
     title: 'Panel de Administración | ENMI 2027 Madrid'
   },
   {
     path: 'admin/inscritos',
     component: AdminInscripcionesComponent,
-    canActivate: [authGuard],
-    title: 'Inscritos | Panel de Administración ENMI 2027'
+    canActivate: [roleGuard],
+    data: {
+      roles: ['superadministrador', 'supervisor']
+    },
+    title: 'Inscritos y Gestión General | ENMI 2027 Madrid'
   },
+  {
+    path: 'admin/usuarios',
+    component: AdminUsuariosComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['superadministrador']
+    },
+    title: 'Gestión de Usuarios y Roles | ENMI 2027 Madrid'
+  },
+  {
+    path: 'admin/logs',
+    component: AdminLogsComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['superadministrador', 'supervisor']
+    },
+    title: 'Auditoría y Logs del Sistema | ENMI 2027 Madrid'
+  },
+
+  // Alias y redirecciones amigables
   {
     path: 'inscritos',
     redirectTo: 'admin/inscritos',
     pathMatch: 'full'
   },
+  {
+    path: 'usuarios',
+    redirectTo: 'admin/usuarios',
+    pathMatch: 'full'
+  },
+  {
+    path: 'logs',
+    redirectTo: 'admin/logs',
+    pathMatch: 'full'
+  },
+
+  // Ruta comodín para cualquier URL no encontrada
   {
     path: '**',
     redirectTo: ''

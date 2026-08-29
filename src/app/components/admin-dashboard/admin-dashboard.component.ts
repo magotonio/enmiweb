@@ -19,6 +19,12 @@ export class AdminDashboardComponent implements OnInit {
 
   // Estado del usuario autenticado
   readonly currentUser = this.authService.currentUser;
+  readonly userRole = this.authService.userRole;
+  readonly userRoleLabel = this.authService.userRoleLabel;
+  readonly userRoleBadge = this.authService.userRoleBadge;
+  readonly isSuperAdmin = this.authService.isSuperAdmin;
+  readonly isSupervisor = this.authService.isSupervisor;
+  readonly isAsistente = this.authService.isAsistente;
 
   // Estado de carga y datos
   readonly isLoading = signal(true);
@@ -99,9 +105,10 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   /**
-   * Exporta directamente todos los registros en formato CSV.
+   * Exporta directamente todos los registros en formato CSV (Superadmin y Supervisor).
    */
   exportarCsv(): void {
+    if (!this.isSupervisor()) return;
     const listado = this.inscripciones();
     if (listado.length > 0) {
       this.inscripcionService.exportToCsv(listado);
