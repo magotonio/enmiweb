@@ -34,7 +34,7 @@ export const routes: Routes = [
     title: 'Acceso Restringido | ENMI 2027 Madrid'
   },
 
-  // Espacio Personal del Asistente / Congresista (Nivel 1+)
+  // Espacio Personal del Asistente (Nivel 1+)
   {
     path: 'asistente',
     component: PanelAsistenteComponent,
@@ -42,7 +42,7 @@ export const routes: Routes = [
     data: {
       roles: ['asistente', 'supervisor', 'superadministrador']
     },
-    title: 'Mi Espacio de Congresista | ENMI 2027 Madrid'
+    title: 'Mi Espacio de Asistente | ENMI 2027 Madrid'
   },
   {
     path: 'asistente/ficha',

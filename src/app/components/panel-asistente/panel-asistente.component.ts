@@ -63,7 +63,7 @@ export class PanelAsistenteComponent implements OnInit {
   }
 
   /**
-   * Obtiene las iniciales para el avatar visual del congresista.
+   * Obtiene las iniciales para el avatar visual del asistente.
    */
   getInitials(nombre?: string, apellidos?: string): string {
     const n = (nombre || this.currentUser()?.login || 'A').trim().charAt(0);
@@ -72,7 +72,7 @@ export class PanelAsistenteComponent implements OnInit {
   }
 
   /**
-   * Abre el diálogo de impresión para imprimir el comprobante / credencial de congresista.
+   * Abre el diálogo de impresión para imprimir el comprobante / credencial de asistente.
    */
   imprimirCredencial(): void {
     if (typeof window !== 'undefined') {

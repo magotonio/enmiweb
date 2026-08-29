@@ -14,15 +14,12 @@ SET `rol` = 'superadministrador'
 WHERE `login` = 'admin';
 
 -- 3. Crear o actualizar usuarios semilla para los 3 perfiles
--- Password 'Admin.123' -> $2y$10$vWg6eKP9o8s0CbkaPJzTXu07kj32K90OjWZriyVYzOh20X7Q4WNEG
--- Password 'Supervisor.123' -> $2y$10$Q7wYvS0v8u6rXk5Yx9q3ueeE5Y3kK5zY0w.7R4z4j6U6f8W0Y7XCe
--- Password 'Asistente.123' -> $2y$10$4B9L9T6Zz9c8v7x6w5u4uekK7rY1w0z9q8x7v6u5t4s3r2q1p0o9N
 
 INSERT INTO `enmi_usuarios` (`id`, `login`, `email`, `rol`, `password_hash`, `bloqueado`, `intentos_fallidos`, `fecha_creacion`)
 VALUES 
-  (1, 'admin', 'enmi@eutikea.com', 'superadministrador', '$2y$10$vWg6eKP9o8s0CbkaPJzTXu07kj32K90OjWZriyVYzOh20X7Q4WNEG', 0, 0, NOW()),
-  (2, 'supervisor', 'supervisor@enmi2027.es', 'supervisor', '$2y$10$p0b3hAEvuW91JslZkKx36eD9Q8sM2yBfI0oP9L7t6v5U4r3s2q1PO', 0, 0, NOW()),
-  (3, 'asistente', 'asistente@enmi2027.es', 'asistente', '$2y$10$v8kK5rY1w0z9q8x7v6u5te9Q8sM2yBfI0oP9L7t6v5U4r3s2q1PO9', 0, 0, NOW())
+  (1, 'admin', 'enmi@eutikea.com', 'superadministrador', '$2y$10$YZROVCeDCMoxzC64B5J4V.T6WksOyDPgDvMa3Dd4gA7Ibvx0Qb4.y', 0, 0, NOW()),
+  (2, 'supervisor', 'supervisor@enmi2027.es', 'supervisor', '$2y$10$fxRBjBjaE8ctiRi2TDAF3u0bZ9hHjNZcXmy9p0XmPNo1SBejferii', 0, 0, NOW()),
+  (3, 'asistente', 'asistente@enmi2027.es', 'asistente', '$2y$10$fzTCbMykb3a3Z.OlwbIAHuB8CR3O6nrlOimTtbz87/LDo9WCOkUDO', 0, 0, NOW())
 ON DUPLICATE KEY UPDATE 
   `rol` = VALUES(`rol`),
   `email` = VALUES(`email`);
