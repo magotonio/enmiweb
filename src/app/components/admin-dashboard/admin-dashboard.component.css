@@ -1,0 +1,4 @@
+/* Estilos específicos complementarios para AdminDashboardComponent */
+:host {
+  display: block;
+}

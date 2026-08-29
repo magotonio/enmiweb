@@ -28,7 +28,7 @@ export class LoginComponent {
   constructor() {
     // Si ya está conectado, redirigir a la administración o al inicio
     if (this.authService.isLoggedIn()) {
-      const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/admin/inscritos';
+      const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/admin';
       this.router.navigateByUrl(returnUrl);
     }
   }
@@ -52,7 +52,7 @@ export class LoginComponent {
       next: (response) => {
         this.isLoading.set(false);
         if (response.success) {
-          const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/admin/inscritos';
+          const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/admin';
           this.router.navigateByUrl(returnUrl);
         } else {
           this.errorMessage.set(response.message || 'No se pudo iniciar sesión.');

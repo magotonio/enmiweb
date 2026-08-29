@@ -1,0 +1,615 @@
+<div class="min-h-screen bg-slate-50/70 pb-20">
+
+  <!-- ENCABEZADO Y BREADCRUMB -->
+  <div class="bg-brand-white border-b border-brand-silver/40 shadow-2xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+      <!-- Breadcrumbs -->
+      <nav class="flex items-center gap-2 text-xs font-medium text-slate-500 mb-3" aria-label="Ruta de navegación">
+        <a routerLink="/" class="hover:text-brand-navy transition-colors">Inicio</a>
+        <span>/</span>
+        <span class="text-brand-navy font-semibold">Panel de Administración</span>
+      </nav>
+
+      <!-- Título Principal y Acciones de Cabecera -->
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-brand-navy text-brand-gold flex items-center justify-center shadow-xs">
+              <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+            </div>
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-brand-navy tracking-tight">
+                  Panel de Administración
+                </h1>
+                <span
+                  class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-brand-gold/15 text-brand-gold-dark border border-brand-gold/30 text-xs font-bold uppercase tracking-wider">
+                  <span class="w-1.5 h-1.5 rounded-full bg-brand-gold animate-pulse"></span>
+                  ENMI 2027 Madrid
+                </span>
+              </div>
+              <p class="text-sm text-slate-500 mt-1">
+                Centro de gestión, control y auditoría del Encuentro Nacional de Magos Infantiles.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones de Acción de Cabecera -->
+        <div class="flex flex-wrap items-center gap-2.5">
+          <!-- Botón Actualizar Datos -->
+          <button type="button" (click)="cargarDatos(true)" [disabled]="isLoading() || isRefreshing()"
+            class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-brand-white border border-brand-silver/50 hover:border-brand-navy/30 hover:bg-slate-50 rounded-xl shadow-2xs transition-all duration-150 active:scale-95 cursor-pointer disabled:opacity-60"
+            title="Recargar datos desde la base de datos">
+            <svg class="w-4 h-4 text-slate-600" [class.animate-spin]="isRefreshing()" xmlns="http://www.w3.org/2000/svg"
+              fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+            <span>{{ isRefreshing() ? 'Actualizando...' : 'Actualizar' }}</span>
+          </button>
+
+          <!-- Botón Ver Listado Completo -->
+          <a routerLink="/admin/inscritos"
+            class="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-brand-navy hover:bg-brand-navy-light rounded-xl shadow-xs hover:shadow-md transition-all duration-150 active:scale-95 cursor-pointer">
+            <svg class="w-4 h-4 text-brand-gold" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+              stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+            </svg>
+            <span>Lista de Inscritos</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
+
+    <!-- MENSAJE DE ERROR SI OCURRE -->
+    @if (errorMessage()) {
+    <div
+      class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-between gap-3 shadow-xs animate-in fade-in duration-200">
+      <div class="flex items-center gap-3">
+        <svg class="w-5 h-5 text-rose-600 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+          stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+        </svg>
+        <span class="text-sm font-medium">{{ errorMessage() }}</span>
+      </div>
+      <button type="button" (click)="cargarDatos(true)"
+        class="text-xs font-semibold text-rose-700 hover:underline cursor-pointer">
+        Reintentar
+      </button>
+    </div>
+    }
+
+    <!-- TARJETA DE BIENVENIDA Y PERFIL DEL ADMINISTRADOR -->
+    <div
+      class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-navy-dark via-brand-navy to-brand-navy-light text-white p-6 sm:p-8 shadow-md border border-brand-gold/30">
+      <!-- Decoración de fondo -->
+      <div class="absolute -top-24 -right-24 w-96 h-96 bg-brand-gold/10 rounded-full blur-3xl pointer-events-none">
+      </div>
+      <div class="absolute -bottom-24 -left-24 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none">
+      </div>
+
+      <div class="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+        <div class="space-y-2 max-w-2xl">
+          <div
+            class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-brand-gold text-xs font-semibold tracking-wide">
+            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>Sesión Activa de Coordinación</span>
+          </div>
+
+          <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+            Bienvenido/a, <span class="text-brand-gold">{{ currentUser()?.login || 'Administrador' }}</span>
+          </h2>
+
+          <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+            Tienes acceso completo a la supervisión del evento, revisión de inscritos, auditoría de participantes y
+            gestión de datos para el ENMI 2027.
+          </p>
+        </div>
+
+        <!-- Ficha de usuario y cierre de sesión rápido -->
+        <div
+          class="flex items-center gap-4 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/15 shrink-0">
+          <div
+            class="w-12 h-12 rounded-xl bg-brand-gold text-brand-navy flex items-center justify-center text-lg font-black uppercase shadow-xs">
+            {{ currentUser()?.login?.charAt(0) || 'A' }}
+          </div>
+          <div class="flex flex-col">
+            <span class="text-sm font-bold text-white leading-tight">
+              {{ currentUser()?.login }}
+            </span>
+            <span class="text-xs text-slate-300">
+              {{ currentUser()?.email || 'Administrador oficial' }}
+            </span>
+            <span class="text-[11px] text-brand-gold mt-0.5 font-medium">
+              Rol: Supervisor
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TARJETAS DE MÉTRICAS Y KPIS -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+
+      <!-- Total Inscritos -->
+      <a routerLink="/admin/inscritos"
+        class="group relative overflow-hidden bg-brand-white p-5 rounded-2xl border border-brand-silver/50 hover:border-brand-gold/60 shadow-2xs hover:shadow-md transition-all duration-200 block">
+        <div class="flex items-center justify-between">
+          <span
+            class="text-xs font-semibold uppercase tracking-wider text-slate-500 group-hover:text-brand-navy transition-colors">
+            Total Inscritos
+          </span>
+          <div
+            class="w-9 h-9 rounded-xl bg-brand-navy-soft text-brand-navy group-hover:bg-brand-navy group-hover:text-brand-gold flex items-center justify-center transition-colors">
+            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Z" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="mt-4 flex items-baseline gap-2">
+          @if (isLoading()) {
+          <div class="h-8 w-16 bg-slate-200 animate-pulse rounded-lg"></div>
+          } @else {
+          <span class="text-3xl font-extrabold text-brand-navy tracking-tight">
+            {{ totalInscritos() }}
+          </span>
+          <span
+            class="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+            {{ totalActivos() }} activos
+          </span>
+          }
+        </div>
+
+        <p class="text-xs text-slate-500 mt-2 flex items-center gap-1 group-hover:text-brand-navy font-medium">
+          <span>Ver listado completo</span>
+          <svg class="w-3.5 h-3.5 transform group-hover:translate-x-0.5 transition-transform"
+            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+          </svg>
+        </p>
+      </a>
+
+      <!-- Participación Artística -->
+      <div class="bg-brand-white p-5 rounded-2xl border border-brand-silver/50 shadow-2xs">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            Quieren Participar
+          </span>
+          <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="mt-4 flex items-baseline gap-2">
+          @if (isLoading()) {
+          <div class="h-8 w-16 bg-slate-200 animate-pulse rounded-lg"></div>
+          } @else {
+          <span class="text-3xl font-extrabold text-amber-600 tracking-tight">
+            {{ totalParticipantesArtisticos() }}
+          </span>
+          <span class="text-xs text-slate-500">
+            propuestas registradas
+          </span>
+          }
+        </div>
+
+        <p class="text-xs text-slate-500 mt-2">
+          Artistas disponibles para galas y talleres
+        </p>
+      </div>
+
+      <!-- Consentimiento Imagen (Sin Cesión de Imagen) -->
+      <div class="bg-brand-white p-5 rounded-2xl border border-brand-silver/50 shadow-2xs">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            Sin Cesión de Imagen
+          </span>
+          <div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="mt-4 flex items-baseline gap-2">
+          @if (isLoading()) {
+          <div class="h-8 w-16 bg-slate-200 animate-pulse rounded-lg"></div>
+          } @else {
+          <span class="text-3xl font-extrabold text-rose-600 tracking-tight">
+            {{ totalSinConsentimientoImagen() }}
+          </span>
+          <span class="text-xs text-slate-500">
+            no autorizan
+          </span>
+          }
+        </div>
+
+        <p class="text-xs text-slate-500 mt-2">
+          No autorizan grabación ni fotografía
+        </p>
+      </div>
+
+      <!-- Asociaciones Mágicas -->
+      <div class="bg-brand-white p-5 rounded-2xl border border-brand-silver/50 shadow-2xs">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            Asociaciones
+          </span>
+          <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 0 1 3 12c0-.778.099-1.533.284-2.253" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="mt-4 flex items-baseline gap-2">
+          @if (isLoading()) {
+          <div class="h-8 w-16 bg-slate-200 animate-pulse rounded-lg"></div>
+          } @else {
+          <span class="text-3xl font-extrabold text-purple-600 tracking-tight">
+            {{ totalAsociacionesUnicas() }}
+          </span>
+          <span class="text-xs text-slate-500">
+            entidades distintas
+          </span>
+          }
+        </div>
+
+        <p class="text-xs text-slate-500 mt-2">
+          Diversidad de clubes y círculos
+        </p>
+      </div>
+
+    </div>
+
+    <!-- MÓDULOS PRINCIPALES DE GESTIÓN (CARDS DE ACCESO) -->
+    <div>
+      <div class="mb-4">
+        <h2 class="text-lg font-bold text-brand-navy">Módulos de Gestión y Enlaces</h2>
+        <p class="text-xs text-slate-500">Accede directamente a las herramientas de administración del congreso.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- Card 1: Lista de Administración de Inscritos -->
+        <div
+          class="bg-brand-white rounded-2xl border border-brand-silver/50 hover:border-brand-gold/60 p-6 shadow-2xs hover:shadow-md transition-all duration-200 flex flex-col justify-between group">
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div
+                class="w-12 h-12 rounded-2xl bg-brand-navy text-brand-gold flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+                </svg>
+              </div>
+              <span
+                class="px-2.5 py-1 text-xs font-bold text-brand-navy bg-brand-gold/20 rounded-full border border-brand-gold/30">
+                Principal
+              </span>
+            </div>
+
+            <div>
+              <h3 class="text-lg font-bold text-brand-navy group-hover:text-brand-gold-dark transition-colors">
+                Listado de Inscritos
+              </h3>
+              <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                Gestión integral de asistentes: búsqueda predictiva, filtros por estado, auditoría detallada de datos
+                personales y descarga de fichas.
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-slate-100">
+            <a routerLink="/admin/inscritos"
+              class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-brand-navy hover:bg-brand-navy-light rounded-xl shadow-xs hover:shadow-md transition-all duration-150 active:scale-95">
+              <span>Gestionar Inscritos</span>
+              <svg class="w-4 h-4 text-brand-gold" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14"></path>
+                <path d="m12 5 7 7-7 7"></path>
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Card 2: Nueva Inscripción Manual -->
+        <div
+          class="bg-brand-white rounded-2xl border border-brand-silver/50 hover:border-brand-gold/60 p-6 shadow-2xs hover:shadow-md transition-all duration-200 flex flex-col justify-between group">
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div
+                class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM4 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 10.374 21c-2.331 0-4.512-.645-6.374-1.765Z" />
+                </svg>
+              </div>
+              <span
+                class="px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-full border border-emerald-200">
+                Formulario
+              </span>
+            </div>
+
+            <div>
+              <h3 class="text-lg font-bold text-brand-navy group-hover:text-emerald-700 transition-colors">
+                Nueva Inscripción
+              </h3>
+              <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                Formulario oficial para registrar a nuevos magos participantes, artistas o miembros de la organización
+                con validación en tiempo real.
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-slate-100">
+            <a routerLink="/registro"
+              class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-brand-navy bg-brand-gold hover:bg-brand-gold-hover rounded-xl shadow-xs hover:shadow-md transition-all duration-150 active:scale-95">
+              <span>Registrar Participante</span>
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 4.5v15m7.5-7.5h-15"></path>
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Card 3: Exportación Rápida CSV -->
+        <div
+          class="bg-brand-white rounded-2xl border border-brand-silver/50 hover:border-brand-gold/60 p-6 shadow-2xs hover:shadow-md transition-all duration-200 flex flex-col justify-between group">
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div
+                class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+              </div>
+              <span
+                class="px-2.5 py-1 text-xs font-semibold text-amber-700 bg-amber-50 rounded-full border border-amber-200">
+                Excel / CSV
+              </span>
+            </div>
+
+            <div>
+              <h3 class="text-lg font-bold text-brand-navy group-hover:text-amber-700 transition-colors">
+                Exportar Base de Datos
+              </h3>
+              <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                Descarga inmediata del archivo CSV delimitado por punto y coma con cabeceras completas y codificación
+                UTF-8 BOM para abrir directamente en Microsoft Excel.
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-slate-100">
+            <button type="button" (click)="exportarCsv()" [disabled]="isLoading() || inscripciones().length === 0"
+              class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300/70 rounded-xl shadow-2xs hover:shadow-xs transition-all duration-150 active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+              <svg class="w-4 h-4 text-slate-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+              <span>Exportar Todos a CSV</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SECCIÓN: ÚLTIMAS INSCRIPCIONES REGISTRADAS -->
+    <div class="bg-brand-white rounded-2xl border border-brand-silver/50 shadow-2xs overflow-hidden">
+      <div
+        class="p-5 sm:p-6 border-b border-brand-silver/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-bold text-brand-navy">Últimas Inscripciones Recientes</h2>
+          <p class="text-xs text-slate-500">Muestra los 5 registros más recientes incorporados al sistema.</p>
+        </div>
+
+        <a routerLink="/admin/inscritos"
+          class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-navy hover:text-brand-gold-dark transition-colors self-start sm:self-auto">
+          <span>Ver todas las inscripciones ({{ totalInscritos() }})</span>
+          <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+          </svg>
+        </a>
+      </div>
+
+      <!-- Contenido / Tabla de inscripciones -->
+      @if (isLoading()) {
+      <div class="p-8 text-center">
+        <div class="inline-flex items-center gap-2 text-slate-500 text-xs">
+          <svg class="w-5 h-5 animate-spin text-brand-gold" xmlns="http://www.w3.org/2000/svg" fill="none"
+            viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+          </svg>
+          <span>Cargando inscripciones recientes...</span>
+        </div>
+      </div>
+      } @else if (ultimasInscripciones().length === 0) {
+      <div class="p-8 text-center">
+        <p class="text-xs text-slate-500">No hay inscripciones registradas todavía en la base de datos.</p>
+      </div>
+      } @else {
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-50/80 text-slate-600 font-semibold border-b border-brand-silver/30">
+            <tr>
+              <th scope="col" class="py-3 px-4">Participante</th>
+              <th scope="col" class="py-3 px-4">Nombre Artístico</th>
+              <th scope="col" class="py-3 px-4">Email / Teléfono</th>
+              <th scope="col" class="py-3 px-4">Origen / Asociación</th>
+              <th scope="col" class="py-3 px-4">Actuación</th>
+              <th scope="col" class="py-3 px-4">Fecha Registro</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @for (item of ultimasInscripciones(); track item.id) {
+            <tr class="hover:bg-slate-50/60 transition-colors">
+              <td class="py-3.5 px-4">
+                <div class="font-bold text-brand-navy">
+                  {{ item.nombre }} {{ item.apellidos }}
+                </div>
+                <div class="text-[11px] text-slate-400">
+                  ID #{{ item.id }} · {{ item.nif_pasaporte || 'Sin documento' }}
+                </div>
+              </td>
+
+              <td class="py-3.5 px-4">
+                @if (item.nombre_artistico) {
+                <span class="inline-flex items-center gap-1 font-semibold text-brand-gold-dark">
+                  ✨ {{ item.nombre_artistico }}
+                </span>
+                } @else {
+                <span class="text-slate-400 italic">—</span>
+                }
+              </td>
+
+              <td class="py-3.5 px-4">
+                <div class="text-slate-700">{{ item.email }}</div>
+                <div class="text-[11px] text-slate-400">{{ item.telefono || 'Sin teléfono' }}</div>
+              </td>
+
+              <td class="py-3.5 px-4">
+                <div class="text-slate-700 font-medium">{{ item.origen || 'No especificado' }}</div>
+                <div class="text-[11px] text-slate-400">{{ item.asociacion || 'Sin asociación' }}</div>
+              </td>
+
+              <td class="py-3.5 px-4">
+                @if (item.quiero_participar) {
+                <span
+                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                  ⭐ Sí desea actuar
+                </span>
+                } @else {
+                <span class="text-slate-400 text-[11px]">Asistente</span>
+                }
+              </td>
+
+              <td class="py-3.5 px-4 text-slate-500 whitespace-nowrap">
+                {{ item.fecha_creacion | date:'dd/MM/yyyy HH:mm' }}
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      }
+    </div>
+
+    <!-- INFORMACIÓN DEL CONGRESO Y ESTADO DEL SERVIDOR -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      <!-- Ficha Técnica ENMI 2027 -->
+      <div class="bg-brand-white p-6 rounded-2xl border border-brand-silver/50 shadow-2xs space-y-3">
+        <h3 class="text-sm font-bold text-brand-navy uppercase tracking-wider flex items-center gap-2">
+          <svg class="w-4 h-4 text-brand-gold" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect>
+            <line x1="16" x2="16" y1="2" y2="6"></line>
+            <line x1="8" x2="8" y1="2" y2="6"></line>
+            <line x1="3" x2="21" y1="10" y2="10"></line>
+          </svg>
+          <span>Ficha Técnica del Evento</span>
+        </h3>
+        <ul class="text-xs space-y-2 text-slate-600">
+          <li class="flex justify-between py-1 border-b border-slate-100">
+            <span class="text-slate-400">Evento:</span>
+            <span class="font-semibold text-brand-navy">Encuentro Nacional de Magos Infantiles</span>
+          </li>
+          <li class="flex justify-between py-1 border-b border-slate-100">
+            <span class="text-slate-400">Edición:</span>
+            <span class="font-semibold text-brand-navy">ENMI 2027 Madrid</span>
+          </li>
+          <li class="flex justify-between py-1 border-b border-slate-100">
+            <span class="text-slate-400">Sede:</span>
+            <span class="font-semibold text-brand-navy">Madrid, España</span>
+          </li>
+          <li class="flex justify-between py-1">
+            <span class="text-slate-400">Estado de Inscripciones:</span>
+            <span class="inline-flex items-center gap-1 font-bold text-emerald-600">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Abiertas
+            </span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Estado de la Sesión y Seguridad -->
+      <div
+        class="bg-brand-white p-6 rounded-2xl border border-brand-silver/50 shadow-2xs space-y-3 flex flex-col justify-between">
+        <div>
+          <h3 class="text-sm font-bold text-brand-navy uppercase tracking-wider flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+            <span>Seguridad y Sesión Activa</span>
+          </h3>
+          <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+            La sesión administrativa se encuentra encriptada y protegida por autenticación basada en tokens de sesión.
+          </p>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+          <a routerLink="/"
+            class="text-xs font-semibold text-brand-navy hover:text-brand-gold-dark flex items-center gap-1 transition-colors">
+            <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+            </svg>
+            <span>Ver Web Pública</span>
+          </a>
+
+          <button type="button" (click)="logout()"
+            class="text-xs font-semibold text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer transition-colors">
+            <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+            </svg>
+            <span>Cerrar Sesión</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
