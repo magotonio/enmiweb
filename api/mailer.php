@@ -149,7 +149,7 @@ function sendSmtpEmail(
 
         // 5. MAIL FROM
         $fromEmail = (string)($smtpConfig['from_email'] ?? $smtpConfig['user'] ?? 'no-reply@enmi.es');
-        $fromName  = (string)($smtpConfig['from_name'] ?? 'ENMI Web');
+        $fromName  = (string)($smtpConfig['from_name'] ?? 'Eutikea - ENMI');
         $mailFromRes = $sendCommand("MAIL FROM:<{$fromEmail}>", [250]);
         if (!$mailFromRes['ok']) {
             throw new RuntimeException("Error en MAIL FROM: " . $mailFromRes['response']);
@@ -440,7 +440,7 @@ function sendRegistrationNotification(array $data): array {
                     <tr>
                         <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 18px 28px; text-align: center;">
                             <p style="margin: 0; font-size: 12px; color: #94a3b8;">
-                                Este es un correo automático generado por el sistema de inscripciones de ENMI Web.
+                                Este es un correo automático generado por el sistema de inscripciones de Eutikea.
                             </p>
                         </td>
                     </tr>
@@ -480,7 +480,7 @@ Puedes consultar y gestionar todos los registros en el Panel de Administración:
 {$adminUrl}
 
 ---
-Sistema de notificaciones automáticas de ENMI Web.
+Sistema de notificaciones automáticas de Eutikea.
 TEXT;
 
     return sendSmtpEmail($smtpConfig, $notificationEmails, $subject, $htmlBody, $textBody);

@@ -27,7 +27,7 @@ return [
     'SMTP_USER'       => 'enmi@eutikea.com',                       // Usuario / Buzón de correo
     'SMTP_PASS'       => 'enmI.2702$Tk',                           // Contraseña del buzón de correo
     'SMTP_FROM_EMAIL' => 'enmi@eutikea.com',                       // Remitente predeterminado
-    'SMTP_FROM_NAME'  => 'ENMI Web',                               // Nombre mostrado del remitente
+    'SMTP_FROM_NAME'  => 'Eutikea - ENMI',                               // Nombre mostrado del remitente
 
     // Listado de direcciones de correo electrónico para notificaciones
     'NOTIFICATION_EMAILS' => [
