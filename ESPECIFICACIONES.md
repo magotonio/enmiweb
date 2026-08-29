@@ -60,7 +60,11 @@ Aplicación web moderna, accesible y modular construida con **Angular 21** conec
         ├── 001_create_enmi_inscripciones.sql
         ├── 002_create_enmi_usuarios.sql
         ├── 003_create_enmi_recuperacion_passwords.sql
-        └── 004_create_enmi_logs.sql
+        ├── 004_create_enmi_logs.sql
+        ├── 005_add_fields_to_enmi_inscripciones.sql
+        ├── 006_add_intentos_fallidos_to_enmi_usuarios.sql
+        ├── 007_add_rol_to_enmi_usuarios.sql
+        └── 008_create_enmi_configuracion.sql
 ```
 
 ---
@@ -77,9 +81,10 @@ Aplicación web moderna, accesible y modular construida con **Angular 21** conec
   - **Tipografía**: *Plus Jakarta Sans* (Google Fonts).
   - **Accesibilidad**: Atributos `aria-*`, alertas `role="alert"`, modales `role="dialog"`, navegación completa por teclado.
 - **Backend**:
+  - **Tabla de Configuración Dinámica de la Web (`enmi_configuracion`)**: Almacén centralizado de parámetros clave-valor de texto (`clave`, `valor`, `descripcion`, timestamps) en MariaDB. Gestiona de forma dinámica el estado de mantenimiento (`mantenimiento = "1"`) y todos los parámetros de transporte y buzón SMTP (`smtp_host`, `smtp_port`, `smtp_secure`, `smtp_auth`, `smtp_user`, `smtp_pass`, `smtp_from_email`, `smtp_from_name`, `notification_emails` separados por comas), con caché en memoria por ciclo de petición (`getDbConfig()`, `getConfigValue()`, `isMaintenanceMode()`, `getSmtpConfig()`, `getNotificationEmails()`).
   - **Servicio de Logs, Auditoría y Niveles (`api/logger.php`)**: Filtrado inteligente por severidad (`LOG_LEVEL`: `DEBUG` [100], `INFO` [200], `NOTICE` [250], `WARNING` [300], `ERROR` [400], `CRITICAL` [500]) con descarte automático de eventos menores al umbral y captura de contexto, IP, User-Agent y origen.
   - **Manejo Global de Errores en API (`api/config.php`)**: Capturador de excepciones (`set_exception_handler`), errores de runtime (`set_error_handler`) y errores fatales (`register_shutdown_function`) con registro en `enmi_logs` y respuestas JSON 500 normalizadas con detalle de depuración condicional (`SHOW_ERROR_DETAILS`).
-  - **Servicio de Email y Notificaciones**: Configuración SMTP compatible con Dinahosting (puerto 465 SSL / 587 TLS) y array de direcciones para notificaciones (`NOTIFICATION_EMAILS`), cargadas dinámicamente mediante cascada de entornos (`config.env.php` > `config.env.local.php` > `getenv()`).
+  - **Servicio de Email y Notificaciones (`api/mailer.php`)**: Conexión nativa PHP 8.2+ con soporte SSL (puerto 465) y STARTTLS (puerto 587), cargando parámetros dinámicamente desde `enmi_configuracion` con soporte de múltiples destinatarios en `notification_emails`.
   - **Formato de Comunicación**: JSON REST con cabeceras CORS y códigos de estado HTTP estándar (200, 201, 400, 401, 403, 405, 500).
 - **Infraestructura, Entornos y URLs**:
   - **Entorno Local (Desarrollo)**:
@@ -256,6 +261,22 @@ CREATE TABLE IF NOT EXISTS `enmi_inscripciones` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
+### 6.2. Tabla de Configuración de la Web: `enmi_configuracion`
+
+```sql
+CREATE TABLE IF NOT EXISTS `enmi_configuracion` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `clave` VARCHAR(100) NOT NULL COMMENT 'Identificador único del parámetro de configuración',
+  `valor` TEXT DEFAULT NULL COMMENT 'Valor del parámetro almacenado como texto',
+  `descripcion` VARCHAR(255) DEFAULT NULL COMMENT 'Descripción explicativa del propósito del parámetro',
+  `fecha_creacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha de creación del registro',
+  `fecha_actualizacion` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Fecha de última modificación',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_enmi_configuracion_clave` (`clave`),
+  INDEX `idx_enmi_configuracion_clave` (`clave`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
 ---
 
 ## 7. Requisitos Funcionales (RF)
@@ -277,12 +298,23 @@ CREATE TABLE IF NOT EXISTS `enmi_inscripciones` (
   - **Guards de Seguridad en Angular**: `roleGuard` funcional que evalúa `route.data['roles']` o `route.data['minRole']`, redirigiendo usuarios no autorizados a `/acceso-denegado` (pantalla informativa 403) o a su panel correspondiente sin romper la sesión activa.
   - **Endpoints Backend Seguros en PHP**: `api/usuarios.php` (exclusivo Superadmin), `api/logs.php` (Superadmin y Supervisor), y enriquecimiento de `api/login.php` y `api/check_session.php` con el perfil del usuario.
   - **Migración 007 (`007_add_rol_to_enmi_usuarios.sql`)**: Incorporación de columna `rol` en `enmi_usuarios` y usuarios semilla de prueba para los tres perfiles.
+- **RF-06: Configuración Dinámica y Centralizada en Base de Datos**:
+  - Almacén de configuraciones en tabla `enmi_configuracion` con soporte clave-valor textual.
+  - Parámetro de `mantenimiento` (valor `"1"` para activar el estado de mantenimiento / cierre temporal).
+  - Parámetros completos del servicio de correo saliente SMTP (`smtp_host`, `smtp_port`, `smtp_secure`, `smtp_auth`, `smtp_user`, `smtp_pass`, `smtp_from_email`, `smtp_from_name`, `notification_emails` separados por comas).
 
 ---
 
 ## 8. Registro de Cambios (Changelog)
 
-### v2.7.0 (Actual)
+### v2.8.0 (Actual)
+- **Tabla de Configuración de la Web (`enmi_configuracion`)**: Creación de la tabla clave-valor de texto para gestión dinámica de parámetros en MariaDB.
+- **Parámetro de Mantenimiento (`mantenimiento = "1"`)**: Incorporación del flag de control del estado de mantenimiento web en base de datos.
+- **Centralización de Configuración SMTP y Correo**: Traslado de las credenciales, host, puertos, remitentes y lista de correos de notificación (`notification_emails` separados por comas) desde los archivos de entorno hacia `enmi_configuracion`.
+- **Capa de Abstracción en API PHP (`api/config.php`)**: Nuevas funciones `getDbConfig()`, `getConfigValue()`, `isMaintenanceMode()` y adaptación retrocompatible de `getSmtpConfig()` y `getNotificationEmails()` con caché estática por petición.
+- **Migración 008 (`008_create_enmi_configuracion.sql`)**: Script incremental y actualización del esquema consolidado (`db/schema.sql`).
+
+### v2.7.0
 - **Panel Exclusivo para Asistentes (`PanelAsistenteComponent` en `/asistente`)**: Módulo operativo para control de acceso, búsqueda predictiva de participantes y fichas completas de acreditación.
 - **Restricción del Panel de Administración (`/admin`)**: Exclusivo para Superadministrador y Supervisor.
 - **Sistema de Control de Acceso por Roles (RBAC)**: Implementación de perfiles `superadministrador`, `supervisor` y `asistente`.

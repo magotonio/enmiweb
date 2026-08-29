@@ -19,20 +19,8 @@ return [
     'DB_USER' => 'enmi_user',        // Usuario de base de datos
     'DB_PASS' => 'enmi_password',    // Contraseña de base de datos
 
-    // Envío de Correos Electrónicos (SMTP - Local / Pruebas)
-    'SMTP_HOST'       => 'eutikea-com.correoseguro.dinaserver.com', // Servidor de correo saliente
-    'SMTP_PORT'       => 465,                                      // Puerto estándar SSL/SMTPS para hosting PHP (465) o TLS (587)
-    'SMTP_SECURE'     => 'ssl',                                    // Protocolo de seguridad: 'ssl' (puerto 465) o 'tls' (puerto 587)
-    'SMTP_AUTH'       => true,                                     // Requiere autenticación SMTP
-    'SMTP_USER'       => 'enmi@eutikea.com',                       // Usuario / Buzón de correo
-    'SMTP_PASS'       => 'enmI.2702$Tk',                           // Contraseña del buzón de correo
-    'SMTP_FROM_EMAIL' => 'enmi@eutikea.com',                       // Remitente predeterminado
-    'SMTP_FROM_NAME'  => 'ENMI Web',                               // Nombre mostrado del remitente
-
-    // Listado de direcciones de correo electrónico para notificaciones
-    'NOTIFICATION_EMAILS' => [
-        'enmi@eutikea.com',
-    ],
+    // NOTA: La configuración de envío de correos (SMTP) y el modo de mantenimiento
+    // se gestionan centralizadamente desde la tabla `enmi_configuracion` en la base de datos MariaDB.
 
     // Configuración de Logs y Auditoría
     // Niveles: DEBUG (100), INFO (200), NOTICE (250), WARNING (300), ERROR (400), CRITICAL (500)

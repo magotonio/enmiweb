@@ -99,44 +99,124 @@ function getDbConnection(): PDO {
 }
 
 /**
+ * Carga todos los parámetros clave-valor de la tabla enmi_configuracion en memoria (caché por petición).
+ * 
+ * @param PDO|null $pdo Conexión PDO opcional
+ * @return array<string, string|null> Mapa asociativo [clave => valor]
+ */
+function getDbConfig(?PDO $pdo = null): array {
+    static $configCache = null;
+    if ($configCache !== null) {
+        return $configCache;
+    }
+
+    $configCache = [];
+    try {
+        if ($pdo === null) {
+            $pdo = getDbConnection();
+        }
+        $stmt = $pdo->query("SELECT `clave`, `valor` FROM `enmi_configuracion`");
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $configCache[$row['clave']] = $row['valor'];
+        }
+    } catch (Throwable $e) {
+        // En caso de que la tabla aún no exista o haya error, se mantiene vacío para recurrir a los valores por defecto
+        if (function_exists('logEvent')) {
+            logEvent('WARNING', 'bd', 'config_load_fallback', 'No se pudo cargar la configuración de la BD: ' . $e->getMessage());
+        }
+    }
+
+    return $configCache;
+}
+
+/**
+ * Obtiene el valor de un parámetro específico de configuración de la web almacenado en la BD.
+ * 
+ * @param string $clave Identificador de la configuración (ej: 'mantenimiento', 'smtp_host')
+ * @param mixed $default Valor de respaldo si la clave no existe
+ * @param PDO|null $pdo Conexión PDO opcional
+ * @return mixed
+ */
+function getConfigValue(string $clave, mixed $default = null, ?PDO $pdo = null): mixed {
+    $dbConfig = getDbConfig($pdo);
+    return $dbConfig[$clave] ?? $default;
+}
+
+/**
+ * Comprueba si la plataforma web se encuentra actualmente en modo mantenimiento.
+ * 
+ * @param PDO|null $pdo Conexión PDO opcional
+ * @return bool True si mantenimiento está activo ('1', 1, 'true'), False en caso contrario
+ */
+function isMaintenanceMode(?PDO $pdo = null): bool {
+    $val = getConfigValue('mantenimiento', '0', $pdo);
+    if (is_bool($val)) {
+        return $val;
+    }
+    return in_array(strtolower(trim((string)$val)), ['1', 'true', 'yes', 'si', 'on'], true);
+}
+
+/**
  * Obtiene los parámetros de configuración para el envío de correos electrónicos vía SMTP.
  * Prioridad de configuración:
- *  1. Archivo de producción: api/config.env.php (PRO)
- *  2. Archivo de entorno local: api/config.env.local.php (LOCAL)
- *  3. Variables de entorno: getenv()
- *  4. Valores predeterminados estándar de Dinahosting
+ *  1. Tabla en base de datos: `enmi_configuracion` (PRO y LOCAL centralizado)
+ *  2. Archivo de producción: api/config.env.php (PRO)
+ *  3. Archivo de entorno local: api/config.env.local.php (LOCAL)
+ *  4. Variables de entorno: getenv()
+ *  5. Valores predeterminados estándar de Dinahosting
  * 
+ * @param PDO|null $pdo Conexión PDO opcional
  * @return array
  */
-function getSmtpConfig(): array {
+function getSmtpConfig(?PDO $pdo = null): array {
     $customConfig = getAppConfig();
+    $dbAuth = getConfigValue('smtp_auth', null, $pdo);
+    $authBool = true;
+    if ($dbAuth !== null) {
+        $authBool = in_array(strtolower(trim((string)$dbAuth)), ['1', 'true', 'yes', 'si', 'on'], true);
+    } elseif (isset($customConfig['SMTP_AUTH'])) {
+        $authBool = (bool)$customConfig['SMTP_AUTH'];
+    } elseif (getenv('SMTP_AUTH') !== false) {
+        $authBool = filter_var(getenv('SMTP_AUTH'), FILTER_VALIDATE_BOOLEAN);
+    }
 
     return [
-        'host'                => (string)($customConfig['SMTP_HOST'] ?? getenv('SMTP_HOST') ?: 'eutikea-com.correoseguro.dinaserver.com'),
-        'port'                => (int)($customConfig['SMTP_PORT'] ?? getenv('SMTP_PORT') ?: 465),
-        'secure'              => (string)($customConfig['SMTP_SECURE'] ?? getenv('SMTP_SECURE') ?: 'ssl'),
-        'auth'                => (bool)($customConfig['SMTP_AUTH'] ?? (getenv('SMTP_AUTH') !== false ? filter_var(getenv('SMTP_AUTH'), FILTER_VALIDATE_BOOLEAN) : true)),
-        'user'                => (string)($customConfig['SMTP_USER'] ?? getenv('SMTP_USER') ?: 'enmi@eutikea'),
-        'pass'                => (string)($customConfig['SMTP_PASS'] ?? (getenv('SMTP_PASS') !== false ? getenv('SMTP_PASS') : 'enmI.2702$Tk')),
-        'from_email'          => (string)($customConfig['SMTP_FROM_EMAIL'] ?? getenv('SMTP_FROM_EMAIL') ?: 'enmi@eutikea'),
-        'from_name'           => (string)($customConfig['SMTP_FROM_NAME'] ?? getenv('SMTP_FROM_NAME') ?: 'Eutikea - ENMI'),
-        'notification_emails' => getNotificationEmails(),
+        'host'                => (string)(getConfigValue('smtp_host', null, $pdo) ?? $customConfig['SMTP_HOST'] ?? getenv('SMTP_HOST') ?: 'eutikea-com.correoseguro.dinaserver.com'),
+        'port'                => (int)(getConfigValue('smtp_port', null, $pdo) ?? $customConfig['SMTP_PORT'] ?? getenv('SMTP_PORT') ?: 465),
+        'secure'              => (string)(getConfigValue('smtp_secure', null, $pdo) ?? $customConfig['SMTP_SECURE'] ?? getenv('SMTP_SECURE') ?: 'ssl'),
+        'auth'                => $authBool,
+        'user'                => (string)(getConfigValue('smtp_user', null, $pdo) ?? $customConfig['SMTP_USER'] ?? getenv('SMTP_USER') ?: 'enmi@eutikea.com'),
+        'pass'                => (string)(getConfigValue('smtp_pass', null, $pdo) ?? $customConfig['SMTP_PASS'] ?? (getenv('SMTP_PASS') !== false ? getenv('SMTP_PASS') : 'enmI.2702$Tk')),
+        'from_email'          => (string)(getConfigValue('smtp_from_email', null, $pdo) ?? $customConfig['SMTP_FROM_EMAIL'] ?? getenv('SMTP_FROM_EMAIL') ?: 'enmi@eutikea.com'),
+        'from_name'           => (string)(getConfigValue('smtp_from_name', null, $pdo) ?? $customConfig['SMTP_FROM_NAME'] ?? getenv('SMTP_FROM_NAME') ?: 'Eutikea - ENMI'),
+        'notification_emails' => getNotificationEmails($pdo),
     ];
 }
 
 /**
- * Obtiene el listado de direcciones de correo electrónico para notificaciones.
+ * Obtiene el listado de direcciones de correo electrónico para notificaciones de inscripción.
  * Prioridad de configuración:
- *  1. Archivo de producción: api/config.env.php (PRO)
- *  2. Archivo de entorno local: api/config.env.local.php (LOCAL)
- *  3. Variables de entorno: getenv('NOTIFICATION_EMAILS') (array o string separado por comas)
- *  4. Valores por defecto
+ *  1. Tabla en base de datos: `enmi_configuracion` (campo `notification_emails` separado por comas)
+ *  2. Archivo de producción: api/config.env.php (PRO)
+ *  3. Archivo de entorno local: api/config.env.local.php (LOCAL)
+ *  4. Variables de entorno: getenv('NOTIFICATION_EMAILS')
+ *  5. Valores por defecto
  * 
- * @return array
+ * @param PDO|null $pdo Conexión PDO opcional
+ * @return array<string> Lista normalizada de correos electrónicos
  */
-function getNotificationEmails(): array {
-    $customConfig = getAppConfig();
+function getNotificationEmails(?PDO $pdo = null): array {
+    // 1. Prioridad: BD enmi_configuracion
+    $dbEmails = getConfigValue('notification_emails', null, $pdo);
+    if ($dbEmails !== null && trim((string)$dbEmails) !== '') {
+        $parsed = array_values(array_filter(array_map('trim', explode(',', (string)$dbEmails))));
+        if (!empty($parsed)) {
+            return $parsed;
+        }
+    }
 
+    // 2. Prioridad: Archivo de entorno
+    $customConfig = getAppConfig();
     if (isset($customConfig['NOTIFICATION_EMAILS'])) {
         $emails = $customConfig['NOTIFICATION_EMAILS'];
         if (is_array($emails)) {
@@ -147,6 +227,7 @@ function getNotificationEmails(): array {
         }
     }
 
+    // 3. Prioridad: Variable de entorno del sistema
     $envEmails = getenv('NOTIFICATION_EMAILS');
     if ($envEmails !== false && trim($envEmails) !== '') {
         return array_values(array_filter(array_map('trim', explode(',', $envEmails))));

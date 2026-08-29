@@ -116,6 +116,22 @@ CREATE TABLE IF NOT EXISTS `enmi_logs` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
+-- Tabla 5: enmi_configuracion
+-- Registra parámetros clave-valor de texto para configuración dinámica de la web.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `enmi_configuracion` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `clave` VARCHAR(100) NOT NULL COMMENT 'Identificador único del parámetro de configuración',
+  `valor` TEXT DEFAULT NULL COMMENT 'Valor del parámetro almacenado como texto',
+  `descripcion` VARCHAR(255) DEFAULT NULL COMMENT 'Descripción explicativa del propósito del parámetro',
+  `fecha_creacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha de creación del registro',
+  `fecha_actualizacion` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Fecha de última modificación',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_enmi_configuracion_clave` (`clave`),
+  INDEX `idx_enmi_configuracion_clave` (`clave`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
 -- Datos Iniciales / Semilla Base
 -- Usuarios con los 3 perfiles de seguridad:
 -- 1. Superadministrador: login 'admin' | pass 'Admin.123' | email 'enmi@eutikea.com'
@@ -138,4 +154,22 @@ INSERT INTO `enmi_inscripciones`
 VALUES
   ('Alejandro', 'Gómez Martín', 'Mago Álex', '12345678Z', 'asistente@enmi2027.es', '+34 600 123 456', 'Madrid, España', 'Círculo de Ilusionistas de Madrid', 1, 1, 1, 'Vegetariano. Participación en gala de magia infantil de cerca.', 'activo')
 ON DUPLICATE KEY UPDATE `email` = VALUES(`email`);
+
+-- Parámetros de configuración iniciales (mantenimiento y servicio SMTP)
+INSERT INTO `enmi_configuracion` (`clave`, `valor`, `descripcion`, `fecha_creacion`)
+VALUES
+  ('mantenimiento', '1', 'Modo mantenimiento de la web (1: activado / formulario cerrado, 0: desactivado / abierto)', NOW()),
+  ('smtp_host', 'eutikea-com.correoseguro.dinaserver.com', 'Servidor de correo saliente SMTP', NOW()),
+  ('smtp_port', '465', 'Puerto del servidor SMTP (465 SSL / 587 TLS)', NOW()),
+  ('smtp_secure', 'ssl', 'Protocolo de seguridad de transporte SMTP (ssl / tls)', NOW()),
+  ('smtp_auth', '1', 'Requiere autenticación SMTP (1: sí, 0: no)', NOW()),
+  ('smtp_user', 'enmi@eutikea.com', 'Usuario / buzón de la cuenta de correo SMTP', NOW()),
+  ('smtp_pass', 'enmI.2702$Tk', 'Contraseña de la cuenta de correo SMTP', NOW()),
+  ('smtp_from_email', 'enmi@eutikea.com', 'Dirección de correo remitente predeterminada', NOW()),
+  ('smtp_from_name', 'Eutikea - ENMI', 'Nombre legible mostrado del remitente', NOW()),
+  ('notification_emails', 'enmi@eutikea.com', 'Direcciones de correo para notificaciones de inscripción (separadas por comas)', NOW())
+ON DUPLICATE KEY UPDATE
+  `valor` = VALUES(`valor`),
+  `descripcion` = VALUES(`descripcion`);
+
 
