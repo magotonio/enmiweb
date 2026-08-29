@@ -764,7 +764,7 @@
         <div class="p-4 rounded-2xl bg-slate-100/70 border border-slate-200/80 text-[11px] text-slate-600 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <strong class="text-slate-700 block">Fecha y Hora de Creación:</strong>
-            <span>{{ selectedInscripcion()!.fecha_creacion | date:'EEEE, dd de MMMM de yyyy, HH:mm:ss':'':'es' }}</span>
+            <span>{{ selectedInscripcion()!.fecha_creacion | date:"EEEE, d 'de' MMMM 'de' yyyy, HH:mm:ss":'':'es' }}</span>
           </div>
           <div>
             <strong class="text-slate-700 block">Dirección IP de Registro:</strong>

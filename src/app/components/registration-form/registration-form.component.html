@@ -324,7 +324,7 @@
         </fieldset>
 
         <!-- ============================================================ -->
-        <!-- SECCIÓN 3: PARTICIPACIÓN ACTIVA EN EL ENCUENTRO             -->
+        <!-- SECCIÓN 3: PARTICIPACIÓN EN EL ENCUENTRO                    -->
         <!-- ============================================================ -->
         <fieldset class="border border-brand-gold/40 rounded-2xl p-5 sm:p-6 bg-brand-gold-light/40 shadow-2xs">
           <legend
@@ -347,8 +347,8 @@
                   Quiero participar activamente en el Encuentro
                 </span>
                 <span class="text-xs text-slate-600 block mt-0.5 leading-relaxed">
-                  Si deseas presentar número, participar en concursos, conferencias, stands o soporte, marca esta
-                  casilla.
+                  Si deseas presentar número en gala de escena, participar en concurso, impartir charla o taller, tener
+                  dealer/stand o colaborar en apoyo logístico, marca esta casilla.
                 </span>
               </label>
             </div>
@@ -356,19 +356,19 @@
             <!-- Botón de Información con Modal -->
             <button type="button" (click)="openParticipacionModal()"
               class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-brand-navy bg-brand-gold/20 hover:bg-brand-gold/30 border border-brand-gold/50 rounded-xl transition-colors shrink-0 cursor-pointer shadow-2xs self-start sm:self-center"
-              title="Ver todas las modalidades de participación">
+              title="Ver opciones de participación (orientativo)">
               <svg class="w-4 h-4 text-brand-gold-dark" xmlns="http://www.w3.org/2000/svg" fill="none"
                 viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round"
                   d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
               </svg>
-              <span>Modalidades y detalles</span>
+              <span>¿En qué puedo participar?</span>
             </button>
           </div>
 
           <p class="text-[11px] text-slate-500 mt-2.5 px-1">
-            * <em>Nota: Tras registrarte, nuestro equipo de organización y dirección artística se pondrá en contacto
-              contigo para coordinar tu propuesta.</em>
+            * <em>Información orientativa: Tras registrarte, la organización se pondrá en contacto contigo para
+              explicarte todas las opciones detalladamente y coordinar tu propuesta.</em>
           </p>
         </fieldset>
 
@@ -540,7 +540,7 @@
 </div>
 
 <!-- ===================================================================== -->
-<!-- MODAL 1: MODALIDADES DE PARTICIPACIÓN                                 -->
+<!-- MODAL 1: INFORMACIÓN DE PARTICIPACIÓN (ORIENTATIVO)                  -->
 <!-- ===================================================================== -->
 @if (showParticipacionModal()) {
 <div
@@ -560,16 +560,16 @@
         </div>
         <div>
           <span class="text-[11px] font-bold uppercase tracking-widest text-brand-gold block">
-            Encuentro Nacional de Magos Infantiles
+            Información Orientativa &bull; ENMI
           </span>
           <h3 id="participacionModalTitle" class="text-lg sm:text-xl font-extrabold text-white">
-            Modalidades de Participación
+            ¿En qué puedes participar?
           </h3>
         </div>
       </div>
       <button type="button" (click)="closeParticipacionModal()"
         class="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-        title="Cerrar modal">
+        title="Cerrar ventana">
         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
           stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -579,84 +579,83 @@
 
     <!-- Contenido con Scroll -->
     <div class="p-6 overflow-y-auto space-y-4 text-slate-700 text-sm">
-      <p class="text-slate-600 leading-relaxed">
-        El ENMI es un espacio colaborativo donde los magos e ilusionistas pueden formar parte activa del programa. Si
-        marcas la casilla <strong>"Quiero participar"</strong>, podrás colaborar en cualquiera de las siguientes
-        modalidades:
-      </p>
+      <div
+        class="p-3.5 rounded-2xl bg-brand-navy-soft/60 border border-brand-navy/10 text-xs text-slate-700 leading-relaxed">
+        <strong class="text-brand-navy font-bold block mb-1">Información de carácter orientativo:</strong>
+        El ENMI es un espacio abierto a la colaboración de la comunidad mágica. Si marcas la casilla <strong>«Quiero
+          participar activamente»</strong>, esta guía te muestra las áreas en las que puedes involucrarte. Más adelante,
+        la organización se pondrá en contacto contigo para explicarte todo detenidamente y coordinar los detalles.
+      </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
 
-        <!-- Modalidad 1 -->
-        <div class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40">
+        <!-- Opción 1: Concurso -->
+        <div
+          class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40 hover:border-brand-gold/40 transition-colors">
           <div class="flex items-center gap-2 font-bold text-brand-navy text-sm mb-1">
             <span class="text-base">🏆</span>
-            <span>Concurso Oficial</span>
+            <span>Concurso</span>
           </div>
           <p class="text-xs text-slate-600 leading-relaxed">
-            Participación en el certamen oficial de magia infantil / familiar ante el jurado calificador y público
-            congresista.
+            Certamen participativo y lúdico de magia infantil y familiar ante los compañeros y público del encuentro. Un
+            espacio formativo y cercano para compartir.
           </p>
         </div>
 
-        <!-- Modalidad 2 -->
-        <div class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40">
+        <!-- Opción 2: Gala de Escena -->
+        <div
+          class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40 hover:border-brand-gold/40 transition-colors">
           <div class="flex items-center gap-2 font-bold text-brand-navy text-sm mb-1">
             <span class="text-base">🎩</span>
             <span>Gala de Escena</span>
           </div>
           <p class="text-xs text-slate-600 leading-relaxed">
-            Presentación de un número unipersonal o en conjunto en el escenario principal del auditorio.
+            Presentación de un número de magia unipersonal o conjunto en el escenario principal del auditorio.
           </p>
         </div>
 
-        <!-- Modalidad 3 -->
-        <div class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40">
-          <div class="flex items-center gap-2 font-bold text-brand-navy text-sm mb-1">
-            <span class="text-base">🪄</span>
-            <span>Gala de Cerca / Infantil</span>
-          </div>
-          <p class="text-xs text-slate-600 leading-relaxed">
-            Actuaciones de proximidad en salas habilitadas para grupos reducidos y formato participativo.
-          </p>
-        </div>
-
-        <!-- Modalidad 4 -->
-        <div class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40">
+        <!-- Opción 3: Dealer / Stand -->
+        <div
+          class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40 hover:border-brand-gold/40 transition-colors">
           <div class="flex items-center gap-2 font-bold text-brand-navy text-sm mb-1">
             <span class="text-base">🎪</span>
-            <span>Feria de Dealers / Stand</span>
+            <span>Dealer / Stand</span>
           </div>
           <p class="text-xs text-slate-600 leading-relaxed">
-            Espacio expositivo para fabricantes, creadores, librerías mágicas y tiendas especializadas.
+            Espacio expositivo y de venta para tiendas de magia especializadas, fabricantes, creadores de material y
+            librerías mágicas.
           </p>
         </div>
 
-        <!-- Modalidad 5 -->
-        <div class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40">
+        <!-- Opción 4: Charla o Taller (Microconferencia) -->
+        <div
+          class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40 hover:border-brand-gold/40 transition-colors">
           <div class="flex items-center gap-2 font-bold text-brand-navy text-sm mb-1">
             <span class="text-base">💡</span>
-            <span>Microconferencia / Charla</span>
+            <span>Charla, Taller o Microconferencia</span>
           </div>
           <p class="text-xs text-slate-600 leading-relaxed">
-            Ponencias teóricas o talleres prácticos sobre pedagogía mágica, psicología, construcción o puesta en escena.
+            Ponencias teóricas, microconferencias o talleres prácticos sobre pedagogía mágica, psicología, construcción,
+            técnica o puesta en escena.
           </p>
         </div>
 
-        <!-- Modalidad 6 -->
-        <div class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40">
+        <!-- Opción 5: Apoyo Logístico -->
+        <div
+          class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40 hover:border-brand-gold/40 transition-colors sm:col-span-2">
           <div class="flex items-center gap-2 font-bold text-brand-navy text-sm mb-1">
             <span class="text-base">🤝</span>
             <span>Apoyo Logístico</span>
           </div>
           <p class="text-xs text-slate-600 leading-relaxed">
-            Colaboración voluntaria con el equipo de organización en control de accesos, regiduría técnica o recepción.
+            Colaboración voluntaria con el equipo de organización en control de accesos, regiduría técnica, recepción o
+            apoyo general durante el festival.
           </p>
         </div>
 
       </div>
 
-      <!-- Aviso de Contacto -->
+      <!-- Aviso de Contacto Detenido -->
       <div class="p-4 rounded-2xl bg-brand-gold-light border border-brand-gold/40 flex items-start gap-3">
         <svg class="w-5 h-5 text-brand-gold-dark shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" fill="none"
           viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -664,9 +663,11 @@
             d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
         </svg>
         <div class="text-xs text-slate-700 leading-relaxed">
-          <strong class="text-brand-navy font-bold block mb-0.5">Nos pondremos en contacto contigo:</strong>
-          Una vez registrado, nuestro equipo de coordinación se comunicará contigo a través de tu correo electrónico o
-          teléfono para acordar disponibilidad, condiciones técnicas y horarios.
+          <strong class="text-brand-navy font-bold block mb-0.5">Te explicaremos todo detenidamente en el
+            contacto:</strong>
+          Esta selección es puramente orientativa. Tras registrarte, nuestro equipo de organización se pondrá en
+          contacto contigo (por teléfono o email) para explicarte cada opción en profundidad, responder a tus preguntas
+          y coordinar tu participación.
         </div>
       </div>
     </div>

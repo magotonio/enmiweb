@@ -68,7 +68,7 @@ describe('RegistrationFormComponent', () => {
     component.form.controls['quiero_participar'].setValue(true);
     component.form.controls['acepta_privacidad'].setValue(true);
     component.form.controls['consentimiento_imagen'].setValue(true);
-    component.form.controls['comentarios'].setValue('Prefiero gala de cerca');
+    component.form.controls['comentarios'].setValue('Interesado en participar en el concurso o taller');
 
     component.onSubmit();
 
