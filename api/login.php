@@ -54,7 +54,7 @@ $pdo = getDbConnection();
 try {
     // Buscar usuario por login o por email
     $stmt = $pdo->prepare("
-        SELECT id, login, email, password_hash, bloqueado, ultimo_login 
+        SELECT id, login, email, password_hash, bloqueado, intentos_fallidos, ultimo_login 
         FROM `enmi_usuarios` 
         WHERE login = :login OR email = :email 
         LIMIT 1
@@ -76,28 +76,72 @@ try {
         ], 401);
     }
 
-    // Comprobar si la cuenta está bloqueada
+    // Comprobar si la cuenta ya está bloqueada
     if ((int)$user['bloqueado'] === 1) {
         logAuth('login_bloqueado', "Intento de acceso con cuenta bloqueada: {$user['login']}", ['login' => $user['login']], false, (int)$user['id']);
         sendJsonResponse([
-            'success' => false,
-            'message' => 'La cuenta de usuario está bloqueada. Contacte con el administrador.'
+            'success'   => false,
+            'bloqueado' => true,
+            'message'   => 'Su usuario está bloqueado. Por favor, contacte con el administrador.'
         ], 403);
     }
 
     // Verificar la contraseña con el hash almacenado
     if (!password_verify($password, $user['password_hash'])) {
-        logAuth('login_password_invalido', "Contraseña incorrecta para usuario: {$user['login']}", ['login' => $user['login']], false, (int)$user['id']);
-        sendJsonResponse([
-            'success' => false,
-            'message' => 'Usuario o contraseña incorrectos.'
-        ], 401);
+        $nuevosIntentos = (int)($user['intentos_fallidos'] ?? 0) + 1;
+
+        if ($nuevosIntentos >= 3) {
+            // Bloquear automáticamente la cuenta al tercer intento fallido
+            $updateStmt = $pdo->prepare("
+                UPDATE `enmi_usuarios`
+                SET `bloqueado` = 1,
+                    `intentos_fallidos` = :intentos
+                WHERE `id` = :id
+            ");
+            $updateStmt->execute([
+                ':intentos' => $nuevosIntentos,
+                ':id'       => $user['id']
+            ]);
+
+            logAuth('usuario_bloqueado_intentos', "Usuario bloqueado automáticamente tras 3 intentos fallidos de login: {$user['login']}", [
+                'login'             => $user['login'],
+                'intentos_fallidos' => $nuevosIntentos
+            ], false, (int)$user['id']);
+
+            sendJsonResponse([
+                'success'   => false,
+                'bloqueado' => true,
+                'message'   => 'Su usuario está bloqueado. Por favor, contacte con el administrador.'
+            ], 403);
+        } else {
+            // Incrementar contador de intentos erróneos
+            $updateStmt = $pdo->prepare("
+                UPDATE `enmi_usuarios`
+                SET `intentos_fallidos` = :intentos
+                WHERE `id` = :id
+            ");
+            $updateStmt->execute([
+                ':intentos' => $nuevosIntentos,
+                ':id'       => $user['id']
+            ]);
+
+            logAuth('login_password_invalido', "Contraseña incorrecta para usuario: {$user['login']} (Intento {$nuevosIntentos}/3)", [
+                'login'             => $user['login'],
+                'intentos_fallidos' => $nuevosIntentos
+            ], false, (int)$user['id']);
+
+            sendJsonResponse([
+                'success' => false,
+                'message' => 'Usuario o contraseña incorrectos.'
+            ], 401);
+        }
     }
 
-    // Actualizar fecha de último login
+    // Login exitoso: actualizar último login y resetear contador de intentos fallidos a 0
     $updateStmt = $pdo->prepare("
         UPDATE `enmi_usuarios` 
-        SET `ultimo_login` = NOW() 
+        SET `ultimo_login` = NOW(),
+            `intentos_fallidos` = 0 
         WHERE `id` = :id
     ");
     $updateStmt->execute([':id' => $user['id']]);
@@ -112,9 +156,11 @@ try {
         'success' => true,
         'message' => 'Inicio de sesión exitoso.',
         'user'    => [
-            'id'    => (int)$user['id'],
-            'login' => $user['login'],
-            'email' => $user['email']
+            'id'                => (int)$user['id'],
+            'login'             => $user['login'],
+            'email'             => $user['email'],
+            'bloqueado'         => 0,
+            'intentos_fallidos' => 0
         ],
         'token'   => $sessionToken
     ], 200);

@@ -139,6 +139,11 @@ export class AdminInscripcionesComponent implements OnInit {
    * Carga los datos de inscripciones desde la API PHP.
    */
   loadData(isManualRefresh = false): void {
+    if (this.authService.isBlocked(this.authService.currentUser())) {
+      this.authService.logout('blocked');
+      return;
+    }
+
     if (isManualRefresh) {
       this.isRefreshing.set(true);
     } else {

@@ -1,7 +1,7 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap } from 'rxjs';
+import { Observable, of, tap, catchError } from 'rxjs';
 import { AuthUser, LoginCredentials, LoginResponse } from '../models/usuario.model';
 import { environment } from '../../environments/environment';
 
@@ -15,10 +15,22 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly apiUrl = `${environment.apiUrl}/login.php`;
+  private readonly checkSessionUrl = `${environment.apiUrl}/check_session.php`;
 
   // Estado reactivo del usuario conectado
   readonly currentUser = signal<AuthUser | null>(this.getStoredUser());
-  readonly isLoggedIn = computed(() => this.currentUser() !== null);
+  readonly isLoggedIn = computed(() => {
+    const user = this.currentUser();
+    return user !== null && !this.isBlocked(user);
+  });
+
+  /**
+   * Comprueba si un usuario tiene la condición de bloqueado (bloqueado == 1 o true).
+   */
+  isBlocked(user?: AuthUser | null): boolean {
+    if (!user) return false;
+    return Number(user.bloqueado) === 1 || user.bloqueado === true;
+  }
 
   /**
    * Inicia sesión enviando credenciales a la API PHP.
@@ -27,6 +39,10 @@ export class AuthService {
     return this.http.post<LoginResponse>(this.apiUrl, credentials).pipe(
       tap(response => {
         if (response.success && response.user) {
+          if (this.isBlocked(response.user) || response.bloqueado) {
+            this.logout('blocked');
+            throw new Error('Su usuario está bloqueado. Contacte con el administrador.');
+          }
           this.setSession(response.user, response.token);
         }
       })
@@ -34,15 +50,61 @@ export class AuthService {
   }
 
   /**
-   * Cierra la sesión activa, elimina el almacenamiento local y redirige al inicio.
+   * Valida en tiempo real contra el backend si la sesión sigue activa y si el usuario está bloqueado.
+   * Si el usuario se encuentra bloqueado, cierra la sesión inmediatamente.
    */
-  logout(): void {
+  verifySession(): Observable<{ success: boolean; bloqueado?: boolean; user?: AuthUser; message?: string }> {
+    const user = this.currentUser();
+    if (!user) {
+      return of({ success: false, message: 'No hay sesión activa.' });
+    }
+
+    if (this.isBlocked(user)) {
+      this.logout('blocked');
+      return of({ success: false, bloqueado: true, message: 'Su usuario está bloqueado.' });
+    }
+
+    const params = new HttpParams()
+      .set('id', user.id.toString())
+      .set('login', user.login);
+
+    return this.http.get<{ success: boolean; bloqueado?: boolean; user?: AuthUser; message?: string }>(
+      this.checkSessionUrl,
+      { params }
+    ).pipe(
+      tap(response => {
+        if (response.bloqueado || (response.user && this.isBlocked(response.user))) {
+          this.logout('blocked');
+        } else if (response.success && response.user) {
+          this.setSession(response.user, this.getToken() || undefined);
+        }
+      }),
+      catchError(err => {
+        if (err.status === 403 || err.error?.bloqueado) {
+          this.logout('blocked');
+          return of({ success: false, bloqueado: true, message: 'Su usuario está bloqueado. Por favor, contacte con el administrador.' });
+        }
+        return of({ success: false, message: err.error?.message || 'Error al validar la sesión.' });
+      })
+    );
+  }
+
+  /**
+   * Cierra la sesión activa, elimina el almacenamiento local y redirige según la causa.
+   * @param reason Causa del cierre ('blocked' redirige a /login con aviso, 'manual' redirige al inicio).
+   */
+  logout(reason: 'blocked' | 'manual' = 'manual'): void {
     if (typeof window !== 'undefined' && window.localStorage) {
       localStorage.removeItem(STORAGE_USER_KEY);
       localStorage.removeItem(STORAGE_TOKEN_KEY);
     }
     this.currentUser.set(null);
-    this.router.navigate(['/']);
+
+    if (reason === 'blocked') {
+      this.router.navigate(['/login'], { queryParams: { blocked: '1' } });
+    } else {
+      this.router.navigate(['/']);
+    }
   }
 
   /**
@@ -60,6 +122,7 @@ export class AuthService {
 
   /**
    * Recupera el usuario almacenado en localStorage al iniciar la aplicación.
+   * Si detecta que está bloqueado, purga la sesión inmediatamente.
    */
   private getStoredUser(): AuthUser | null {
     if (typeof window === 'undefined' || !window.localStorage) {
@@ -67,7 +130,15 @@ export class AuthService {
     }
     try {
       const stored = localStorage.getItem(STORAGE_USER_KEY);
-      return stored ? (JSON.parse(stored) as AuthUser) : null;
+      if (!stored) return null;
+
+      const user = JSON.parse(stored) as AuthUser;
+      if (this.isBlocked(user)) {
+        localStorage.removeItem(STORAGE_USER_KEY);
+        localStorage.removeItem(STORAGE_TOKEN_KEY);
+        return null;
+      }
+      return user;
     } catch {
       return null;
     }
@@ -83,3 +154,4 @@ export class AuthService {
     return localStorage.getItem(STORAGE_TOKEN_KEY);
   }
 }
+

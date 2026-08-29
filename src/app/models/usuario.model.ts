@@ -5,6 +5,7 @@ export interface Usuario {
   password_hash?: string;
   ultimo_login?: Date | string | null;
   bloqueado: boolean | number;
+  intentos_fallidos?: number;
   fecha_creacion?: Date | string;
   fecha_actualizacion?: Date | string | null;
 }
@@ -20,6 +21,7 @@ export interface UsuarioUpdateDto {
   email?: string;
   password?: string;
   bloqueado?: boolean;
+  intentos_fallidos?: number;
 }
 
 export interface RecuperacionPassword {
@@ -47,6 +49,8 @@ export interface AuthUser {
   id: number;
   login: string;
   email: string;
+  bloqueado?: boolean | number;
+  intentos_fallidos?: number;
 }
 
 export interface LoginCredentials {
@@ -57,7 +61,10 @@ export interface LoginCredentials {
 export interface LoginResponse {
   success: boolean;
   message: string;
+  bloqueado?: boolean | number;
+  intentos_fallidos?: number;
   user?: AuthUser;
   token?: string;
   errors?: Record<string, string>;
 }
+

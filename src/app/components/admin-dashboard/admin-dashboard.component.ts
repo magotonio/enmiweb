@@ -67,6 +67,11 @@ export class AdminDashboardComponent implements OnInit {
    * Obtiene la lista de inscripciones desde el backend para calcular estadísticas.
    */
   cargarDatos(isRefresh = false): void {
+    if (this.authService.isBlocked(this.currentUser())) {
+      this.authService.logout('blocked');
+      return;
+    }
+
     if (isRefresh) {
       this.isRefreshing.set(true);
     } else {
