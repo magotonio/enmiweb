@@ -1,0 +1,10 @@
+/* Estilos específicos para la ficha completa del asistente */
+:host {
+  display: block;
+}
+
+@media print {
+  body {
+    background: white !important;
+  }
+}

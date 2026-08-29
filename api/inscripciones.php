@@ -70,7 +70,7 @@ function getAuthenticatedUser(PDO $pdo): ?array {
 try {
     $authUser = getAuthenticatedUser($pdo);
     $userRole = $authUser['rol'] ?? 'asistente';
-    $userEmail = $authUser['email'] ?? '';
+    $userEmail = $authUser['email'] ?? (isset($_GET['user_email']) ? trim((string)$_GET['user_email']) : '');
 
     // Parámetros de consulta sanitizados
     $search = isset($_GET['q']) ? trim((string)$_GET['q']) : '';
@@ -102,8 +102,8 @@ try {
     // AISLAMIENTO DE DATOS PARA EL ROL ASISTENTE:
     // Un asistente NUNCA puede ver la información de otros participantes.
     if ($userRole === 'asistente') {
-        if (empty($userEmail)) {
-            // Si no se puede identificar el email del asistente, devolver lista vacía por seguridad
+        $emailToMatch = trim($userEmail);
+        if (empty($emailToMatch)) {
             sendJsonResponse([
                 'success' => true,
                 'count'   => 0,
@@ -112,9 +112,8 @@ try {
             ], 200);
         }
 
-        $whereClauses[] = '(email = :asistenteEmail OR login_usuario = :asistenteLogin)';
-        $params[':asistenteEmail'] = $userEmail;
-        $params[':asistenteLogin'] = $authUser['login'] ?? '';
+        $whereClauses[] = 'LOWER(TRIM(email)) = LOWER(TRIM(:asistenteEmail))';
+        $params[':asistenteEmail'] = $emailToMatch;
     } else {
         // Para Superadministrador y Supervisor: permitir búsqueda y filtros globales
         if ($search !== '') {

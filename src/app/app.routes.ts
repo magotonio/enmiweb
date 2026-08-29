@@ -7,6 +7,7 @@ import { AdminInscripcionesComponent } from './components/admin-inscripciones/ad
 import { AdminUsuariosComponent } from './components/admin-usuarios/admin-usuarios.component';
 import { AdminLogsComponent } from './components/admin-logs/admin-logs.component';
 import { PanelAsistenteComponent } from './components/panel-asistente/panel-asistente.component';
+import { AsistenteFichaComponent } from './components/asistente-ficha/asistente-ficha.component';
 import { AccesoDenegadoComponent } from './components/acceso-denegado/acceso-denegado.component';
 import { roleGuard } from './guards/role.guard';
 
@@ -33,7 +34,7 @@ export const routes: Routes = [
     title: 'Acceso Restringido | ENMI 2027 Madrid'
   },
 
-  // Panel Operativo de Asistentes y Acreditaciones (Nivel 1+)
+  // Espacio Personal del Asistente / Congresista (Nivel 1+)
   {
     path: 'asistente',
     component: PanelAsistenteComponent,
@@ -41,7 +42,16 @@ export const routes: Routes = [
     data: {
       roles: ['asistente', 'supervisor', 'superadministrador']
     },
-    title: 'Panel de Acreditaciones y Asistentes | ENMI 2027 Madrid'
+    title: 'Mi Espacio de Congresista | ENMI 2027 Madrid'
+  },
+  {
+    path: 'asistente/ficha',
+    component: AsistenteFichaComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['asistente', 'supervisor', 'superadministrador']
+    },
+    title: 'Mi Ficha Completa | ENMI 2027 Madrid'
   },
 
   // Rutas de Administración General (Nivel 2+ : Superadministrador y Supervisor)
@@ -83,6 +93,11 @@ export const routes: Routes = [
   },
 
   // Alias y redirecciones amigables
+  {
+    path: 'mi-ficha',
+    redirectTo: 'asistente/ficha',
+    pathMatch: 'full'
+  },
   {
     path: 'inscritos',
     redirectTo: 'admin/inscritos',

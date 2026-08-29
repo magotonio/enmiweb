@@ -1,5 +1,5 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Inscripcion } from '../../models/inscripcion.model';
 import { InscripcionService } from '../../services/inscripcion.service';
@@ -8,7 +8,7 @@ import { AuthService } from '../../services/auth.service';
 @Component({
   selector: 'app-panel-asistente',
   standalone: true,
-  imports: [CommonModule, RouterLink, DatePipe],
+  imports: [CommonModule, RouterLink],
   templateUrl: './panel-asistente.component.html',
   styleUrl: './panel-asistente.component.css'
 })
@@ -53,10 +53,11 @@ export class PanelAsistenteComponent implements OnInit {
           this.miInscripcion.set(null);
         }
       },
-      error: () => {
+      error: (err) => {
         this.isLoading.set(false);
         this.isRefreshing.set(false);
-        this.errorMessage.set('No se pudo recuperar la información de tu inscripción.');
+        const msg = err?.error?.message || 'No se pudo recuperar la información de tu inscripción.';
+        this.errorMessage.set(msg);
       }
     });
   }

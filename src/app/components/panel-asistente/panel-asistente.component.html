@@ -1,280 +1,133 @@
-<main class="min-h-[calc(100vh-5rem)] bg-slate-50/70 py-6 sm:py-10 px-4 sm:px-6 lg:px-8">
-  <div class="max-w-5xl mx-auto space-y-6 sm:space-y-8">
-
-    <!-- CABECERA PRINCIPAL DEL CONGRESISTA -->
-    <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-5">
-      <div class="space-y-2">
-        <div class="flex items-center gap-2 flex-wrap">
-          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-extrabold uppercase tracking-wider bg-brand-gold/20 text-brand-navy border border-brand-gold/40">
-            <svg class="w-3.5 h-3.5 text-brand-navy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <polyline points="16 11 18 13 22 9" />
-            </svg>
-            Perfil Congresista · ENMI 2027
-          </span>
-          <span class="text-xs text-slate-400">·</span>
-          <span class="text-xs font-semibold text-slate-500">Madrid, España</span>
-        </div>
-
-        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-          Mi Espacio de Congresista
-        </h1>
-        <p class="text-xs sm:text-sm text-slate-600 max-w-2xl">
-          Consulta tu acreditación oficial, los datos personales de tu inscripción y la información de participación para el Encuentro Nacional de Magos Infantiles.
-        </p>
-      </div>
-
-      <div class="flex items-center gap-3 shrink-0 print:hidden">
-        <button type="button" (click)="cargarMiInscripcion(true)" [disabled]="isLoading() || isRefreshing()"
-          class="inline-flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition-colors cursor-pointer disabled:opacity-50"
-          title="Actualizar datos">
-          <svg class="w-4 h-4 text-slate-600" [class.animate-spin]="isRefreshing()" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-          </svg>
-          <span>{{ isRefreshing() ? 'Actualizando...' : 'Refrescar' }}</span>
-        </button>
-
-        @if (miInscripcion()) {
-        <button type="button" (click)="imprimirCredencial()"
-          class="inline-flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold text-brand-navy bg-brand-gold hover:bg-brand-gold-hover rounded-xl shadow-xs hover:shadow-md transition-all duration-150 cursor-pointer active:scale-95">
-          <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-3.118 2.012-5.829 5.28-5.829s5.52 2.711 5.28 5.829M9 19.5h6m-9-3h12a2.25 2.25 0 002.25-2.25V9.75A2.25 2.25 0 0018 7.5H6a2.25 2.25 0 00-2.25 2.25v4.5A2.25 2.25 0 006 16.5z" />
-          </svg>
-          <span>Imprimir Acreditación</span>
-        </button>
-        }
-      </div>
-    </div>
+<main class="min-h-[calc(100vh-5rem)] bg-slate-50/70 py-8 sm:py-12 px-4 sm:px-6 lg:px-8 flex flex-col justify-center items-center">
+  <div class="max-w-2xl w-full space-y-6">
 
     <!-- ESTADO DE CARGA -->
     @if (isLoading()) {
-    <div class="py-20 text-center space-y-3 bg-white rounded-3xl border border-slate-200">
+    <div class="py-16 text-center space-y-3 bg-white rounded-3xl border border-slate-200 shadow-xs">
       <svg class="w-8 h-8 text-brand-gold animate-spin mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
       </svg>
-      <p class="text-sm text-slate-500 font-medium">Recuperando tu inscripción...</p>
+      <p class="text-sm text-slate-500 font-medium">Cargando tus datos...</p>
     </div>
     }
 
-    <!-- CUANDO EL ASISTENTE TIENE SU INSCRIPCIÓN REGISTRADA -->
+    <!-- MENSAJE DE ERROR -->
+    @else if (errorMessage()) {
+    <div class="bg-rose-50 border border-rose-200 text-rose-800 p-5 rounded-3xl text-sm flex items-center justify-between gap-3 shadow-xs">
+      <div class="flex items-center gap-2.5">
+        <svg class="w-5 h-5 text-rose-600 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+        </svg>
+        <span>{{ errorMessage() }}</span>
+      </div>
+      <button type="button" (click)="cargarMiInscripcion(true)" class="px-3.5 py-1.5 bg-rose-200 hover:bg-rose-300 text-rose-900 rounded-xl text-xs font-bold transition-colors cursor-pointer">
+        Reintentar
+      </button>
+    </div>
+    }
+
+    <!-- VISTA RESUMIDA BÁSICA (SI TIENE INSCRIPCIÓN) -->
     @else if (miInscripcion(); as item) {
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden p-6 sm:p-8 space-y-6">
 
-      <!-- COLUMNA 1: TARJETA DE ACREDITACIÓN OFICIAL (CARNET VISUAL) -->
-      <div class="lg:col-span-5 bg-gradient-to-br from-brand-navy-dark via-brand-navy to-slate-900 text-white rounded-3xl p-6 sm:p-7 shadow-xl border border-brand-gold/30 space-y-6 relative overflow-hidden">
-        
-        <!-- Marca de agua de fondo decorativa -->
-        <div class="absolute -right-8 -bottom-8 w-40 h-40 rounded-full bg-brand-gold/10 blur-2xl pointer-events-none"></div>
-
-        <!-- Encabezado del Pase Oficial -->
-        <div class="flex items-center justify-between border-b border-white/15 pb-4">
-          <div class="flex items-center gap-2.5">
-            <div class="w-8 h-8 rounded-xl bg-brand-gold text-brand-navy flex items-center justify-center font-black text-xs">
-              EN
-            </div>
-            <div>
-              <span class="text-xs font-black uppercase tracking-widest text-brand-gold block">
-                ENMI 2027 MADRID
-              </span>
-              <span class="text-[10px] text-slate-300 uppercase tracking-wider">
-                Acreditación de Congresista
-              </span>
-            </div>
-          </div>
-
-          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 uppercase">
-            Confirmado
+      <!-- Encabezado de Bienvenida -->
+      <div class="flex items-center justify-between border-b border-slate-100 pb-5">
+        <div class="space-y-1">
+          <span class="text-xs font-bold uppercase tracking-wider text-brand-gold-dark">
+            ENMI 2027 Madrid
           </span>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Hola, {{ item.nombre }}
+          </h1>
         </div>
+        <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300 uppercase">
+          Confirmado
+        </span>
+      </div>
 
-        <!-- Avatar e Identificación del Mago / Asistente -->
-        <div class="flex flex-col items-center text-center space-y-3 py-2">
-          <div class="w-20 h-20 rounded-3xl bg-brand-gold text-brand-navy flex items-center justify-center text-2xl font-black uppercase shadow-md border-2 border-white/20">
+      <!-- Tarjeta Resumen con Datos Básicos -->
+      <div class="bg-slate-50/80 rounded-2xl border border-slate-200/80 p-5 space-y-4">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-2xl bg-brand-navy text-brand-gold flex items-center justify-center text-lg font-black uppercase shadow-xs shrink-0">
             {{ getInitials(item.nombre, item.apellidos) }}
           </div>
-
-          <div class="space-y-1">
-            <h2 class="text-xl font-extrabold text-white">
+          <div class="space-y-0.5 min-w-0">
+            <h2 class="text-lg font-extrabold text-slate-900 truncate">
               {{ item.nombre }} {{ item.apellidos }}
             </h2>
             @if (item.nombre_artistico) {
-            <p class="text-sm font-bold text-brand-gold flex items-center justify-center gap-1">
-              <span>✨</span>
-              <span>{{ item.nombre_artistico }}</span>
+            <p class="text-xs font-bold text-amber-600">
+              ✨ {{ item.nombre_artistico }}
             </p>
             }
-          </div>
-
-          <!-- Localizador de Congresista -->
-          <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-xl border border-white/15 text-xs font-mono text-slate-200">
-            <span>Nº Acreditación:</span>
-            <strong class="text-brand-gold">#ENMI-{{ item.id }}</strong>
+            <p class="text-xs text-slate-500 font-mono">
+              Acreditación: <strong class="text-brand-navy font-bold">#ENMI-{{ item.id }}</strong>
+            </p>
           </div>
         </div>
 
-        <!-- Modalidad y Detalles Rápidos de la Credencial -->
-        <div class="space-y-2.5 pt-4 border-t border-white/15 text-xs">
-          <div class="flex items-center justify-between py-1">
-            <span class="text-slate-400">Modalidad:</span>
-            @if (item.quiero_participar) {
-            <span class="font-extrabold text-brand-gold">⭐ Gala / Escena</span>
-            } @else {
-            <span class="font-bold text-slate-200">Congresista</span>
-            }
+        <!-- Datos Clave Básicos -->
+        <div class="grid grid-cols-2 gap-3 pt-3 border-t border-slate-200/60 text-xs">
+          <div>
+            <span class="text-slate-400 block font-medium">Modalidad:</span>
+            <strong class="text-slate-800 font-semibold">
+              {{ item.quiero_participar ? '⭐ Participa en Gala' : 'Congresista Asistente' }}
+            </strong>
           </div>
-
-          <div class="flex items-center justify-between py-1">
-            <span class="text-slate-400">Asociación / Círculo:</span>
-            <span class="font-bold text-slate-200 truncate max-w-[180px]">{{ item.asociacion || 'Independiente' }}</span>
-          </div>
-
-          <div class="flex items-center justify-between py-1">
-            <span class="text-slate-400">Lugar de Origen:</span>
-            <span class="font-bold text-slate-200">{{ item.origen || 'No indicado' }}</span>
-          </div>
-
-          <div class="flex items-center justify-between py-1">
-            <span class="text-slate-400">Fecha de Registro:</span>
-            <span class="font-mono text-slate-300">{{ item.fecha_creacion | date:'dd/MM/yyyy' }}</span>
+          <div>
+            <span class="text-slate-400 block font-medium">Email:</span>
+            <strong class="text-slate-800 font-semibold truncate block" [title]="item.email">
+              {{ item.email }}
+            </strong>
           </div>
         </div>
-
-        <!-- Aviso para la Sede -->
-        <div class="p-3 rounded-2xl bg-white/5 border border-white/10 text-[11px] text-slate-300 leading-relaxed text-center">
-          Presenta esta acreditación o tu DNI en el mostrador de recepción para recoger tu identificador oficial y material del encuentro.
-        </div>
-
       </div>
 
-      <!-- COLUMNA 2: DETALLE COMPLETO DE LA INSCRIPCIÓN Y ESTADO -->
-      <div class="lg:col-span-7 space-y-6">
+      <!-- Botones de Acción: Acceso a Mi Ficha Completa -->
+      <div class="flex flex-col sm:flex-row gap-3 pt-2">
+        <a routerLink="/asistente/ficha"
+          class="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold text-brand-navy bg-brand-gold hover:bg-brand-gold-hover hover:text-white rounded-2xl shadow-xs hover:shadow-md transition-all duration-150 active:scale-95 cursor-pointer text-center">
+          <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+          </svg>
+          <span>Ver Mi Ficha Completa</span>
+        </a>
 
-        <!-- Ficha de Datos Personales Registrados -->
-        <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-5">
-          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
-              <svg class="w-5 h-5 text-brand-gold" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-              </svg>
-              <span>Datos Personales y de Contacto</span>
-            </h3>
-            <span class="text-xs text-slate-400 font-mono">ID #{{ item.id }}</span>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm">
-            <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
-              <span class="text-xs font-semibold text-slate-400 uppercase">Documento NIF / Pasaporte</span>
-              <p class="font-bold text-slate-900 text-base">{{ item.nif_pasaporte || 'No indicado' }}</p>
-            </div>
-
-            <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
-              <span class="text-xs font-semibold text-slate-400 uppercase">Teléfono Móvil</span>
-              <p class="font-bold text-slate-900 text-base">{{ item.telefono || 'No indicado' }}</p>
-            </div>
-
-            <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
-              <span class="text-xs font-semibold text-slate-400 uppercase">Correo Electrónico</span>
-              <p class="font-bold text-slate-900">{{ item.email }}</p>
-            </div>
-
-            <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
-              <span class="text-xs font-semibold text-slate-400 uppercase">Procedencia</span>
-              <p class="font-bold text-slate-900">{{ item.origen || 'No indicado' }}</p>
-            </div>
-          </div>
-
-          <!-- Preferencias y Consentimientos -->
-          <div class="space-y-3 pt-2 border-t border-slate-100 text-xs sm:text-sm">
-            <div class="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80">
-              <span class="text-slate-600 font-semibold">Círculo o Asociación Mágica:</span>
-              <span class="font-bold text-brand-navy">{{ item.asociacion || 'Independiente' }}</span>
-            </div>
-
-            <div class="flex items-center justify-between p-3.5 rounded-2xl border"
-              [class.bg-amber-50]="item.quiero_participar"
-              [class.border-amber-200]="item.quiero_participar"
-              [class.bg-slate-50]="!item.quiero_participar"
-              [class.border-slate-200]="!item.quiero_participar">
-              <span class="font-semibold text-slate-700">Modalidad de Participación:</span>
-              @if (item.quiero_participar) {
-              <span class="font-extrabold text-amber-700">⭐ Actuación / Gala de Magia</span>
-              } @else {
-              <span class="text-slate-600 font-medium">Congresista Asistente</span>
-              }
-            </div>
-
-            <div class="flex items-center justify-between p-3.5 rounded-2xl border"
-              [class.bg-emerald-50]="item.consentimiento_imagen"
-              [class.border-emerald-200]="item.consentimiento_imagen"
-              [class.bg-rose-50]="!item.consentimiento_imagen"
-              [class.border-rose-200]="!item.consentimiento_imagen">
-              <span class="font-semibold text-slate-700">Cesión de Derechos de Imagen:</span>
-              @if (item.consentimiento_imagen) {
-              <span class="font-bold text-emerald-700">✓ Autorizada</span>
-              } @else {
-              <span class="font-bold text-rose-700">✕ No autorizada</span>
-              }
-            </div>
-          </div>
-
-          <!-- Comentarios / Observaciones -->
-          @if (item.comentarios) {
-          <div class="space-y-1 p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 text-xs sm:text-sm">
-            <span class="font-bold text-slate-700 uppercase text-xs">Observaciones / Alergias registradas:</span>
-            <p class="text-slate-700 whitespace-pre-line">{{ item.comentarios }}</p>
-          </div>
-          }
-        </div>
-
-        <!-- Información del Encuentro ENMI 2027 -->
-        <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-3">
-          <h3 class="text-base font-extrabold text-slate-900">
-            Información del Evento
-          </h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm text-slate-600">
-            <div class="p-3 bg-slate-50 rounded-xl">
-              <strong class="text-slate-900 block">Sede Oficial:</strong>
-              <span>Madrid, España</span>
-            </div>
-            <div class="p-3 bg-slate-50 rounded-xl">
-              <strong class="text-slate-900 block">Contacto Organización:</strong>
-              <span>info&#64;enmi2027.es</span>
-            </div>
-          </div>
-        </div>
-
+        <button type="button" (click)="imprimirCredencial()"
+          class="inline-flex items-center justify-center gap-2 px-4 py-3 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-2xl transition-colors cursor-pointer active:scale-95">
+          <svg class="w-4 h-4 text-slate-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-3.118 2.012-5.829 5.28-5.829s5.52 2.711 5.28 5.829M9 19.5h6m-9-3h12a2.25 2.25 0 002.25-2.25V9.75A2.25 2.25 0 0018 7.5H6a2.25 2.25 0 00-2.25 2.25v4.5A2.25 2.25 0 006 16.5z" />
+          </svg>
+          <span>Imprimir Pase</span>
+        </button>
       </div>
 
     </div>
     }
 
-    <!-- CUANDO NO SE ENCUENTRA INSCRIPCIÓN PARA ESTE CORREO -->
+    <!-- CUANDO NO SE ENCUENTRA INSCRIPCIÓN -->
     @else {
-    <div class="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200 shadow-xs text-center space-y-5">
-      <div class="w-16 h-16 rounded-3xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto shadow-xs">
-        <svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+    <div class="bg-white rounded-3xl p-8 sm:p-10 border border-slate-200 shadow-xs text-center space-y-4">
+      <div class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto shadow-xs">
+        <svg class="w-7 h-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
         </svg>
       </div>
 
-      <div class="space-y-2 max-w-md mx-auto">
-        <h2 class="text-xl font-extrabold text-slate-900">
-          Aún no tienes una inscripción registrada
+      <div class="space-y-1 max-w-sm mx-auto">
+        <h2 class="text-lg font-bold text-slate-900">
+          No encontramos tu inscripción
         </h2>
-        <p class="text-xs sm:text-sm text-slate-500 leading-relaxed">
-          No hemos encontrado ninguna inscripción vinculada a tu cuenta (<strong class="text-slate-700">{{ currentUser()?.email || currentUser()?.login }}</strong>).
+        <p class="text-xs text-slate-500">
+          No hay registros asociados a <strong class="text-slate-700">{{ currentUser()?.email || currentUser()?.login }}</strong>.
         </p>
       </div>
 
       <div class="pt-2">
         <a routerLink="/registro"
-          class="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-brand-navy bg-brand-gold hover:bg-brand-gold-hover rounded-xl shadow-xs transition-colors cursor-pointer">
-          <span>Completar Formulario de Inscripción</span>
-          <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-          </svg>
+          class="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-brand-navy bg-brand-gold hover:bg-brand-gold-hover rounded-xl shadow-xs transition-colors cursor-pointer">
+          <span>Completar Inscripción</span>
         </a>
       </div>
     </div>
