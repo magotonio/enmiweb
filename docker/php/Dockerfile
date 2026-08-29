@@ -3,6 +3,12 @@ FROM php:8.2-apache
 # Instalar extensiones necesarias de PHP para MariaDB / MySQL
 RUN docker-php-ext-install pdo pdo_mysql
 
+# Instalar Xdebug para depuración paso a paso desde VS Code
+RUN pecl install xdebug && docker-php-ext-enable xdebug
+
+# Copiar configuración personalizada de Xdebug
+COPY docker/php/xdebug.ini /usr/local/etc/php/conf.d/99-xdebug.ini
+
 # Habilitar módulos de Apache útiles para APIs REST (reescritura y cabeceras)
 RUN a2enmod rewrite headers
 

@@ -35,8 +35,43 @@
       @if (!isSubmitted()) {
       <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-8" novalidate id="registrationForm">
 
-        <!-- Banner de Error de Servidor -->
+        <!-- Banner de Error / Duplicado de Servidor -->
         @if (serverError()) {
+        @if (isDuplicateError()) {
+        <div id="duplicateWarningBanner"
+          class="flex items-start gap-4 p-5 rounded-2xl bg-amber-50/95 border-2 border-amber-300 text-amber-950 text-sm shadow-md shadow-amber-500/5 transition-all animate-in fade-in slide-in-from-top-2 duration-300"
+          role="alert">
+          <div
+            class="w-10 h-10 rounded-xl bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center shrink-0 shadow-2xs">
+            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+          </div>
+          <div class="flex-1 space-y-1.5">
+            <div class="flex items-center gap-2 flex-wrap">
+              <strong class="font-extrabold text-base text-amber-950">Inscripción ya registrada</strong>
+              <span
+                class="px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider bg-amber-200/70 text-amber-900 rounded-md border border-amber-300">
+                Datos Duplicados
+              </span>
+            </div>
+            <p class="font-medium text-amber-900 leading-relaxed">
+              {{ serverError() }}
+            </p>
+            <div class="pt-1 text-xs text-amber-800/90 flex items-center gap-1.5 border-t border-amber-200/70 mt-2">
+              <svg class="w-4 h-4 shrink-0 text-amber-600" xmlns="http://www.w3.org/2000/svg" fill="none"
+                viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+              </svg>
+              <span>Revisa los campos señalados en rojo en el formulario o contacta con nosotros si necesitas consultar
+                o modificar tus datos ya registrados.</span>
+            </div>
+          </div>
+        </div>
+        } @else {
         <div
           class="flex items-start gap-3.5 p-4 sm:p-5 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm shadow-sm transition-all"
           role="alert">
@@ -51,6 +86,7 @@
             <span class="font-normal leading-snug">{{ serverError() }}</span>
           </div>
         </div>
+        }
         }
 
         <!-- ============================================================ -->
@@ -118,7 +154,7 @@
                   [class.border-red-400]="isFieldInvalid('apellidos')"
                   [class.bg-red-50/30]="isFieldInvalid('apellidos')"
                   [class.focus:border-red-500]="isFieldInvalid('apellidos')"
-                  [class.focus:ring-red-500/20]="isFieldInvalid('apellidos')" placeholder="Ej. Velayos Lucas"
+                  [class.focus:ring-red-500/20]="isFieldInvalid('apellidos')" placeholder="Ej. García Lucas"
                   autocomplete="family-name" [attr.aria-invalid]="isFieldInvalid('apellidos')"
                   aria-describedby="apellidosError">
               </div>
@@ -532,7 +568,9 @@
               </strong>
               <p class="text-xs sm:text-sm text-blue-900 leading-relaxed">
                 Hemos enviado un email con todos los datos que has registrado a:
-                <strong id="confirmedEmail" class="font-bold text-blue-950 block sm:inline mt-0.5 sm:mt-0 underline decoration-blue-300 underline-offset-2">{{ registeredEmail() }}</strong>
+                <strong id="confirmedEmail"
+                  class="font-bold text-blue-950 block sm:inline mt-0.5 sm:mt-0 underline decoration-blue-300 underline-offset-2">{{
+                  registeredEmail() }}</strong>
               </p>
               <p class="text-xs text-blue-700/90 pt-1 flex items-center gap-1.5">
                 <svg class="w-3.5 h-3.5 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -540,7 +578,8 @@
                   <path stroke-linecap="round" stroke-linejoin="round"
                     d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
                 </svg>
-                Si no lo encuentras en tu bandeja de entrada en unos instantes, revisa tu carpeta de spam o correo no deseado.
+                Si no lo encuentras en tu bandeja de entrada en unos instantes, revisa tu carpeta de spam o correo no
+                deseado.
               </p>
             </div>
           </div>

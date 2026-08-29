@@ -156,9 +156,125 @@ if (!empty($errors)) {
 // Obtener IP del cliente
 $ipRegistro = getClientIp();
 
-// Insertar en la base de datos MariaDB
+// Conexión a MariaDB
 $pdo = getDbConnection();
 
+// =====================================================================
+// VERIFICACIÓN DE DUPLICADOS EN BASE DE DATOS (NIF, CORREO, TELÉFONO)
+// =====================================================================
+$nifNormalized   = strtoupper(trim($nifPasaporte));
+$emailNormalized = strtolower(trim($email));
+$phoneClean      = preg_replace('/[\s\-\.\+\(\)]/', '', $telefono);
+$phoneDigits     = preg_replace('/[^0-9]/', '', $telefono);
+$phoneLast9      = (strlen($phoneDigits) >= 9) ? substr($phoneDigits, -9) : $phoneDigits;
+
+try {
+    $stmtCheck = $pdo->prepare("
+        SELECT id, nombre, apellidos, nif_pasaporte, email, telefono, estado 
+        FROM `enmi_inscripciones` 
+        WHERE (
+            UPPER(TRIM(nif_pasaporte)) = :nif
+            OR LOWER(TRIM(email)) = :email
+            OR TRIM(telefono) = :telefono_raw
+            OR REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(telefono, ' ', ''), '-', ''), '.', ''), '+', ''), '(', ''), ')', '') = :telefono_clean
+            OR (
+                CHAR_LENGTH(:telefono_last9_len) >= 9 
+                AND RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(telefono, ' ', ''), '-', ''), '.', ''), '+', ''), '(', ''), ')', ''), 9) = :telefono_last9
+            )
+        )
+        AND (estado != 'cancelado' OR estado IS NULL)
+    ");
+
+    $stmtCheck->execute([
+        ':nif'                => $nifNormalized,
+        ':email'              => $emailNormalized,
+        ':telefono_raw'       => $telefono,
+        ':telefono_clean'     => $phoneClean,
+        ':telefono_last9_len' => $phoneLast9,
+        ':telefono_last9'     => $phoneLast9
+    ]);
+
+    $existingRows = $stmtCheck->fetchAll(PDO::FETCH_ASSOC);
+
+    if (!empty($existingRows)) {
+        $duplicateErrors = [];
+
+        foreach ($existingRows as $row) {
+            $rowNif         = strtoupper(trim($row['nif_pasaporte'] ?? ''));
+            $rowEmail       = strtolower(trim($row['email'] ?? ''));
+            $rowPhoneRaw    = trim($row['telefono'] ?? '');
+            $rowPhoneClean  = preg_replace('/[\s\-\.\+\(\)]/', '', $rowPhoneRaw);
+            $rowPhoneDigits = preg_replace('/[^0-9]/', '', $rowPhoneRaw);
+            $rowPhoneLast9  = (strlen($rowPhoneDigits) >= 9) ? substr($rowPhoneDigits, -9) : $rowPhoneDigits;
+
+            // 1. Verificación de NIF duplicado
+            if (!empty($nifNormalized) && $rowNif === $nifNormalized) {
+                $duplicateErrors['nif_pasaporte'] = 'Ya existe una inscripción registrada con este NIF / CIF / Pasaporte.';
+            }
+
+            // 2. Verificación de Correo electrónico duplicado
+            if (!empty($emailNormalized) && $rowEmail === $emailNormalized) {
+                $duplicateErrors['email'] = 'Ya existe una inscripción registrada con este correo electrónico.';
+            }
+
+            // 3. Verificación de Teléfono móvil duplicado
+            $phoneMatched = false;
+            if (!empty($telefono)) {
+                if ($rowPhoneRaw === $telefono || (!empty($phoneClean) && $rowPhoneClean === $phoneClean)) {
+                    $phoneMatched = true;
+                } elseif (!empty($phoneDigits) && !empty($rowPhoneDigits) && $phoneDigits === $rowPhoneDigits) {
+                    $phoneMatched = true;
+                } elseif (strlen($phoneLast9) >= 9 && strlen($rowPhoneLast9) >= 9 && $phoneLast9 === $rowPhoneLast9) {
+                    $phoneMatched = true;
+                }
+            }
+
+            if ($phoneMatched) {
+                $duplicateErrors['telefono'] = 'Ya existe una inscripción registrada con este número de teléfono móvil.';
+            }
+        }
+
+        if (!empty($duplicateErrors)) {
+            $dupLabels = [];
+            if (isset($duplicateErrors['nif_pasaporte'])) $dupLabels[] = 'NIF/Pasaporte';
+            if (isset($duplicateErrors['email']))         $dupLabels[] = 'correo electrónico';
+            if (isset($duplicateErrors['telefono']))      $dupLabels[] = 'número de móvil';
+
+            $summaryMsg = 'Ya existe una inscripción registrada en el sistema con el mismo ' . implode(', ', $dupLabels) . '. Si necesitas consultar o modificar tu inscripción, ponte en contacto con la organización.';
+
+            // Registrar aviso en el log de auditoría
+            logWarning('inscripciones', 'registro_duplicado', "Intento de inscripción duplicada para {$nombre} {$apellidos}: " . implode(', ', $dupLabels), [
+                'nombre'            => $nombre,
+                'apellidos'         => $apellidos,
+                'nif_pasaporte'     => $nifPasaporte,
+                'email'             => $email,
+                'telefono'          => $telefono,
+                'campos_duplicados' => array_keys($duplicateErrors),
+                'ip'                => $ipRegistro
+            ], $isAuthorizedOperator ? (int)($op['id'] ?? null) : null);
+
+            sendJsonResponse([
+                'success'   => false,
+                'duplicado' => true,
+                'message'   => $summaryMsg,
+                'errors'    => $duplicateErrors
+            ], 409);
+        }
+    }
+} catch (PDOException $e) {
+    logError('inscripciones', 'error_bd_check_duplicados', $e->getMessage(), [
+        'nif'   => $nifNormalized,
+        'email' => $emailNormalized
+    ]);
+    sendJsonResponse([
+        'success' => false,
+        'message' => 'Error interno al verificar datos existentes. Por favor, inténtalo de nuevo más tarde.'
+    ], 500);
+}
+
+// =====================================================================
+// INSERCIÓN DE LA INSCRIPCIÓN EN MARIADB
+// =====================================================================
 try {
     $stmt = $pdo->prepare("
         INSERT INTO `enmi_inscripciones` 
@@ -266,6 +382,25 @@ try {
     ], 201);
 
 } catch (PDOException $e) {
+    // Si la BD devuelve error de clave duplicada (código 23000 / 1062)
+    if ($e->getCode() === '23000' || $e->getCode() === 23000 || ($e->errorInfo[1] ?? 0) === 1062) {
+        logWarning('inscripciones', 'registro_duplicado_bd', $e->getMessage(), [
+            'nombre'    => $nombre,
+            'apellidos' => $apellidos,
+            'email'     => $email
+        ]);
+        sendJsonResponse([
+            'success'   => false,
+            'duplicado' => true,
+            'message'   => 'Ya existe una inscripción registrada en el sistema con estos datos identificativos (NIF, email o teléfono).',
+            'errors'    => [
+                'nif_pasaporte' => 'Verifica si ya te has registrado con este NIF / CIF / Pasaporte.',
+                'email'         => 'Verifica si ya te has registrado con esta dirección de email.',
+                'telefono'      => 'Verifica si ya te has registrado con este teléfono.'
+            ]
+        ], 409);
+    }
+
     logError('inscripciones', 'error_bd_inscripcion', $e->getMessage(), [
         'nombre'    => $nombre,
         'apellidos' => $apellidos,
@@ -276,4 +411,5 @@ try {
         'message' => 'Error al registrar la inscripción en la base de datos: ' . $e->getMessage()
     ], 500);
 }
+
 

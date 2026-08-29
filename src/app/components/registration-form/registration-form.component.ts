@@ -26,6 +26,8 @@ export class RegistrationFormComponent {
   isSubmitted = signal<boolean>(false);
   isLoading = signal<boolean>(false);
   serverError = signal<string | null>(null);
+  isDuplicateError = signal<boolean>(false);
+  serverFieldErrors = signal<Record<string, string>>({});
   registeredFullName = signal<string>('');
   registeredArtistName = signal<string>('');
   registeredEmail = signal<string>('');
@@ -49,16 +51,42 @@ export class RegistrationFormComponent {
       consentimiento_imagen: [false],
       comentarios: ['', [Validators.maxLength(1000)]]
     });
+
+    // Limpiar errores del servidor en un campo cuando el usuario lo modifica
+    ['nombre', 'apellidos', 'nif_pasaporte', 'email', 'telefono', 'origen', 'asociacion', 'comentarios'].forEach(fieldName => {
+      this.form.get(fieldName)?.valueChanges.subscribe(() => {
+        const currentErrors = this.serverFieldErrors();
+        if (currentErrors[fieldName]) {
+          const updated = { ...currentErrors };
+          delete updated[fieldName];
+          this.serverFieldErrors.set(updated);
+          if (Object.keys(updated).length === 0) {
+            this.serverError.set(null);
+            this.isDuplicateError.set(false);
+          }
+        }
+      });
+    });
   }
 
   isFieldInvalid(fieldName: string): boolean {
     const control = this.form.get(fieldName);
-    return !!(control && control.invalid && (control.dirty || control.touched));
+    const hasServerError = !!this.serverFieldErrors()[fieldName];
+    return !!(hasServerError || (control && control.invalid && (control.dirty || control.touched)));
   }
 
   getErrorMessage(fieldName: string): string {
+    const serverMsg = this.serverFieldErrors()[fieldName];
+    if (serverMsg) {
+      return serverMsg;
+    }
+
     const control = this.form.get(fieldName);
     if (!control || !control.errors) return '';
+
+    if (control.errors['serverError']) {
+      return control.errors['serverError'];
+    }
 
     if (control.errors['required']) {
       switch (fieldName) {
@@ -120,6 +148,8 @@ export class RegistrationFormComponent {
 
   onSubmit(): void {
     this.serverError.set(null);
+    this.serverFieldErrors.set({});
+    this.isDuplicateError.set(false);
 
     if (this.form.valid) {
       this.isLoading.set(true);
@@ -138,8 +168,35 @@ export class RegistrationFormComponent {
         },
         error: (err) => {
           this.isLoading.set(false);
-          const errorDetail = err?.error?.message || 'No se pudo conectar con el servidor o registrar los datos. Por favor, inténtalo de nuevo.';
+          const errorBody = err?.error;
+          const isDup = !!errorBody?.duplicado || err?.status === 409;
+          this.isDuplicateError.set(isDup);
+
+          const errorDetail = errorBody?.message || 'No se pudo conectar con el servidor o registrar los datos. Por favor, inténtalo de nuevo.';
           this.serverError.set(errorDetail);
+
+          if (errorBody?.errors && typeof errorBody.errors === 'object') {
+            this.serverFieldErrors.set(errorBody.errors);
+
+            for (const [fieldName, errorMsg] of Object.entries(errorBody.errors as Record<string, string>)) {
+              const control = this.form.get(fieldName);
+              if (control) {
+                control.setErrors({ serverError: errorMsg });
+                control.markAsTouched();
+              }
+            }
+
+            // Enfocar automáticamente el primer campo conflictivo
+            const dupKeys = Object.keys(errorBody.errors);
+            if (dupKeys.includes('nif_pasaporte')) {
+              this.nifInputElement?.nativeElement.focus();
+            } else if (dupKeys.includes('email')) {
+              this.emailInputElement?.nativeElement.focus();
+            } else if (dupKeys.includes('telefono')) {
+              this.telefonoInputElement?.nativeElement.focus();
+            }
+          }
+
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       });
@@ -182,6 +239,8 @@ export class RegistrationFormComponent {
     this.isSubmitted.set(false);
     this.isLoading.set(false);
     this.serverError.set(null);
+    this.isDuplicateError.set(false);
+    this.serverFieldErrors.set({});
     this.registeredFullName.set('');
     this.registeredArtistName.set('');
     this.registeredEmail.set('');

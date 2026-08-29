@@ -106,4 +106,57 @@ describe('RegistrationFormComponent', () => {
     component.closeParticipacionModal();
     expect(component.showParticipacionModal()).toBeFalse();
   });
+
+  it('should handle duplicate registration errors (NIF, email, phone) from API', () => {
+    const errorResponse = {
+      status: 409,
+      error: {
+        success: false,
+        duplicado: true,
+        message: 'Ya existe una inscripción registrada en el sistema con el mismo NIF/Pasaporte, correo electrónico, número de móvil.',
+        errors: {
+          nif_pasaporte: 'Ya existe una inscripción registrada con este NIF / CIF / Pasaporte.',
+          email: 'Ya existe una inscripción registrada con este correo electrónico.',
+          telefono: 'Ya existe una inscripción registrada con este número de teléfono móvil.'
+        }
+      }
+    };
+
+    const { throwError } = require('rxjs');
+    mockInscripcionService.inscribir.and.returnValue(throwError(() => errorResponse));
+
+    component.form.controls['nombre'].setValue('Carlos');
+    component.form.controls['apellidos'].setValue('Gómez');
+    component.form.controls['nif_pasaporte'].setValue('12345678Z');
+    component.form.controls['email'].setValue('carlos@mago.es');
+    component.form.controls['telefono'].setValue('600123456');
+    component.form.controls['origen'].setValue('Madrid');
+    component.form.controls['acepta_privacidad'].setValue(true);
+
+    component.onSubmit();
+    fixture.detectChanges();
+
+    expect(component.isSubmitted()).toBeFalse();
+    expect(component.isDuplicateError()).toBeTrue();
+    expect(component.serverError()).toContain('Ya existe una inscripción registrada');
+
+    // Comprobar errores específicos por campo
+    expect(component.isFieldInvalid('nif_pasaporte')).toBeTrue();
+    expect(component.getErrorMessage('nif_pasaporte')).toBe('Ya existe una inscripción registrada con este NIF / CIF / Pasaporte.');
+    expect(component.isFieldInvalid('email')).toBeTrue();
+    expect(component.getErrorMessage('email')).toBe('Ya existe una inscripción registrada con este correo electrónico.');
+    expect(component.isFieldInvalid('telefono')).toBeTrue();
+    expect(component.getErrorMessage('telefono')).toBe('Ya existe una inscripción registrada con este número de teléfono móvil.');
+
+    // Comprobar que el banner de advertencia de duplicados está en el DOM
+    const bannerEl = fixture.nativeElement.querySelector('#duplicateWarningBanner');
+    expect(bannerEl).toBeTruthy();
+    expect(bannerEl.textContent).toContain('Inscripción ya registrada');
+    expect(bannerEl.textContent).toContain('Datos Duplicados');
+
+    // Modificar un campo y comprobar que su error de servidor se limpia
+    component.form.controls['nif_pasaporte'].setValue('87654321A');
+    expect(component.serverFieldErrors()['nif_pasaporte']).toBeUndefined();
+  });
 });
+

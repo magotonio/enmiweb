@@ -36,6 +36,7 @@ export interface InscripcionFormData {
 export interface InscripcionApiResponse {
   success: boolean;
   message: string;
+  duplicado?: boolean;
   id?: number;
   data?: {
     nombre: string;

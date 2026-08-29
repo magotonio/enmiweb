@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS `enmi_inscripciones` (
   INDEX `idx_enmi_inscripciones_apellidos` (`apellidos`),
   INDEX `idx_enmi_inscripciones_email` (`email`),
   INDEX `idx_enmi_inscripciones_nif` (`nif_pasaporte`),
+  INDEX `idx_enmi_inscripciones_telefono` (`telefono`),
   INDEX `idx_enmi_inscripciones_participar` (`quiero_participar`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
