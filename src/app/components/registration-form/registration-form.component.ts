@@ -35,6 +35,8 @@ export class RegistrationFormComponent {
   // Modales de información y legal
   showParticipacionModal = signal<boolean>(false);
   showPrivacidadModal = signal<boolean>(false);
+  showNoImagenModal = signal<boolean>(false);
+  noImagenConfirmedCheckbox = signal<boolean>(false);
 
   constructor() {
     this.form = this.fb.group({
@@ -146,60 +148,44 @@ export class RegistrationFormComponent {
     this.showPrivacidadModal.set(false);
   }
 
+  openNoImagenModal(): void {
+    this.noImagenConfirmedCheckbox.set(false);
+    this.showNoImagenModal.set(true);
+  }
+
+  closeNoImagenModal(): void {
+    this.showNoImagenModal.set(false);
+    this.noImagenConfirmedCheckbox.set(false);
+  }
+
+  toggleNoImagenConfirmedCheckbox(checked: boolean): void {
+    this.noImagenConfirmedCheckbox.set(checked);
+  }
+
+  confirmNoImagenAndSubmit(): void {
+    if (!this.noImagenConfirmedCheckbox()) return;
+    this.showNoImagenModal.set(false);
+    this.executeSubmission();
+  }
+
+  authorizeImagenAndSubmit(): void {
+    this.form.get('consentimiento_imagen')?.setValue(true);
+    this.showNoImagenModal.set(false);
+    this.executeSubmission();
+  }
+
   onSubmit(): void {
     this.serverError.set(null);
     this.serverFieldErrors.set({});
     this.isDuplicateError.set(false);
 
     if (this.form.valid) {
-      this.isLoading.set(true);
-      const data = this.form.value as InscripcionFormData;
-      const fullName = `${data.nombre.trim()} ${data.apellidos.trim()}`;
-      const artistName = (data.nombre_artistico || '').trim();
-
-      this.inscripcionService.inscribir(data).subscribe({
-        next: () => {
-          this.isLoading.set(false);
-          this.registeredFullName.set(fullName);
-          this.registeredArtistName.set(artistName);
-          this.registeredEmail.set(data.email.trim());
-          this.isSubmitted.set(true);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        },
-        error: (err) => {
-          this.isLoading.set(false);
-          const errorBody = err?.error;
-          const isDup = !!errorBody?.duplicado || err?.status === 409;
-          this.isDuplicateError.set(isDup);
-
-          const errorDetail = errorBody?.message || 'No se pudo conectar con el servidor o registrar los datos. Por favor, inténtalo de nuevo.';
-          this.serverError.set(errorDetail);
-
-          if (errorBody?.errors && typeof errorBody.errors === 'object') {
-            this.serverFieldErrors.set(errorBody.errors);
-
-            for (const [fieldName, errorMsg] of Object.entries(errorBody.errors as Record<string, string>)) {
-              const control = this.form.get(fieldName);
-              if (control) {
-                control.setErrors({ serverError: errorMsg });
-                control.markAsTouched();
-              }
-            }
-
-            // Enfocar automáticamente el primer campo conflictivo
-            const dupKeys = Object.keys(errorBody.errors);
-            if (dupKeys.includes('nif_pasaporte')) {
-              this.nifInputElement?.nativeElement.focus();
-            } else if (dupKeys.includes('email')) {
-              this.emailInputElement?.nativeElement.focus();
-            } else if (dupKeys.includes('telefono')) {
-              this.telefonoInputElement?.nativeElement.focus();
-            }
-          }
-
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      });
+      const hasConsentimientoImagen = !!this.form.get('consentimiento_imagen')?.value;
+      if (!hasConsentimientoImagen) {
+        this.openNoImagenModal();
+        return;
+      }
+      this.executeSubmission();
     } else {
       this.form.markAllAsTouched();
 
@@ -221,6 +207,57 @@ export class RegistrationFormComponent {
     }
   }
 
+  private executeSubmission(): void {
+    this.isLoading.set(true);
+    const data = this.form.value as InscripcionFormData;
+    const fullName = `${data.nombre.trim()} ${data.apellidos.trim()}`;
+    const artistName = (data.nombre_artistico || '').trim();
+
+    this.inscripcionService.inscribir(data).subscribe({
+      next: () => {
+        this.isLoading.set(false);
+        this.registeredFullName.set(fullName);
+        this.registeredArtistName.set(artistName);
+        this.registeredEmail.set(data.email.trim());
+        this.isSubmitted.set(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      },
+      error: (err) => {
+        this.isLoading.set(false);
+        const errorBody = err?.error;
+        const isDup = !!errorBody?.duplicado || err?.status === 409;
+        this.isDuplicateError.set(isDup);
+
+        const errorDetail = errorBody?.message || 'No se pudo conectar con el servidor o registrar los datos. Por favor, inténtalo de nuevo.';
+        this.serverError.set(errorDetail);
+
+        if (errorBody?.errors && typeof errorBody.errors === 'object') {
+          this.serverFieldErrors.set(errorBody.errors);
+
+          for (const [fieldName, errorMsg] of Object.entries(errorBody.errors as Record<string, string>)) {
+            const control = this.form.get(fieldName);
+            if (control) {
+              control.setErrors({ serverError: errorMsg });
+              control.markAsTouched();
+            }
+          }
+
+          // Enfocar automáticamente el primer campo conflictivo
+          const dupKeys = Object.keys(errorBody.errors);
+          if (dupKeys.includes('nif_pasaporte')) {
+            this.nifInputElement?.nativeElement.focus();
+          } else if (dupKeys.includes('email')) {
+            this.emailInputElement?.nativeElement.focus();
+          } else if (dupKeys.includes('telefono')) {
+            this.telefonoInputElement?.nativeElement.focus();
+          }
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+  }
+
   onReset(): void {
     this.form.reset({
       nombre: '',
@@ -236,6 +273,8 @@ export class RegistrationFormComponent {
       consentimiento_imagen: false,
       comentarios: ''
     });
+    this.showNoImagenModal.set(false);
+    this.noImagenConfirmedCheckbox.set(false);
     this.isSubmitted.set(false);
     this.isLoading.set(false);
     this.serverError.set(null);

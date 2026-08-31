@@ -385,8 +385,7 @@
                   Quiero participar activamente en el Encuentro
                 </span>
                 <span class="text-xs text-slate-600 block mt-0.5 leading-relaxed">
-                  Si deseas presentar número en gala de escena, participar en concurso, impartir charla o taller, tener
-                  dealer/stand o colaborar en apoyo logístico, marca esta casilla.
+                  Si deseas participar en el concurso, actuar en la gala o disponer de dealer/stand, marca esta casilla.
                 </span>
               </label>
             </div>
@@ -660,70 +659,48 @@
         la organización se pondrá en contacto contigo para explicarte todo detenidamente y coordinar los detalles.
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
 
         <!-- Opción 1: Concurso -->
         <div
-          class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40 hover:border-brand-gold/40 transition-colors">
-          <div class="flex items-center gap-2 font-bold text-brand-navy text-sm mb-1">
-            <span class="text-base">🏆</span>
-            <span>Concurso</span>
+          class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40 hover:border-brand-gold/40 transition-colors flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2 font-bold text-brand-navy text-sm mb-1">
+              <span class="text-base">🏆</span>
+              <span>Concurso</span>
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Certamen participativo y lúdico de magia infantil. Un espacio formativo y cercano para compartir.
+            </p>
           </div>
-          <p class="text-xs text-slate-600 leading-relaxed">
-            Certamen participativo y lúdico de magia infantil y familiar ante los compañeros y público del encuentro. Un
-            espacio formativo y cercano para compartir.
-          </p>
         </div>
 
-        <!-- Opción 2: Gala de Escena -->
+        <!-- Opción 2: Gala -->
         <div
-          class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40 hover:border-brand-gold/40 transition-colors">
-          <div class="flex items-center gap-2 font-bold text-brand-navy text-sm mb-1">
-            <span class="text-base">🎩</span>
-            <span>Gala de Escena</span>
+          class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40 hover:border-brand-gold/40 transition-colors flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2 font-bold text-brand-navy text-sm mb-1">
+              <span class="text-base">🎩</span>
+              <span>Gala</span>
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Presentación de un número de magia unipersonal o conjunto en el escenario principal del auditorio.
+            </p>
           </div>
-          <p class="text-xs text-slate-600 leading-relaxed">
-            Presentación de un número de magia unipersonal o conjunto en el escenario principal del auditorio.
-          </p>
         </div>
 
         <!-- Opción 3: Dealer / Stand -->
         <div
-          class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40 hover:border-brand-gold/40 transition-colors">
-          <div class="flex items-center gap-2 font-bold text-brand-navy text-sm mb-1">
-            <span class="text-base">🎪</span>
-            <span>Dealer / Stand</span>
+          class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40 hover:border-brand-gold/40 transition-colors flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2 font-bold text-brand-navy text-sm mb-1">
+              <span class="text-base">🎪</span>
+              <span>Dealer / Stand</span>
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Espacio expositivo y de venta para tiendas de magia especializadas, fabricantes, creadores de material y librerías mágicas.
+            </p>
           </div>
-          <p class="text-xs text-slate-600 leading-relaxed">
-            Espacio expositivo y de venta para tiendas de magia especializadas, fabricantes, creadores de material y
-            librerías mágicas.
-          </p>
-        </div>
-
-        <!-- Opción 4: Charla o Taller (Microconferencia) -->
-        <div
-          class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40 hover:border-brand-gold/40 transition-colors">
-          <div class="flex items-center gap-2 font-bold text-brand-navy text-sm mb-1">
-            <span class="text-base">💡</span>
-            <span>Charla, Taller o Microconferencia</span>
-          </div>
-          <p class="text-xs text-slate-600 leading-relaxed">
-            Ponencias teóricas, microconferencias o talleres prácticos sobre pedagogía mágica, psicología, construcción,
-            técnica o puesta en escena.
-          </p>
-        </div>
-
-        <!-- Opción 5: Apoyo Logístico -->
-        <div
-          class="p-3.5 rounded-2xl bg-slate-50 border border-brand-silver/40 hover:border-brand-gold/40 transition-colors sm:col-span-2">
-          <div class="flex items-center gap-2 font-bold text-brand-navy text-sm mb-1">
-            <span class="text-base">🤝</span>
-            <span>Apoyo Logístico</span>
-          </div>
-          <p class="text-xs text-slate-600 leading-relaxed">
-            Colaboración voluntaria con el equipo de organización en control de accesos, regiduría técnica, recepción o
-            apoyo general durante el festival.
-          </p>
         </div>
 
       </div>
@@ -894,6 +871,123 @@
           He leído y acepto la política
         </button>
       </div>
+    </div>
+
+  </div>
+</div>
+}
+
+<!-- ===================================================================== -->
+<!-- MODAL 3: CONFIRMACIÓN DE NO AUTORIZACIÓN DE DERECHOS DE IMAGEN         -->
+<!-- ===================================================================== -->
+@if (showNoImagenModal()) {
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200"
+  role="dialog" aria-modal="true" aria-labelledby="noImagenModalTitle" (click)="closeNoImagenModal()">
+
+  <div
+    class="bg-brand-white rounded-3xl border border-brand-silver/40 shadow-2xl max-w-xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+    (click)="$event.stopPropagation()">
+
+    <!-- Cabecera del Modal -->
+    <div class="bg-brand-navy p-5 sm:p-6 text-white flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div
+          class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 flex items-center justify-center font-extrabold text-lg shadow-xs shrink-0">
+          <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
+        </div>
+        <div>
+          <span class="text-[11px] font-bold uppercase tracking-widest text-brand-gold block">
+            Derechos de Imagen y Difusión
+          </span>
+          <h3 id="noImagenModalTitle" class="text-base sm:text-lg font-extrabold text-white">
+            Confirmación: No autorizo el uso de mi imagen
+          </h3>
+        </div>
+      </div>
+      <button type="button" (click)="closeNoImagenModal()"
+        class="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+        title="Cerrar modal">
+        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+          stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Contenido del Modal -->
+    <div class="p-6 sm:p-7 overflow-y-auto space-y-4 text-slate-700 text-xs sm:text-sm leading-relaxed">
+
+      <!-- Alerta informativa -->
+      <div class="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-amber-950 flex items-start gap-3">
+        <div
+          class="w-6 h-6 rounded-full bg-amber-200 text-amber-800 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
+          i
+        </div>
+        <div class="space-y-1">
+          <p class="font-bold text-amber-900">
+            Has seleccionado "No autorizo el uso de mi imagen".
+          </p>
+          <p class="text-xs text-amber-900/90 leading-relaxed">
+            Esta decisión puede afectar a tu participación en determinadas actividades del encuentro o a la forma en que
+            podamos incluirte en comunicaciones, grabaciones de galas, talleres, fotografías grupales y materiales
+            relacionados del ENMI.
+          </p>
+        </div>
+      </div>
+
+      <p class="text-slate-600 text-xs sm:text-sm leading-relaxed">
+        Confirma que has leído la información sobre el tratamiento de imágenes y que deseas continuar con esta opción, o
+        si lo prefieres, puedes autorizar el uso de imagen para facilitar la cobertura y recuerdo del encuentro.
+      </p>
+
+      <!-- Checkbox Obligatorio -->
+      <div class="p-4 rounded-2xl bg-slate-50 border-2 border-slate-200 hover:border-brand-gold/60 transition-colors">
+        <div class="flex items-start gap-3">
+          <input type="checkbox" id="confirmNoImagenCheckbox" [checked]="noImagenConfirmedCheckbox()"
+            (change)="toggleNoImagenConfirmedCheckbox($any($event.target).checked)"
+            class="mt-1 w-5 h-5 rounded-md text-brand-navy border-slate-300 focus:ring-brand-navy focus:ring-2 cursor-pointer transition-all shrink-0">
+          <label for="confirmNoImagenCheckbox"
+            class="text-xs sm:text-sm font-semibold text-slate-800 select-none cursor-pointer leading-relaxed">
+            Confirmo que he leído y comprendido las consecuencias de esta decisión.
+            <span class="text-rose-600 font-bold ml-1">*</span>
+          </label>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Pie del Modal con Acciones -->
+    <div
+      class="bg-slate-50 p-4 px-6 border-t border-brand-silver/30 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+
+      <button type="button" (click)="closeNoImagenModal()"
+        class="px-4 py-2.5 text-xs font-semibold text-slate-600 bg-white border border-brand-silver/60 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer text-center order-3 sm:order-1">
+        Revisar formulario
+      </button>
+
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 order-1 sm:order-2">
+        <button type="button" (click)="authorizeImagenAndSubmit()"
+          class="px-4 py-2.5 text-xs font-bold text-brand-navy bg-brand-gold hover:bg-brand-gold-hover active:scale-[0.98] rounded-xl shadow-xs transition-all cursor-pointer text-center flex items-center justify-center gap-1.5"
+          title="Cambiar opción y autorizar derechos de imagen">
+          <svg class="w-4 h-4 text-brand-navy" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+            stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+          </svg>
+          <span>Autorizar imagen y enviar</span>
+        </button>
+
+        <button type="button" (click)="confirmNoImagenAndSubmit()" [disabled]="!noImagenConfirmedCheckbox()"
+          class="px-4 py-2.5 text-xs font-bold text-white bg-slate-800 hover:bg-slate-900 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none rounded-xl shadow-xs transition-all cursor-pointer text-center flex items-center justify-center gap-1.5"
+          title="Confirmar y continuar sin autorizar imagen">
+          <span>Continuar sin autorizar</span>
+        </button>
+      </div>
+
     </div>
 
   </div>

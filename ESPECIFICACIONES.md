@@ -305,7 +305,7 @@ CREATE TABLE IF NOT EXISTS `enmi_configuracion` (
 - **RF-01: Entrada de Datos Completa**:
   - Captación de nombre real, apellidos, nombre artístico, documento de identidad (NIF/CIF/Pasaporte), correo electrónico, teléfono móvil, lugar de residencia (localidad/provincia/país), asociación o círculo mágico, voluntad de participación activa, aceptación de RGPD y derechos de imagen, y comentarios adicionales.
 - **RF-02: Modales Interactivos en Formulario**:
-  - Modal informativo orientativo sobre las opciones en las que puede participar (Concurso no oficial, Gala de escena, Dealer / stand, Charla/taller/microconferencia y Apoyo logístico) con aviso de contacto personalizado posterior.
+  - Modal informativo orientativo sobre las opciones en las que puede participar (Concurso, Gala o Dealer / Stand) con aviso de contacto personalizado posterior.
   - Modal legal con el texto íntegro de Política de Privacidad / RGPD y aceptación directa.
 - **RF-03: Diseño Adaptable y Ampliado**:
   - Contenedor responsive ancho (`max-w-4xl`) con rejilla de 2 columnas en desktop y fluido en móviles.

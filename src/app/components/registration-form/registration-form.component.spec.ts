@@ -132,6 +132,7 @@ describe('RegistrationFormComponent', () => {
     component.form.controls['telefono'].setValue('600123456');
     component.form.controls['origen'].setValue('Madrid');
     component.form.controls['acepta_privacidad'].setValue(true);
+    component.form.controls['consentimiento_imagen'].setValue(true);
 
     component.onSubmit();
     fixture.detectChanges();
@@ -157,6 +158,90 @@ describe('RegistrationFormComponent', () => {
     // Modificar un campo y comprobar que su error de servidor se limpia
     component.form.controls['nif_pasaporte'].setValue('87654321A');
     expect(component.serverFieldErrors()['nif_pasaporte']).toBeUndefined();
+  });
+
+  it('should show image rights confirmation modal when consentimiento_imagen is false on submit', () => {
+    component.form.controls['nombre'].setValue('Carlos');
+    component.form.controls['apellidos'].setValue('Gómez');
+    component.form.controls['nif_pasaporte'].setValue('12345678Z');
+    component.form.controls['email'].setValue('carlos@mago.es');
+    component.form.controls['telefono'].setValue('600123456');
+    component.form.controls['origen'].setValue('Madrid');
+    component.form.controls['acepta_privacidad'].setValue(true);
+    component.form.controls['consentimiento_imagen'].setValue(false);
+
+    component.onSubmit();
+    fixture.detectChanges();
+
+    expect(component.showNoImagenModal()).toBeTrue();
+    expect(component.isSubmitted()).toBeFalse();
+    expect(mockInscripcionService.inscribir).not.toHaveBeenCalled();
+
+    const modalTitle = fixture.nativeElement.querySelector('#noImagenModalTitle');
+    expect(modalTitle).toBeTruthy();
+    expect(modalTitle.textContent).toContain('No autorizo el uso de mi imagen');
+  });
+
+  it('should submit without image rights when user checks mandatory checkbox and confirms in modal', () => {
+    component.form.controls['nombre'].setValue('Carlos');
+    component.form.controls['apellidos'].setValue('Gómez');
+    component.form.controls['nif_pasaporte'].setValue('12345678Z');
+    component.form.controls['email'].setValue('carlos@mago.es');
+    component.form.controls['telefono'].setValue('600123456');
+    component.form.controls['origen'].setValue('Madrid');
+    component.form.controls['acepta_privacidad'].setValue(true);
+    component.form.controls['consentimiento_imagen'].setValue(false);
+
+    component.onSubmit();
+    expect(component.showNoImagenModal()).toBeTrue();
+
+    // Trying to submit without checking checkbox should do nothing
+    component.confirmNoImagenAndSubmit();
+    expect(mockInscripcionService.inscribir).not.toHaveBeenCalled();
+
+    // Check mandatory confirmation checkbox and submit
+    component.toggleNoImagenConfirmedCheckbox(true);
+    component.confirmNoImagenAndSubmit();
+
+    expect(component.showNoImagenModal()).toBeFalse();
+    expect(mockInscripcionService.inscribir).toHaveBeenCalledWith(jasmine.objectContaining({
+      consentimiento_imagen: false
+    }));
+    expect(component.isSubmitted()).toBeTrue();
+  });
+
+  it('should authorize image and submit when user chooses authorize button in modal', () => {
+    component.form.controls['nombre'].setValue('Carlos');
+    component.form.controls['apellidos'].setValue('Gómez');
+    component.form.controls['nif_pasaporte'].setValue('12345678Z');
+    component.form.controls['email'].setValue('carlos@mago.es');
+    component.form.controls['telefono'].setValue('600123456');
+    component.form.controls['origen'].setValue('Madrid');
+    component.form.controls['acepta_privacidad'].setValue(true);
+    component.form.controls['consentimiento_imagen'].setValue(false);
+
+    component.onSubmit();
+    expect(component.showNoImagenModal()).toBeTrue();
+
+    component.authorizeImagenAndSubmit();
+
+    expect(component.showNoImagenModal()).toBeFalse();
+    expect(component.form.get('consentimiento_imagen')?.value).toBeTrue();
+    expect(mockInscripcionService.inscribir).toHaveBeenCalledWith(jasmine.objectContaining({
+      consentimiento_imagen: true
+    }));
+    expect(component.isSubmitted()).toBeTrue();
+  });
+
+  it('should close image rights modal and reset checkbox on close or form reset', () => {
+    component.openNoImagenModal();
+    component.toggleNoImagenConfirmedCheckbox(true);
+    expect(component.showNoImagenModal()).toBeTrue();
+    expect(component.noImagenConfirmedCheckbox()).toBeTrue();
+
+    component.closeNoImagenModal();
+    expect(component.showNoImagenModal()).toBeFalse();
+    expect(component.noImagenConfirmedCheckbox()).toBeFalse();
   });
 });
 
