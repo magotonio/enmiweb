@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
@@ -17,17 +18,17 @@ describe('AdminDashboardComponent', () => {
 
   beforeEach(async () => {
     const authSpy = jasmine.createSpyObj('AuthService', ['logout', 'isBlocked'], {
-      currentUser: () => ({ id: 1, login: 'superadmin', rol: 'superadministrador' }),
-      userRole: () => 'superadministrador',
-      userRoleLabel: () => 'Superadministrador',
-      userRoleBadge: () => ({ badge: 'bg-amber-100 text-amber-800' }),
-      isSuperAdmin: () => true,
-      isSupervisor: () => true,
-      isAsistente: () => true
+      currentUser: signal({ id: 1, login: 'superadmin', rol: 'superadministrador' }),
+      userRole: signal('superadministrador'),
+      userRoleLabel: signal('Superadministrador'),
+      userRoleBadge: signal({ badge: 'bg-amber-100 text-amber-800' }),
+      isSuperAdmin: signal(true),
+      isSupervisor: signal(true),
+      isAsistente: signal(true)
     });
 
     const configSpy = jasmine.createSpyObj('ConfigService', ['checkMaintenance', 'setMaintenanceMode'], {
-      isMaintenanceMode: { set: jasmine.createSpy(), (): boolean => false, subscribe: jasmine.createSpy() }
+      isMaintenanceMode: signal(false)
     });
     configSpy.checkMaintenance.and.returnValue(of(false));
     configSpy.setMaintenanceMode.and.returnValue(of({ success: true, message: 'OK' }));
