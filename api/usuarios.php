@@ -6,6 +6,7 @@
  */
 
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/mailer.php';
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
@@ -122,9 +123,6 @@ if ($method === 'POST') {
         if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors['email'] = 'Debe indicar un correo electrónico válido.';
         }
-        if (empty($password) || strlen($password) < 6) {
-            $errors['password'] = 'La contraseña debe tener al menos 6 caracteres.';
-        }
 
         if (!empty($errors)) {
             sendJsonResponse([
@@ -148,6 +146,10 @@ if ($method === 'POST') {
                 ], 409);
             }
 
+            // Si el superadmin no proporciona contraseña, se genera una aleatoria inicial y se emite token de 24h
+            if (empty($password)) {
+                $password = bin2hex(random_bytes(16));
+            }
             $passwordHash = password_hash($password, PASSWORD_BCRYPT);
 
             $insertStmt = $pdo->prepare("
@@ -163,16 +165,39 @@ if ($method === 'POST') {
 
             $newId = (int)$pdo->lastInsertId();
 
-            logAuth('usuario_creado', "Nuevo usuario creado: {$login} con rol '{$rol}'", [
-                'id'    => $newId,
-                'login' => $login,
-                'email' => $email,
-                'rol'   => $rol
+            // Generar token de 24h para que el nuevo usuario defina su contraseña
+            $expHoursRaw = getConfigValue('token_resetpwd_expiracion_horas', '24', $pdo);
+            $expHours = max(1, (int)$expHoursRaw);
+            $token = generateSecureTokenBase62(32);
+
+            $tokenStmt = $pdo->prepare("
+                INSERT INTO `enmi_tokens` (
+                    `token`, `tipo`, `valor`, `fecha_caducidad`, `descripcion`, `utilizado`, `fecha_creacion`
+                ) VALUES (
+                    :token, 'resetpwd', :valor, DATE_ADD(NOW(), INTERVAL :horas HOUR), :descripcion, 0, NOW()
+                )
+            ");
+            $tokenStmt->execute([
+                ':token'       => $token,
+                ':valor'       => (string)$newId,
+                ':horas'       => $expHours,
+                ':descripcion' => "Activación de cuenta y asignación de contraseña para: {$login} ({$email})"
+            ]);
+
+            // Enviar correo de bienvenida / restablecimiento
+            sendAdminPasswordResetEmail($email, $login, $token, $expHours);
+
+            logAuth('usuario_creado', "Nuevo usuario creado: {$login} con rol '{$rol}'. Token de 24h enviado a {$email}", [
+                'id'        => $newId,
+                'login'     => $login,
+                'email'     => $email,
+                'rol'       => $rol,
+                'exp_horas' => $expHours
             ], true, $newId);
 
             sendJsonResponse([
                 'success' => true,
-                'message' => "Usuario '{$login}' creado exitosamente con perfil '{$rol}'.",
+                'message' => "Usuario '{$login}' creado exitosamente. Se ha enviado un enlace seguro al correo '{$email}' para que defina su contraseña.",
                 'user'    => [
                     'id'                => $newId,
                     'login'             => $login,
@@ -284,43 +309,88 @@ if ($method === 'POST') {
         }
     }
 
-    // D) RESTABLECER CONTRASEÑA
+    // D) RESTABLECER CONTRASEÑA (Emisión de token de 24h y envío de correo)
     if ($action === 'reset_password') {
-        $targetId    = isset($data['id']) ? (int)$data['id'] : 0;
-        $newPassword = isset($data['new_password']) ? (string)$data['new_password'] : '';
+        $targetId = isset($data['id']) ? (int)$data['id'] : 0;
 
-        if ($targetId <= 0 || strlen($newPassword) < 6) {
+        if ($targetId <= 0) {
             sendJsonResponse([
                 'success' => false,
-                'message' => 'La nueva contraseña debe tener al menos 6 caracteres.'
+                'message' => 'Identificador de usuario no válido.'
             ], 400);
         }
 
         try {
-            $newHash = password_hash($newPassword, PASSWORD_BCRYPT);
-            $stmt = $pdo->prepare("
-                UPDATE `enmi_usuarios` 
+            $userStmt = $pdo->prepare("SELECT id, login, email FROM `enmi_usuarios` WHERE id = :id LIMIT 1");
+            $userStmt->execute([':id' => $targetId]);
+            $targetUser = $userStmt->fetch();
+
+            if (!$targetUser) {
+                sendJsonResponse([
+                    'success' => false,
+                    'message' => 'El usuario especificado no existe.'
+                ], 404);
+            }
+
+            $userLogin = (string)$targetUser['login'];
+            $userEmail = (string)$targetUser['email'];
+
+            // Obtener tiempo de expiración (24 horas)
+            $expHoursRaw = getConfigValue('token_resetpwd_expiracion_horas', '24', $pdo);
+            $expHours = max(1, (int)$expHoursRaw);
+
+            // Invalidar inmediatamente la contraseña anterior asignando un hash aleatorio de alta entropía
+            $randomTemporaryPass = bin2hex(random_bytes(24));
+            $randomHash = password_hash($randomTemporaryPass, PASSWORD_BCRYPT);
+
+            $updatePassStmt = $pdo->prepare("
+                UPDATE `enmi_usuarios`
                 SET `password_hash` = :hash,
-                    `bloqueado` = 0,
-                    `intentos_fallidos` = 0
+                    `fecha_actualizacion` = NOW()
                 WHERE `id` = :id
             ");
-            $stmt->execute([':hash' => $newHash, ':id' => $targetId]);
+            $updatePassStmt->execute([
+                ':hash' => $randomHash,
+                ':id'   => $targetId
+            ]);
 
-            logAuth('password_restablecido', "Contraseña restablecida para usuario ID {$targetId}", [
-                'target_id' => $targetId
+            // Generar token criptográficamente seguro de 24 horas
+            $token = generateSecureTokenBase62(32);
+
+            $tokenStmt = $pdo->prepare("
+                INSERT INTO `enmi_tokens` (
+                    `token`, `tipo`, `valor`, `fecha_caducidad`, `descripcion`, `utilizado`, `fecha_creacion`
+                ) VALUES (
+                    :token, 'resetpwd', :valor, DATE_ADD(NOW(), INTERVAL :horas HOUR), :descripcion, 0, NOW()
+                )
+            ");
+            $tokenStmt->execute([
+                ':token'       => $token,
+                ':valor'       => (string)$targetId,
+                ':horas'       => $expHours,
+                ':descripcion' => "Restablecimiento administrativo solicitado por Superadmin para: {$userLogin} ({$userEmail})"
+            ]);
+
+            // Enviar email de notificación administrativa
+            $mailResult = sendAdminPasswordResetEmail($userEmail, $userLogin, $token, $expHours);
+
+            logAuth('password_reset_admin_solicitado', "Superadmin invalidó la contraseña anterior de '{$userLogin}' ({$userEmail}) y emitió token de restablecimiento de {$expHours}h", [
+                'target_id'    => $targetId,
+                'email'        => $userEmail,
+                'exp_horas'    => $expHours,
+                'email_status' => $mailResult['success'] ? 'enviado' : 'fallido'
             ], true, $targetId);
 
             sendJsonResponse([
                 'success' => true,
-                'message' => 'Contraseña del usuario restablecida exitosamente.'
+                'message' => "La contraseña anterior ha sido invalidada inmediatamente y se ha enviado un enlace seguro de {$expHours} horas al correo '{$userEmail}'."
             ], 200);
 
-        } catch (PDOException $e) {
-            logError('usuarios', 'error_reset_password', $e->getMessage(), ['target_id' => $targetId]);
+        } catch (Exception $e) {
+            logError('usuarios', 'error_admin_reset_password', $e->getMessage(), ['target_id' => $targetId]);
             sendJsonResponse([
                 'success' => false,
-                'message' => 'Error al restablecer la contraseña: ' . $e->getMessage()
+                'message' => 'Error al generar el restablecimiento de contraseña: ' . $e->getMessage()
             ], 500);
         }
     }

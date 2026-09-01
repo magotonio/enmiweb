@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { HomeComponent } from './components/home/home.component';
 import { RegistrationFormComponent } from './components/registration-form/registration-form.component';
 import { LoginComponent } from './components/login/login.component';
+import { ResetPasswordComponent } from './components/reset-password/reset-password.component';
 import { AdminDashboardComponent } from './components/admin-dashboard/admin-dashboard.component';
 import { AdminInscripcionesComponent } from './components/admin-inscripciones/admin-inscripciones.component';
 import { AdminUsuariosComponent } from './components/admin-usuarios/admin-usuarios.component';
@@ -32,6 +33,17 @@ export const routes: Routes = [
     component: LoginComponent,
     canActivate: [maintenanceGuard],
     title: 'Acceso Staff | ENMI 2027 Madrid'
+  },
+  {
+    path: 'reset-password',
+    component: ResetPasswordComponent,
+    canActivate: [maintenanceGuard],
+    title: 'Restablecer Contraseña | ENMI 2027 Madrid'
+  },
+  {
+    path: 'restablecer-password',
+    redirectTo: 'reset-password',
+    pathMatch: 'full'
   },
   {
     path: 'mantenimiento',

@@ -278,10 +278,12 @@
           </select>
         </div>
 
-        <div>
-          <label class="block font-semibold text-slate-700 mb-1">Contraseña Inicial *</label>
-          <input type="password" [(ngModel)]="newUserPassword" placeholder="Mínimo 6 caracteres"
-            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-gold">
+        <!-- Banner Informativo de Asignación Segura de Contraseña -->
+        <div class="p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-start gap-2.5 text-xs text-amber-950">
+          <span class="text-base leading-none">🔐</span>
+          <p class="leading-relaxed">
+            <strong>Asignación Segura:</strong> No necesitas escribir una contraseña. Al crear el usuario se generará un token y se enviará un correo con un enlace de <strong>24 horas</strong> para que defina su clave de acceso.
+          </p>
         </div>
       </div>
 
@@ -293,7 +295,7 @@
         <button type="button" (click)="submitCreateUser()"
           [disabled]="isSaving()"
           class="px-5 py-2 text-xs sm:text-sm font-bold text-brand-navy bg-brand-gold hover:bg-brand-gold-hover rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50">
-          {{ isSaving() ? 'Guardando...' : 'Crear Usuario' }}
+          {{ isSaving() ? 'Creando y enviando...' : 'Crear y Enviar Enlace' }}
         </button>
       </div>
     </div>
@@ -339,25 +341,28 @@
   </div>
   }
 
-  <!-- MODAL: RESTABLECER CONTRASEÑA -->
+  <!-- MODAL: RESTABLECER CONTRASEÑA (EMISIÓN DE TOKEN DE 24H) -->
   @if (selectedUserForPassword(); as user) {
   <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
     <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-200 space-y-5 animate-in zoom-in-95 duration-200">
       <div class="flex items-center justify-between">
-        <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">Restablecer Contraseña</h2>
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold">
+            🔑
+          </div>
+          <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">Restablecer Contraseña</h2>
+        </div>
         <button type="button" (click)="closePasswordModal()" class="text-slate-400 hover:text-slate-700 cursor-pointer">✕</button>
       </div>
 
-      <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm space-y-1">
-        <p><strong class="text-slate-700">Usuario:</strong> {{ user.login }}</p>
-        <p class="text-slate-500 text-xs">Al guardar la nueva contraseña, la cuenta se desbloqueará y el contador de intentos fallidos volverá a 0.</p>
+      <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm space-y-1.5">
+        <p><strong class="text-slate-700">Usuario objetivo:</strong> {{ user.login }}</p>
+        <p><strong class="text-slate-700">Destinatario:</strong> {{ user.email }}</p>
       </div>
 
-      <div class="space-y-2 text-xs sm:text-sm">
-        <label class="block font-semibold text-slate-700">Nueva Contraseña *</label>
-        <input type="password" [(ngModel)]="newPassword" placeholder="Mínimo 6 caracteres"
-          class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-gold">
-      </div>
+      <p class="text-xs text-slate-600 leading-relaxed">
+        Al confirmar, <strong>la contraseña actual quedará invalidada inmediatamente</strong> con una clave aleatoria temporal, y se enviará un enlace seguro de <strong>24 horas</strong> al correo <strong>{{ user.email }}</strong> para que el usuario elija su nueva contraseña.
+      </p>
 
       <div class="flex justify-end gap-2.5 pt-2">
         <button type="button" (click)="closePasswordModal()"
@@ -366,8 +371,16 @@
         </button>
         <button type="button" (click)="submitResetPassword()"
           [disabled]="isSaving()"
-          class="px-5 py-2 text-xs sm:text-sm font-bold text-brand-navy bg-brand-gold hover:bg-brand-gold-hover rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50">
-          {{ isSaving() ? 'Restableciendo...' : 'Guardar Nueva Contraseña' }}
+          class="px-5 py-2 text-xs sm:text-sm font-bold text-brand-navy bg-brand-gold hover:bg-brand-gold-hover rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50 inline-flex items-center gap-2">
+          @if (isSaving()) {
+            <svg class="animate-spin h-3.5 w-3.5 text-brand-navy" viewBox="0 0 24 24" fill="none">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Enviando enlace...</span>
+          } @else {
+            <span>Enviar Enlace de 24h</span>
+          }
         </button>
       </div>
     </div>

@@ -427,6 +427,22 @@ function globalShutdownHandler(): void {
     }
 }
 
+/**
+ * Genera un token alfanumérico corto y criptográficamente seguro (Base62: 0-9, a-z, A-Z).
+ *
+ * @param int $length Longitud del token (por defecto 24 caracteres)
+ * @return string
+ */
+function generateSecureTokenBase62(int $length = 24): string {
+    $chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    $max = strlen($chars) - 1;
+    $token = '';
+    for ($i = 0; $i < $length; $i++) {
+        $token .= $chars[random_int(0, $max)];
+    }
+    return $token;
+}
+
 // Registrar manejadores globales para control integral de errores en la API
 set_exception_handler('globalExceptionHandler');
 set_error_handler('globalErrorHandler');

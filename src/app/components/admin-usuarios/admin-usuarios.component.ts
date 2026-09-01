@@ -105,11 +105,13 @@ export class AdminUsuariosComponent implements OnInit {
   /**
    * Abre modal para crear nuevo usuario.
    */
+  /**
+   * Abre modal para crear nuevo usuario.
+   */
   openCreateModal(): void {
     this.newUserLogin = '';
     this.newUserEmail = '';
     this.newUserRole = 'asistente';
-    this.newUserPassword = '';
     this.errorMessage.set(null);
     this.isCreateModalOpen.set(true);
   }
@@ -119,11 +121,11 @@ export class AdminUsuariosComponent implements OnInit {
   }
 
   /**
-   * Guarda el nuevo usuario.
+   * Guarda el nuevo usuario y le envía el enlace de activación de 24 horas.
    */
   submitCreateUser(): void {
-    if (!this.newUserLogin.trim() || !this.newUserEmail.trim() || !this.newUserPassword.trim()) {
-      this.errorMessage.set('Por favor, completa todos los campos requeridos.');
+    if (!this.newUserLogin.trim() || !this.newUserEmail.trim()) {
+      this.errorMessage.set('Por favor, indica el nombre de usuario y correo electrónico.');
       return;
     }
 
@@ -133,14 +135,13 @@ export class AdminUsuariosComponent implements OnInit {
     this.usuarioService.createUsuario({
       login: this.newUserLogin.trim(),
       email: this.newUserEmail.trim(),
-      rol: this.newUserRole,
-      password: this.newUserPassword
+      rol: this.newUserRole
     }).subscribe({
       next: (response) => {
         this.isSaving.set(false);
         if (response.success) {
           this.closeCreateModal();
-          this.showSuccess(`Usuario '${this.newUserLogin}' creado con éxito.`);
+          this.showSuccess(`Usuario '${this.newUserLogin}' creado. Se ha enviado un enlace de 24h a ${this.newUserEmail} para definir su contraseña.`);
           this.cargarUsuarios();
         } else {
           this.errorMessage.set(response.message || 'No se pudo crear el usuario.');
@@ -218,11 +219,10 @@ export class AdminUsuariosComponent implements OnInit {
   }
 
   /**
-   * Abre modal de restablecer contraseña.
+   * Abre modal de confirmación para restablecer contraseña con token de 24 horas.
    */
   openPasswordModal(user: Usuario): void {
     this.selectedUserForPassword.set(user);
-    this.newPassword = '';
     this.errorMessage.set(null);
   }
 
@@ -231,32 +231,29 @@ export class AdminUsuariosComponent implements OnInit {
   }
 
   /**
-   * Guarda la nueva contraseña.
+   * Envía el enlace seguro de restablecimiento de contraseña de 24 horas al correo del usuario.
    */
   submitResetPassword(): void {
     const user = this.selectedUserForPassword();
     if (!user || !user.id) return;
 
-    if (!this.newPassword || this.newPassword.length < 6) {
-      this.errorMessage.set('La nueva contraseña debe tener al menos 6 caracteres.');
-      return;
-    }
-
     this.isSaving.set(true);
-    this.usuarioService.resetPassword(user.id, this.newPassword).subscribe({
+    this.errorMessage.set(null);
+
+    this.usuarioService.resetPassword(user.id).subscribe({
       next: (response) => {
         this.isSaving.set(false);
         if (response.success) {
           this.closePasswordModal();
-          this.showSuccess(`Contraseña de '${user.login}' restablecida correctamente.`);
+          this.showSuccess(response.message || `Enlace de restablecimiento de 24h enviado al correo '${user.email}'.`);
           this.cargarUsuarios();
         } else {
-          this.errorMessage.set(response.message || 'Error al restablecer contraseña.');
+          this.errorMessage.set(response.message || 'Error al enviar restablecimiento de contraseña.');
         }
       },
       error: (err) => {
         this.isSaving.set(false);
-        this.errorMessage.set(err.error?.message || 'Error al restablecer contraseña.');
+        this.errorMessage.set(err.error?.message || 'Error al solicitar el restablecimiento de contraseña.');
       }
     });
   }

@@ -53,7 +53,7 @@ export interface UsuarioCreateDto {
   login: string;
   email: string;
   rol: UserRole;
-  password: string;
+  password?: string;
 }
 
 export interface UsuarioUpdateDto {
@@ -65,20 +65,16 @@ export interface UsuarioUpdateDto {
   intentos_fallidos?: number;
 }
 
-export interface RecuperacionPassword {
-  id?: number;
-  usuario_id: number;
-  email: string;
-  token_hash: string;
-  expira_en: Date | string;
-  utilizado: boolean | number;
-  ip_solicitud?: string | null;
-  fecha_creacion?: Date | string;
-  fecha_utilizacion?: Date | string | null;
-}
-
 export interface SolicitudRecuperacionDto {
   email: string;
+}
+
+export interface VerificarTokenResponse {
+  success: boolean;
+  valido: boolean;
+  login?: string;
+  email?: string;
+  message: string;
 }
 
 export interface RestablecerPasswordDto {

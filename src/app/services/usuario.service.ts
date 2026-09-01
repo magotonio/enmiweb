@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Usuario, UsuarioCreateDto, UserRole } from '../models/usuario.model';
+import { Usuario, UsuarioCreateDto, UserRole, VerificarTokenResponse, RestablecerPasswordDto } from '../models/usuario.model';
 import { environment } from '../../environments/environment';
 
 export interface UsuariosListResponse {
@@ -25,6 +25,7 @@ export interface GenericUserActionResponse {
 export class UsuarioService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = `${environment.apiUrl}/usuarios.php`;
+  private readonly recuperacionUrl = `${environment.apiUrl}/recuperacion.php`;
 
   /**
    * Obtiene el listado completo de usuarios del sistema (exclusivo para superadministrador).
@@ -34,7 +35,7 @@ export class UsuarioService {
   }
 
   /**
-   * Crea un nuevo usuario con el rol y credenciales asignadas.
+   * Crea un nuevo usuario con el rol asignado y le emite un enlace de 24h para definir su contraseña.
    */
   createUsuario(dto: UsuarioCreateDto): Observable<GenericUserActionResponse> {
     return this.http.post<GenericUserActionResponse>(this.apiUrl, {
@@ -66,13 +67,43 @@ export class UsuarioService {
   }
 
   /**
-   * Restablece la contraseña de un usuario a un nuevo valor.
+   * El Superadministrador solicita el restablecimiento de contraseña de un usuario (envía token de 24h por email).
    */
-  resetPassword(id: number, newPassword: string): Observable<GenericUserActionResponse> {
+  resetPassword(id: number): Observable<GenericUserActionResponse> {
     return this.http.post<GenericUserActionResponse>(this.apiUrl, {
       action: 'reset_password',
-      id,
-      new_password: newPassword
+      id
+    });
+  }
+
+  /**
+   * El usuario solicita enlace de recuperación desde el login indicando su email/usuario.
+   */
+  solicitarRecuperacion(email: string): Observable<GenericUserActionResponse> {
+    return this.http.post<GenericUserActionResponse>(this.recuperacionUrl, {
+      action: 'solicitar',
+      email: email.trim()
+    });
+  }
+
+  /**
+   * Comprueba si un token de restablecimiento es válido y no ha caducado (24h).
+   */
+  verificarToken(token: string): Observable<VerificarTokenResponse> {
+    return this.http.post<VerificarTokenResponse>(this.recuperacionUrl, {
+      action: 'verificar',
+      token: token.trim()
+    });
+  }
+
+  /**
+   * Ejecuta el cambio de contraseña usando el token seguro de restablecimiento.
+   */
+  ejecutarResetPassword(dto: RestablecerPasswordDto): Observable<GenericUserActionResponse> {
+    return this.http.post<GenericUserActionResponse>(this.recuperacionUrl, {
+      action: 'resetear',
+      token: dto.token.trim(),
+      password: dto.password
     });
   }
 }

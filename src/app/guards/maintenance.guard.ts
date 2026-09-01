@@ -11,7 +11,7 @@ import { map, of } from 'rxjs';
  * 1. Si 'mantenimiento' == 1:
  *    - Cualquier página SOLO se puede ver si el usuario ha iniciado sesión (isLoggedIn).
  *    - Si NO ha iniciado sesión:
- *      - Las rutas /mantenimiento y /login están permitidas.
+ *      - Las rutas /mantenimiento, /login, /reset-password y /restablecer-password están permitidas.
  *      - Cualquier otra página se redirecciona automáticamente a /mantenimiento.
  * 2. Si 'mantenimiento' == 0:
  *    - Si un usuario intenta acceder a /mantenimiento, se le redirecciona a la portada (/).
@@ -27,6 +27,7 @@ export const maintenanceGuard: CanActivateFn = (route, state) => {
     const url = state.url.split('?')[0];
     const isMaintenanceRoute = url === '/mantenimiento' || url === '/en-mantenimiento';
     const isLoginRoute = url === '/login';
+    const isResetPasswordRoute = url === '/reset-password' || url === '/restablecer-password';
 
     if (isMaintenance) {
       // Modo mantenimiento ACTIVO
@@ -36,7 +37,7 @@ export const maintenanceGuard: CanActivateFn = (route, state) => {
       }
 
       // Usuario NO autenticado
-      if (isMaintenanceRoute || isLoginRoute) {
+      if (isMaintenanceRoute || isLoginRoute || isResetPasswordRoute) {
         return true;
       }
 

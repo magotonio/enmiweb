@@ -1,18 +1,20 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { UsuarioService } from '../../services/usuario.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [FormsModule, ReactiveFormsModule, RouterLink],
   templateUrl: './login.component.html',
   styleUrl: './login.component.css'
 })
 export class LoginComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly usuarioService = inject(UsuarioService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -25,6 +27,13 @@ export class LoginComponent implements OnInit {
   readonly showPassword = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly isBlocked = signal(false);
+
+  // Modal Recordar Contraseña
+  readonly isForgotModalOpen = signal(false);
+  readonly isForgotLoading = signal(false);
+  readonly forgotInput = signal('');
+  readonly forgotMessage = signal<string | null>(null);
+  readonly forgotSuccess = signal(false);
 
   ngOnInit(): void {
     // Si viene redirigido porque su cuenta está bloqueada, mostrar el aviso
@@ -80,6 +89,46 @@ export class LoginComponent implements OnInit {
 
         const serverMsg = err.error?.message || (isBlockedError ? 'Su usuario está bloqueado. Por favor, contacte con el administrador.' : 'Error al conectar con el servidor. Inténtelo de nuevo.');
         this.errorMessage.set(serverMsg);
+      }
+    });
+  }
+
+  // Métodos para Recordar Contraseña
+  openForgotModal(): void {
+    this.forgotInput.set('');
+    this.forgotMessage.set(null);
+    this.forgotSuccess.set(false);
+    this.isForgotLoading.set(false);
+    this.isForgotModalOpen.set(true);
+  }
+
+  closeForgotModal(): void {
+    this.isForgotModalOpen.set(false);
+  }
+
+  submitForgot(): void {
+    const email = this.forgotInput().trim();
+    if (!email) {
+      this.forgotMessage.set('Por favor, indica tu correo electrónico o nombre de usuario.');
+      this.forgotSuccess.set(false);
+      return;
+    }
+
+    this.isForgotLoading.set(true);
+    this.forgotMessage.set(null);
+
+    this.usuarioService.solicitarRecuperacion(email).subscribe({
+      next: (response) => {
+        this.isForgotLoading.set(false);
+        this.forgotSuccess.set(true);
+        this.forgotMessage.set(
+          response.message || 'Si la cuenta existe, se ha enviado un enlace de 24 horas para restablecer tu contraseña.'
+        );
+      },
+      error: (err) => {
+        this.isForgotLoading.set(false);
+        this.forgotSuccess.set(false);
+        this.forgotMessage.set(err.error?.message || 'Error al procesar la solicitud. Inténtalo de nuevo.');
       }
     });
   }

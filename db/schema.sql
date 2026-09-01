@@ -133,6 +133,27 @@ CREATE TABLE IF NOT EXISTS `enmi_configuracion` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
+-- Tabla 6: enmi_tokens
+-- Almacena tokens temporales alfanuméricos cortos para enlaces, reset de password, etc.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `enmi_tokens` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `token` VARCHAR(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'Token alfanumérico corto (Base62: mayúsculas, minúsculas y números)',
+  `tipo` VARCHAR(50) NOT NULL COMMENT 'Tipo de token (ej. resetpwd, link, descuento, verificacion, etc.)',
+  `valor` TEXT DEFAULT NULL COMMENT 'Dato o payload asociado (ID de usuario, URL de destino, código de descuento, etc.)',
+  `fecha_caducidad` DATETIME NOT NULL COMMENT 'Fecha y hora exacta en la que expira el token',
+  `descripcion` VARCHAR(255) DEFAULT NULL COMMENT 'Descripción o contexto del propósito del token',
+  `utilizado` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0: Pendiente / Válido, 1: Ya utilizado / Canjeado',
+  `fecha_creacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha de generación del token',
+  `fecha_uso` DATETIME DEFAULT NULL COMMENT 'Fecha y hora en la que fue consumido el token',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_enmi_tokens_token` (`token`),
+  INDEX `idx_enmi_tokens_tipo` (`tipo`),
+  INDEX `idx_enmi_tokens_caducidad` (`fecha_caducidad`),
+  INDEX `idx_enmi_tokens_busqueda_valido` (`token`, `tipo`, `utilizado`, `fecha_caducidad`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
 -- Datos Iniciales / Semilla Base
 -- Usuarios con los 3 perfiles de seguridad:
 -- 1. Superadministrador: login 'admin' | pass 'Admin.123' | email 'enmi@eutikea.com'
@@ -168,7 +189,8 @@ VALUES
   ('smtp_pass', 'enmI.2702$Tk', 'Contraseña de la cuenta de correo SMTP', NOW()),
   ('smtp_from_email', 'enmi@eutikea.com', 'Dirección de correo remitente predeterminada', NOW()),
   ('smtp_from_name', 'Eutikea - ENMI', 'Nombre legible mostrado del remitente', NOW()),
-  ('notification_emails', 'enmi@eutikea.com', 'Direcciones de correo para notificaciones de inscripción (separadas por comas)', NOW())
+  ('notification_emails', 'enmi@eutikea.com', 'Direcciones de correo para notificaciones de inscripción (separadas por comas)', NOW()),
+  ('token_resetpwd_expiracion_horas', '24', 'Horas de validez predeterminadas para los tokens de restablecimiento de contraseña (resetpwd)', NOW())
 ON DUPLICATE KEY UPDATE
   `valor` = VALUES(`valor`),
   `descripcion` = VALUES(`descripcion`);

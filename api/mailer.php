@@ -752,3 +752,258 @@ TEXT;
     return sendSmtpEmail($smtpConfig, [$participantEmail], $subject, $htmlBody, $textBody);
 }
 
+/**
+ * Envía correo al usuario cuando solicita recordar su contraseña desde el Login.
+ *
+ * @param string $recipientEmail Correo del usuario
+ * @param string $userLogin      Login o nombre de usuario
+ * @param string $token          Token alfanumérico generado
+ * @param int    $expirationHours Horas de vigencia del token (ej. 24)
+ * @return array
+ */
+function sendPasswordResetEmail(
+    string $recipientEmail,
+    string $userLogin,
+    string $token,
+    int $expirationHours = 24
+): array {
+    $smtpConfig = getSmtpConfig();
+    $appUrl = rtrim(getAppUrl(), '/');
+    $resetUrl = $appUrl . '/reset-password?token=' . urlencode($token);
+
+    $loginSafe = htmlspecialchars($userLogin, ENT_QUOTES, 'UTF-8');
+    $subject = 'Restablecer contraseña - ENMI 2027';
+
+    $htmlBody = <<<HTML
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{$subject}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f1f5f9; padding: 32px 12px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="100%" style="max-width: 580px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0, 31, 91, 0.08); border: 1px solid #e2e8f0;" cellspacing="0" cellpadding="0" border="0">
+                    
+                    <!-- Encabezado con degradado azul marino y dorado -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #001F5B 0%, #001233 100%); padding: 36px 32px; text-align: center;">
+                            <div style="display: inline-block; width: 64px; height: 64px; background-color: rgba(255, 255, 255, 0.1); border: 2px solid #D4AF37; border-radius: 50%; margin-bottom: 12px; line-height: 60px; text-align: center; font-size: 28px;">
+                                🔐
+                            </div>
+                            <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">
+                                Restablecimiento de Contraseña
+                            </h1>
+                            <p style="color: #D4AF37; margin: 6px 0 0 0; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+                                Encuentro Nacional de Magos Infantiles (ENMI)
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Contenido principal -->
+                    <tr>
+                        <td style="padding: 32px;">
+                            <p style="font-size: 15px; color: #334155; line-height: 1.6; margin-top: 0;">
+                                Hola <strong>{$loginSafe}</strong>,
+                            </p>
+                            <p style="font-size: 14px; color: #475569; line-height: 1.6;">
+                                Hemos recibido una solicitud para restablecer la contraseña de acceso a tu cuenta en la plataforma del <strong>ENMI</strong>.
+                            </p>
+
+                            <!-- Cuadro informativo del enlace -->
+                            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin: 24px 0; text-align: center;">
+                                <p style="margin: 0 0 16px 0; font-size: 13px; color: #64748b;">
+                                    Haz clic en el siguiente botón para elegir tu nueva contraseña:
+                                </p>
+                                <a href="{$resetUrl}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #D4AF37 0%, #b38d1b 100%); color: #001F5B; text-decoration: none; font-weight: 800; font-size: 15px; padding: 14px 32px; border-radius: 10px; box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35);">
+                                    Restablecer mi Contraseña &rarr;
+                                </a>
+                                <p style="margin: 16px 0 0 0; font-size: 12px; color: #94a3b8;">
+                                    ⏳ Este enlace es de un solo uso y caduca en <strong>{$expirationHours} horas</strong>.
+                                </p>
+                            </div>
+
+                            <p style="font-size: 12px; color: #64748b; line-height: 1.5; margin-bottom: 0;">
+                                Si el botón no funciona, copia y pega este enlace en tu navegador:<br>
+                                <a href="{$resetUrl}" style="color: #0284c7; word-break: break-all; text-decoration: underline;">{$resetUrl}</a>
+                            </p>
+
+                            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+
+                            <p style="font-size: 12px; color: #94a3b8; line-height: 1.5; margin: 0;">
+                                ⚠️ Si no has solicitado este cambio, puedes ignorar este mensaje; tu contraseña actual continuará siendo segura.
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Pie de página -->
+                    <tr>
+                        <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 18px 28px; text-align: center;">
+                            <p style="margin: 0; font-size: 12px; color: #94a3b8;">
+                                Eutikea &bull; Encuentro Nacional de Magos Infantiles
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+HTML;
+
+    $textBody = <<<TEXT
+==================================================
+RESTABLECIMIENTO DE CONTRASEÑA - ENMI 2027
+==================================================
+
+Hola, {$userLogin}:
+
+Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en el ENMI.
+
+Para configurar tu nueva contraseña, accede al siguiente enlace:
+{$resetUrl}
+
+(Este enlace es válido durante {$expirationHours} horas y solo puede utilizarse una vez).
+
+Si no has solicitado este cambio, ignora este mensaje; tu cuenta permanece segura.
+
+---
+Encuentro Nacional de Magos Infantiles (ENMI)
+Organizado por Eutikea.
+TEXT;
+
+    return sendSmtpEmail($smtpConfig, [$recipientEmail], $subject, $htmlBody, $textBody);
+}
+
+/**
+ * Envía correo al usuario cuando el Administrador solicita restablecer su contraseña desde el panel de gestión.
+ *
+ * @param string $recipientEmail Correo del usuario
+ * @param string $userLogin      Login o nombre de usuario
+ * @param string $token          Token alfanumérico generado
+ * @param int    $expirationHours Horas de vigencia del token (ej. 24)
+ * @return array
+ */
+function sendAdminPasswordResetEmail(
+    string $recipientEmail,
+    string $userLogin,
+    string $token,
+    int $expirationHours = 24
+): array {
+    $smtpConfig = getSmtpConfig();
+    $appUrl = rtrim(getAppUrl(), '/');
+    $resetUrl = $appUrl . '/reset-password?token=' . urlencode($token);
+
+    $loginSafe = htmlspecialchars($userLogin, ENT_QUOTES, 'UTF-8');
+    $subject = 'Tu contraseña ha sido restablecida por el Administrador - ENMI 2027';
+
+    $htmlBody = <<<HTML
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{$subject}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f1f5f9; padding: 32px 12px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="100%" style="max-width: 580px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0, 31, 91, 0.08); border: 1px solid #e2e8f0;" cellspacing="0" cellpadding="0" border="0">
+                    
+                    <!-- Encabezado -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #001F5B 0%, #001233 100%); padding: 36px 32px; text-align: center;">
+                            <div style="display: inline-block; width: 64px; height: 64px; background-color: rgba(255, 255, 255, 0.1); border: 2px solid #D4AF37; border-radius: 50%; margin-bottom: 12px; line-height: 60px; text-align: center; font-size: 28px;">
+                                🛡️
+                            </div>
+                            <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">
+                                Notificación de Administrador
+                            </h1>
+                            <p style="color: #D4AF37; margin: 6px 0 0 0; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+                                Encuentro Nacional de Magos Infantiles (ENMI)
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Contenido -->
+                    <tr>
+                        <td style="padding: 32px;">
+                            <p style="font-size: 15px; color: #334155; line-height: 1.6; margin-top: 0;">
+                                Hola <strong>{$loginSafe}</strong>,
+                            </p>
+                            <p style="font-size: 14px; color: #475569; line-height: 1.6;">
+                                El <strong>Superadministrador del ENMI</strong> ha iniciado un proceso de restablecimiento de contraseña para tu cuenta de acceso.
+                            </p>
+                            <p style="font-size: 14px; color: #475569; line-height: 1.6;">
+                                Para poder acceder nuevamente al sistema, por favor crea tu nueva clave de acceso mediante el siguiente enlace:
+                            </p>
+
+                            <!-- Botón de acción -->
+                            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin: 24px 0; text-align: center;">
+                                <a href="{$resetUrl}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #D4AF37 0%, #b38d1b 100%); color: #001F5B; text-decoration: none; font-weight: 800; font-size: 15px; padding: 14px 32px; border-radius: 10px; box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35);">
+                                    Definir mi Nueva Contraseña &rarr;
+                                </a>
+                                <p style="margin: 16px 0 0 0; font-size: 12px; color: #94a3b8;">
+                                    ⏳ Enlace seguro válido durante <strong>{$expirationHours} horas</strong>.
+                                </p>
+                            </div>
+
+                            <p style="font-size: 12px; color: #64748b; line-height: 1.5; margin-bottom: 0;">
+                                Enlace directo:<br>
+                                <a href="{$resetUrl}" style="color: #0284c7; word-break: break-all; text-decoration: underline;">{$resetUrl}</a>
+                            </p>
+
+                            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+
+                            <p style="font-size: 12px; color: #94a3b8; line-height: 1.5; margin: 0;">
+                                Si tienes dudas sobre esta solicitud o necesitas asistencia técnica, puedes responder directamente a este correo.
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Pie de página -->
+                    <tr>
+                        <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 18px 28px; text-align: center;">
+                            <p style="margin: 0; font-size: 12px; color: #94a3b8;">
+                                Eutikea &bull; Encuentro Nacional de Magos Infantiles
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+HTML;
+
+    $textBody = <<<TEXT
+==================================================
+NOTIFICACIÓN DE RESTABLECIMIENTO DE CONTRASEÑA
+==================================================
+
+Hola, {$userLogin}:
+
+El Superadministrador del ENMI ha solicitado el restablecimiento de tu contraseña de acceso.
+
+Para definir tu nueva clave de acceso, ingresa al siguiente enlace seguro:
+{$resetUrl}
+
+(Este enlace es válido durante {$expirationHours} horas).
+
+Si tienes dudas, ponte en contacto con la administración en enmi@eutikea.com.
+
+---
+Encuentro Nacional de Magos Infantiles (ENMI)
+Organizado por Eutikea.
+TEXT;
+
+    return sendSmtpEmail($smtpConfig, [$recipientEmail], $subject, $htmlBody, $textBody);
+}
+
+
