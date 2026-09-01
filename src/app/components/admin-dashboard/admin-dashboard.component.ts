@@ -32,6 +32,8 @@ export class AdminDashboardComponent implements OnInit {
   readonly isMaintenanceMode = this.configService.isMaintenanceMode;
   readonly isUpdatingMaintenance = signal(false);
   readonly maintenanceSuccessMessage = signal<string | null>(null);
+  readonly isMaintenanceModalOpen = signal(false);
+  readonly pendingMaintenanceState = signal<boolean | null>(null);
 
   // Estado de carga y datos
   readonly isLoading = signal(true);
@@ -114,19 +116,41 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   /**
-   * Conmuta el modo mantenimiento de la web (Exclusivo Superadministrador).
+   * Abre el modal de confirmación para cambiar el estado del modo mantenimiento.
    */
-  setMaintenanceMode(enabled: boolean): void {
+  openMaintenanceModal(enable: boolean): void {
     if (!this.isSuperAdmin()) return;
+    this.pendingMaintenanceState.set(enable);
+    this.isMaintenanceModalOpen.set(true);
+  }
+
+  /**
+   * Cierra el modal de confirmación sin realizar cambios.
+   */
+  closeMaintenanceModal(): void {
+    if (this.isUpdatingMaintenance()) return;
+    this.isMaintenanceModalOpen.set(false);
+    this.pendingMaintenanceState.set(null);
+  }
+
+  /**
+   * Confirma la acción y ejecuta el cambio de modo mantenimiento en el backend.
+   */
+  confirmMaintenanceChange(): void {
+    const targetState = this.pendingMaintenanceState();
+    if (targetState === null || !this.isSuperAdmin()) return;
+
     this.isUpdatingMaintenance.set(true);
     this.maintenanceSuccessMessage.set(null);
     this.errorMessage.set(null);
 
-    this.configService.setMaintenanceMode(enabled).subscribe({
+    this.configService.setMaintenanceMode(targetState).subscribe({
       next: (res) => {
         this.isUpdatingMaintenance.set(false);
+        this.isMaintenanceModalOpen.set(false);
+        this.pendingMaintenanceState.set(null);
         if (res.success) {
-          const msg = enabled
+          const msg = targetState
             ? 'Modo Mantenimiento ACTIVADO. La web pública ahora está cerrada y cualquier visitante es redirigido a /mantenimiento.'
             : 'Modo Mantenimiento DESACTIVADO. La web vuelve a estar abierta al público con normalidad.';
           this.maintenanceSuccessMessage.set(msg);
@@ -137,6 +161,8 @@ export class AdminDashboardComponent implements OnInit {
       },
       error: (err) => {
         this.isUpdatingMaintenance.set(false);
+        this.isMaintenanceModalOpen.set(false);
+        this.pendingMaintenanceState.set(null);
         this.errorMessage.set(err.error?.message || 'Error al conectar con el servidor para actualizar el modo mantenimiento.');
       }
     });

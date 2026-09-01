@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { RegistrationFormComponent } from './registration-form.component';
 import { InscripcionService } from '../../services/inscripcion.service';
 
@@ -122,7 +122,6 @@ describe('RegistrationFormComponent', () => {
       }
     };
 
-    const { throwError } = require('rxjs');
     mockInscripcionService.inscribir.and.returnValue(throwError(() => errorResponse));
 
     component.form.controls['nombre'].setValue('Carlos');
