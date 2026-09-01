@@ -144,20 +144,27 @@ export class AuthService {
 
   /**
    * Cierra la sesión activa, elimina el almacenamiento local y redirige según la causa.
-   * @param reason Causa del cierre ('blocked' redirige a /login con aviso, 'manual' redirige al inicio).
+   * @param reason Causa del cierre ('blocked' redirige a /login con aviso, 'manual' redirige al inicio, 'silent' no redirige).
    */
-  logout(reason: 'blocked' | 'manual' = 'manual'): void {
+  logout(reason: 'blocked' | 'manual' | 'silent' = 'manual'): void {
+    this.clearSession();
+
+    if (reason === 'blocked') {
+      this.router.navigate(['/login'], { queryParams: { blocked: '1' } });
+    } else if (reason === 'manual') {
+      this.router.navigate(['/']);
+    }
+  }
+
+  /**
+   * Limpia los datos de sesión en memoria y en almacenamiento local sin redirigir.
+   */
+  clearSession(): void {
     if (typeof window !== 'undefined' && window.localStorage) {
       localStorage.removeItem(STORAGE_USER_KEY);
       localStorage.removeItem(STORAGE_TOKEN_KEY);
     }
     this.currentUser.set(null);
-
-    if (reason === 'blocked') {
-      this.router.navigate(['/login'], { queryParams: { blocked: '1' } });
-    } else {
-      this.router.navigate(['/']);
-    }
   }
 
   /**

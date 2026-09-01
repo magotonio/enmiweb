@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { UsuarioService } from '../../services/usuario.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-reset-password',
@@ -16,6 +17,7 @@ export class ResetPasswordComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly usuarioService = inject(UsuarioService);
+  private readonly authService = inject(AuthService);
 
   // Estados de verificación
   readonly isVerifying = signal(true);
@@ -41,6 +43,11 @@ export class ResetPasswordComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    // Si había una sesión activa previa, cerrarla inmediatamente por seguridad
+    if (this.authService.isLoggedIn() || this.authService.currentUser()) {
+      this.authService.clearSession();
+    }
+
     const tokenParam = this.route.snapshot.queryParams['token'];
     if (!tokenParam || !tokenParam.trim()) {
       this.isVerifying.set(false);
