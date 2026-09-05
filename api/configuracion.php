@@ -49,6 +49,8 @@ if ($method === 'GET') {
     try {
         $mantenimientoActivo = isMaintenanceMode($pdo);
         $mantenimientoValor  = (string)getConfigValue('mantenimiento', '0', $pdo);
+        $demoPagoActivo      = isPagoDemoMode($pdo);
+        $demoPagoValor       = (string)getConfigValue('pago_modo_demo', '1', $pdo);
 
         $operatorId    = isset($_GET['operator_id']) ? (int)$_GET['operator_id'] : null;
         $operatorLogin = isset($_GET['operator_login']) ? trim((string)$_GET['operator_login']) : null;
@@ -57,7 +59,9 @@ if ($method === 'GET') {
         $response = [
             'success'             => true,
             'mantenimiento'       => $mantenimientoActivo,
-            'mantenimiento_valor' => $mantenimientoValor
+            'mantenimiento_valor' => $mantenimientoValor,
+            'demo_pago'           => $demoPagoActivo,
+            'demo_pago_valor'     => $demoPagoValor
         ];
 
         // Si se solicita el listado completo y es un operador autorizado
@@ -122,13 +126,23 @@ if ($method === 'POST') {
         ], 403);
     }
 
-    // Permitir actualización por clave específica o por parámetro directo 'mantenimiento'
+    // Permitir actualización por clave específica o por parámetro directo 'mantenimiento' / 'demo_pago'
     $clave = isset($data['clave']) ? trim((string)$data['clave']) : '';
     $valor = isset($data['valor']) ? (string)$data['valor'] : null;
 
     if (empty($clave) && isset($data['mantenimiento'])) {
         $clave = 'mantenimiento';
         $valor = in_array((string)$data['mantenimiento'], ['1', 'true', 'on', 'si'], true) ? '1' : '0';
+    }
+
+    if (empty($clave) && isset($data['demo_pago'])) {
+        $clave = 'pago_modo_demo';
+        $valor = in_array((string)$data['demo_pago'], ['1', 'true', 'on', 'si'], true) ? '1' : '0';
+    }
+
+    // Si la clave es el alias 'demo_pago', normalizar a 'pago_modo_demo'
+    if ($clave === 'demo_pago') {
+        $clave = 'pago_modo_demo';
     }
 
     if (empty($clave) || $valor === null) {
@@ -138,8 +152,8 @@ if ($method === 'POST') {
         ], 400);
     }
 
-    // Normalizar valor para mantenimiento
-    if ($clave === 'mantenimiento') {
+    // Normalizar valor para mantenimiento y demo_pago
+    if ($clave === 'mantenimiento' || $clave === 'pago_modo_demo') {
         $valor = in_array(strtolower(trim($valor)), ['1', 'true', 'on', 'si'], true) ? '1' : '0';
     }
 
@@ -167,6 +181,7 @@ if ($method === 'POST') {
 
         // Recargar el estado actualizado
         $mantenimientoActivo = ($clave === 'mantenimiento') ? ($valor === '1') : isMaintenanceMode($pdo);
+        $demoPagoActivo      = ($clave === 'pago_modo_demo') ? ($valor === '1') : isPagoDemoMode($pdo);
 
         sendJsonResponse([
             'success'             => true,
@@ -174,7 +189,9 @@ if ($method === 'POST') {
             'clave'               => $clave,
             'valor'               => $valor,
             'mantenimiento'       => $mantenimientoActivo,
-            'mantenimiento_valor' => ($clave === 'mantenimiento' ? $valor : (string)getConfigValue('mantenimiento', '0', $pdo))
+            'mantenimiento_valor' => ($clave === 'mantenimiento' ? $valor : (string)getConfigValue('mantenimiento', '0', $pdo)),
+            'demo_pago'           => $demoPagoActivo,
+            'demo_pago_valor'     => ($clave === 'pago_modo_demo' ? $valor : (string)getConfigValue('pago_modo_demo', '1', $pdo))
         ], 200);
 
     } catch (PDOException $e) {

@@ -21,6 +21,7 @@ export class PagoComponent implements OnInit {
 
   // Configuración de pagos y pasarela
   pagoConfig = signal<PagoConfigInfo | null>(null);
+  isDemoPagoActive = computed(() => this.pagoConfig()?.demo_pago !== false);
   selectedModalidad = signal<ModalidadPago>('redsys');
   isProcessingPayment = signal<boolean>(false);
   paymentError = signal<string | null>(null);
@@ -102,7 +103,7 @@ export class PagoComponent implements OnInit {
         // Fallback por defecto si hay problema temporal de conexión
         this.pagoConfig.set({
           success: true,
-          importe: '120.00',
+          importe: '250.00',
           bizum: {
             telefono: '+34 600 000 000',
             beneficiario: 'Encuentro Nacional de Magos Infantiles (ENMI)'
@@ -120,7 +121,8 @@ export class PagoComponent implements OnInit {
             entorno: 'sandbox',
             sandbox: true,
             tpv_url: 'https://sis-t.redsys.es:25443/sis/realizarPago'
-          }
+          },
+          demo_pago: true
         });
       }
     });

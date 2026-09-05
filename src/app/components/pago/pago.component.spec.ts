@@ -114,4 +114,42 @@ describe('PagoComponent', () => {
     expect(mockSessionService.clearSession).toHaveBeenCalled();
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/registro']);
   });
+
+  it('should show simulator buttons when demo_pago is true', () => {
+    component.pagoConfig.set({
+      success: true,
+      importe: '120.00',
+      bizum: { telefono: '+34 600 000 000', beneficiario: 'ENMI' },
+      transferencia: { iban: 'ES00 1234', titular: 'ENMI', banco: 'Santander', concepto_template: 'ENMI' },
+      otras: { texto: 'Directo' },
+      redsys: { entorno: 'sandbox', sandbox: true, tpv_url: 'https://sis-t.redsys.es' },
+      demo_pago: true
+    });
+    fixture.detectChanges();
+
+    expect(component.isDemoPagoActive()).toBeTrue();
+    const okBtn = fixture.nativeElement.querySelector('#simulateOkBtn');
+    const koBtn = fixture.nativeElement.querySelector('#simulateKoBtn');
+    expect(okBtn).toBeTruthy();
+    expect(koBtn).toBeTruthy();
+  });
+
+  it('should hide simulator buttons when demo_pago is false', () => {
+    component.pagoConfig.set({
+      success: true,
+      importe: '120.00',
+      bizum: { telefono: '+34 600 000 000', beneficiario: 'ENMI' },
+      transferencia: { iban: 'ES00 1234', titular: 'ENMI', banco: 'Santander', concepto_template: 'ENMI' },
+      otras: { texto: 'Directo' },
+      redsys: { entorno: 'sandbox', sandbox: true, tpv_url: 'https://sis-t.redsys.es' },
+      demo_pago: false
+    });
+    fixture.detectChanges();
+
+    expect(component.isDemoPagoActive()).toBeFalse();
+    const okBtn = fixture.nativeElement.querySelector('#simulateOkBtn');
+    const koBtn = fixture.nativeElement.querySelector('#simulateKoBtn');
+    expect(okBtn).toBeNull();
+    expect(koBtn).toBeNull();
+  });
 });

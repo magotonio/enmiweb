@@ -157,6 +157,20 @@ function isMaintenanceMode(?PDO $pdo = null): bool {
 }
 
 /**
+ * Comprueba si el modo demostración / simulador de pagos está activo.
+ * 
+ * @param PDO|null $pdo Conexión PDO opcional
+ * @return bool True si el simulador está activo ('1', 1, 'true'), False en caso contrario
+ */
+function isPagoDemoMode(?PDO $pdo = null): bool {
+    $val = getConfigValue('pago_modo_demo', '1', $pdo);
+    if (is_bool($val)) {
+        return $val;
+    }
+    return in_array(strtolower(trim((string)$val)), ['1', 'true', 'yes', 'si', 'on'], true);
+}
+
+/**
  * Obtiene los parámetros de configuración para el envío de correos electrónicos vía SMTP.
  * Prioridad de configuración:
  *  1. Tabla en base de datos: `enmi_configuracion` (PRO y LOCAL centralizado)

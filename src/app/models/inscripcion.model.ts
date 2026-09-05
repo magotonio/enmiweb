@@ -114,6 +114,7 @@ export interface PagoConfigInfo {
     sandbox: boolean;
     tpv_url: string;
   };
+  demo_pago?: boolean;
 }
 
 export interface RedsysFormParams {

@@ -13,13 +13,14 @@ export class ConfigService {
   private readonly authService = inject(AuthService);
   private readonly apiUrl = `${environment.apiUrl}/configuracion.php`;
 
-  // Estado reactivo del modo mantenimiento
+  // Estado reactivo del modo mantenimiento y demo de pagos
   readonly isMaintenanceMode = signal<boolean>(false);
+  readonly isDemoPago = signal<boolean>(true);
   readonly isLoaded = signal<boolean>(false);
   readonly isLoading = signal<boolean>(false);
 
   /**
-   * Consulta el estado del modo mantenimiento en el backend.
+   * Consulta el estado del modo mantenimiento y configuración en el backend.
    * @param forceRefresh Si es true, ignora el valor precargado y realiza petición HTTP obligatoria.
    */
   checkMaintenance(forceRefresh = false): Observable<boolean> {
@@ -35,7 +36,12 @@ export class ConfigService {
           response.mantenimiento_valor === '1' ||
           response.mantenimiento_valor === 'true'
         );
+        const demoActive = response.demo_pago !== undefined
+          ? Boolean(response.demo_pago)
+          : (response.demo_pago_valor !== '0' && response.demo_pago_valor !== 'false');
+
         this.isMaintenanceMode.set(active);
+        this.isDemoPago.set(demoActive);
         this.isLoaded.set(true);
         this.isLoading.set(false);
         return active;
@@ -66,6 +72,28 @@ export class ConfigService {
       tap(response => {
         if (response.success) {
           this.isMaintenanceMode.set(enabled);
+        }
+      })
+    );
+  }
+
+  /**
+   * Actualiza el parámetro de modo demo de pagos en la base de datos (Exclusivo Superadministrador).
+   * @param enabled True para activar el simulador ('1'), False para ocultarlo ('0').
+   */
+  setDemoPagoMode(enabled: boolean): Observable<ConfigResponse> {
+    const user = this.authService.currentUser();
+    const payload: SetMaintenanceRequest = {
+      clave: 'pago_modo_demo',
+      valor: enabled ? '1' : '0',
+      operator_id: user?.id,
+      operator_login: user?.login
+    };
+
+    return this.http.post<ConfigResponse>(this.apiUrl, payload).pipe(
+      tap(response => {
+        if (response.success) {
+          this.isDemoPago.set(enabled);
         }
       })
     );

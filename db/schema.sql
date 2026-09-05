@@ -205,7 +205,8 @@ VALUES
   ('pago_redsys_clave_secreta', 'sq7HjrUqKpOuHaSYNdTe73cbVQRwRN92', 'Clave secreta HMAC SHA-256 de Redsys (sandbox oficial)', NOW()),
   ('pago_redsys_moneda', '978', 'Código ISO de moneda (978 = Euro)', NOW()),
   ('pago_redsys_url_sandbox', 'https://sis-t.redsys.es:25443/sis/realizarPago', 'URL del TPV Virtual de Redsys en entorno de pruebas', NOW()),
-  ('pago_redsys_url_produccion', 'https://sis.redsys.es/sis/realizarPago', 'URL del TPV Virtual de Redsys en producción', NOW())
+  ('pago_redsys_url_produccion', 'https://sis.redsys.es/sis/realizarPago', 'URL del TPV Virtual de Redsys en producción', NOW()),
+  ('pago_modo_demo', '1', 'Habilita o deshabilita la visualización del simulador de pruebas de pago (Demo Pago) en el formulario de pago', NOW())
 ON DUPLICATE KEY UPDATE
   `valor` = VALUES(`valor`),
   `descripcion` = VALUES(`descripcion`);

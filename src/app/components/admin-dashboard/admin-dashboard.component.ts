@@ -35,6 +35,11 @@ export class AdminDashboardComponent implements OnInit {
   readonly isMaintenanceModalOpen = signal(false);
   readonly pendingMaintenanceState = signal<boolean | null>(null);
 
+  // Estado de modo demo de pagos (Simulador)
+  readonly isDemoPago = this.configService.isDemoPago;
+  readonly isUpdatingDemoPago = signal(false);
+  readonly demoPagoSuccessMessage = signal<string | null>(null);
+
   // Estado de carga y datos
   readonly isLoading = signal(true);
   readonly isRefreshing = signal(false);
@@ -176,6 +181,37 @@ export class AdminDashboardComponent implements OnInit {
         this.isMaintenanceModalOpen.set(false);
         this.pendingMaintenanceState.set(null);
         this.errorMessage.set(err.error?.message || 'Error al conectar con el servidor para actualizar el modo mantenimiento.');
+      }
+    });
+  }
+
+  /**
+   * Conmuta la visibilidad del simulador de pagos (Modo Demo) en la pantalla de pago.
+   * Exclusivo para Superadministradores.
+   */
+  toggleDemoPago(enable: boolean): void {
+    if (!this.isSuperAdmin()) return;
+
+    this.isUpdatingDemoPago.set(true);
+    this.demoPagoSuccessMessage.set(null);
+    this.errorMessage.set(null);
+
+    this.configService.setDemoPagoMode(enable).subscribe({
+      next: (res) => {
+        this.isUpdatingDemoPago.set(false);
+        if (res.success) {
+          const msg = enable
+            ? 'Modo Demo de Pagos ACTIVADO. Los botones de prueba (Simulador Redsys) ahora son visibles en la pantalla de pago.'
+            : 'Modo Demo de Pagos DESACTIVADO. Los botones de prueba han sido ocultados de la pantalla de pago.';
+          this.demoPagoSuccessMessage.set(msg);
+          setTimeout(() => this.demoPagoSuccessMessage.set(null), 6000);
+        } else {
+          this.errorMessage.set(res.message || 'No se pudo actualizar el modo demo de pagos.');
+        }
+      },
+      error: (err) => {
+        this.isUpdatingDemoPago.set(false);
+        this.errorMessage.set(err.error?.message || 'Error al conectar con el servidor para actualizar el modo demo de pagos.');
       }
     });
   }

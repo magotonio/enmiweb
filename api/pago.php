@@ -71,7 +71,8 @@ if ($method === 'GET') {
                     'entorno' => $redsysEntorno,
                     'sandbox' => ($redsysEntorno !== 'produccion'),
                     'tpv_url' => $tpvUrl
-                ]
+                ],
+                'demo_pago'     => isPagoDemoMode($pdo)
             ], 200);
 
         } catch (Throwable $e) {
@@ -250,6 +251,13 @@ if ($method === 'POST') {
 
     // C) SIMULADOR DE REDSYS (Pruebas sandbox / locales)
     if ($accion === 'simular_redsys') {
+        if (!isPagoDemoMode($pdo)) {
+            sendJsonResponse([
+                'success' => false,
+                'message' => 'El simulador de pruebas de pago se encuentra actualmente desactivado por configuración de administración.'
+            ], 403);
+        }
+
         $inscripcionId = isset($data['inscripcion_id']) ? (int)$data['inscripcion_id'] : 0;
         $resultado     = isset($data['resultado']) ? strtolower(trim((string)$data['resultado'])) : 'ok';
 

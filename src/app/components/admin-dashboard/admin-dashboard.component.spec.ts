@@ -27,11 +27,13 @@ describe('AdminDashboardComponent', () => {
       isAsistente: signal(true)
     });
 
-    const configSpy = jasmine.createSpyObj('ConfigService', ['checkMaintenance', 'setMaintenanceMode'], {
-      isMaintenanceMode: signal(false)
+    const configSpy = jasmine.createSpyObj('ConfigService', ['checkMaintenance', 'setMaintenanceMode', 'setDemoPagoMode'], {
+      isMaintenanceMode: signal(false),
+      isDemoPago: signal(true)
     });
     configSpy.checkMaintenance.and.returnValue(of(false));
     configSpy.setMaintenanceMode.and.returnValue(of({ success: true, message: 'OK' }));
+    configSpy.setDemoPagoMode.and.returnValue(of({ success: true, message: 'OK' }));
 
     const inscripcionSpy = jasmine.createSpyObj('InscripcionService', ['getInscripciones', 'exportToCsv']);
     inscripcionSpy.getInscripciones.and.returnValue(of({ success: true, data: [] }));
@@ -107,5 +109,19 @@ describe('AdminDashboardComponent', () => {
 
     expect(component.isMaintenanceModalOpen()).toBeFalse();
     expect(component.errorMessage()).toBe('Error de servidor');
+  });
+
+  it('should toggle demo pago mode to false and update message', () => {
+    component.toggleDemoPago(false);
+
+    expect(configService.setDemoPagoMode).toHaveBeenCalledWith(false);
+    expect(component.demoPagoSuccessMessage()).toContain('DESACTIVADO');
+  });
+
+  it('should toggle demo pago mode to true and update message', () => {
+    component.toggleDemoPago(true);
+
+    expect(configService.setDemoPagoMode).toHaveBeenCalledWith(true);
+    expect(component.demoPagoSuccessMessage()).toContain('ACTIVADO');
   });
 });

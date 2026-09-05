@@ -109,6 +109,25 @@
     </div>
     }
 
+    <!-- MENSAJE DE ÉXITO DE CONFIGURACIÓN / DEMO PAGO -->
+    @if (demoPagoSuccessMessage()) {
+    <div
+      class="p-4 rounded-2xl bg-purple-50 border border-purple-200 text-purple-900 flex items-center justify-between gap-3 shadow-xs animate-in fade-in duration-200">
+      <div class="flex items-center gap-3">
+        <svg class="w-5 h-5 text-purple-600 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+          stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        </svg>
+        <span class="text-sm font-medium">{{ demoPagoSuccessMessage() }}</span>
+      </div>
+      <button type="button" (click)="demoPagoSuccessMessage.set(null)"
+        class="text-xs font-bold text-purple-700 hover:underline cursor-pointer">
+        ✕
+      </button>
+    </div>
+    }
+
     <!-- TARJETA DE BIENVENIDA Y PERFIL DEL ADMINISTRADOR -->
     <div
       class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-navy-dark via-brand-navy to-brand-navy-light text-white p-6 sm:p-8 shadow-md border border-brand-gold/30">
@@ -647,8 +666,8 @@
       }
     </div>
 
-    <!-- INFORMACIÓN DEL ENCUENTRO, CONTROL DE MANTENIMIENTO Y SEGURIDAD -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- INFORMACIÓN DEL ENCUENTRO, CONTROL DE MANTENIMIENTO, DEMO PAGO Y SEGURIDAD -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
 
       <!-- Ficha Técnica ENMI 2027 -->
       <div class="bg-brand-white p-6 rounded-2xl border border-brand-silver/50 shadow-2xs space-y-3 flex flex-col justify-between">
@@ -676,7 +695,7 @@
               <span class="text-slate-400">Sede:</span>
               <span class="font-semibold text-brand-navy">Madrid, España</span>
             </li>
-            <li class="flex justify-between py-1">
+            <li class="flex justify-between py-1 border-b border-slate-100">
               <span class="text-slate-400">Acceso Público Web:</span>
               @if (isMaintenanceMode()) {
               <span class="inline-flex items-center gap-1 font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
@@ -685,6 +704,18 @@
               } @else {
               <span class="inline-flex items-center gap-1 font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Abierto
+              </span>
+              }
+            </li>
+            <li class="flex justify-between py-1">
+              <span class="text-slate-400">Simulador de Pago:</span>
+              @if (isDemoPago()) {
+              <span class="inline-flex items-center gap-1 font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
+                <span class="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span> Activo
+              </span>
+              } @else {
+              <span class="inline-flex items-center gap-1 font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Oculto
               </span>
               }
             </li>
@@ -750,6 +781,71 @@
           <a routerLink="/mantenimiento"
             class="text-[11px] text-center font-medium text-slate-500 hover:text-brand-navy underline cursor-pointer">
             Previsualizar página de mantenimiento
+          </a>
+        </div>
+        }
+      </div>
+
+      <!-- Tarjeta de Control del Simulador de Pagos (Demo Pago - Exclusivo Superadmin) -->
+      <div class="bg-brand-white p-6 rounded-2xl border border-brand-silver/50 shadow-2xs space-y-3 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-brand-navy uppercase tracking-wider flex items-center gap-2">
+              <svg class="w-4 h-4 text-purple-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect width="20" height="14" x="2" y="5" rx="2" />
+                <line x1="2" x2="22" y1="10" y2="10" />
+              </svg>
+              <span>Demo de Pago</span>
+            </h3>
+            <span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded-md border"
+              [ngClass]="isDemoPago() ? 'bg-purple-100 text-purple-800 border-purple-300' : 'bg-slate-100 text-slate-700 border-slate-300'">
+              {{ isDemoPago() ? 'Activo (1)' : 'Oculto (0)' }}
+            </span>
+          </div>
+
+          <p class="text-xs text-slate-600 mt-2.5 leading-relaxed">
+            @if (isDemoPago()) {
+              <strong class="text-purple-800">El simulador está activo.</strong> Los botones de prueba local (OK y KO) se muestran en la pantalla de pago para facilitar verificaciones.
+            } @else {
+              <strong class="text-slate-700">El simulador está desactivado.</strong> Las herramientas de prueba se ocultan completamente para los asistentes en la pantalla de pago.
+            }
+          </p>
+        </div>
+
+        @if (isSuperAdmin()) {
+        <div class="pt-3 border-t border-slate-100 flex flex-col gap-2">
+          @if (isDemoPago()) {
+          <button type="button" id="btnToggleDemoPagoOff" (click)="toggleDemoPago(false)" [disabled]="isUpdatingDemoPago()"
+            class="w-full inline-flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 rounded-xl border border-slate-300 shadow-xs transition-all duration-150 active:scale-95 cursor-pointer disabled:opacity-60">
+            <svg class="w-4 h-4 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+            </svg>
+            <span>Ocultar Simulador (Desactivar)</span>
+          </button>
+          } @else {
+          <button type="button" id="btnToggleDemoPagoOn" (click)="toggleDemoPago(true)" [disabled]="isUpdatingDemoPago()"
+            class="w-full inline-flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-xs transition-all duration-150 active:scale-95 cursor-pointer disabled:opacity-60">
+            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+            </svg>
+            <span>Mostrar Simulador (Activar)</span>
+          </button>
+          }
+
+          <a routerLink="/pago"
+            class="text-[11px] text-center font-medium text-slate-500 hover:text-brand-navy underline cursor-pointer">
+            Ir a pantalla de pago
+          </a>
+        </div>
+        } @else {
+        <div class="pt-3 border-t border-slate-100 flex flex-col gap-2">
+          <p class="text-[11px] text-slate-500 italic">
+            El control de visibilidad del simulador es exclusivo para Superadministradores.
+          </p>
+          <a routerLink="/pago"
+            class="text-[11px] text-center font-medium text-slate-500 hover:text-brand-navy underline cursor-pointer">
+            Ir a pantalla de pago
           </a>
         </div>
         }

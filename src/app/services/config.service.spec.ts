@@ -62,4 +62,21 @@ describe('ConfigService', () => {
       mantenimiento: true
     });
   });
+
+  it('should update demo pago mode via setDemoPagoMode', () => {
+    service.setDemoPagoMode(false).subscribe(res => {
+      expect(res.success).toBeTrue();
+      expect(service.isDemoPago()).toBeFalse();
+    });
+
+    const req = httpMock.expectOne(request => request.url.includes('configuracion.php'));
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body.clave).toBe('pago_modo_demo');
+    expect(req.request.body.valor).toBe('0');
+    req.flush({
+      success: true,
+      message: "Parámetro 'pago_modo_demo' actualizado correctamente.",
+      demo_pago: false
+    });
+  });
 });

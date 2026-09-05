@@ -14,16 +14,21 @@ export interface ConfigResponse {
   success: boolean;
   mantenimiento: boolean;
   mantenimiento_valor?: string;
+  demo_pago?: boolean;
+  demo_pago_valor?: string;
   configuracion?: ConfigItem[];
   message?: string;
   clave?: string;
   valor?: string;
 }
 
-export interface SetMaintenanceRequest {
+export interface SetConfigRequest {
   mantenimiento?: string | boolean;
+  demo_pago?: string | boolean;
   clave?: string;
   valor?: string;
   operator_id?: number;
   operator_login?: string;
 }
+
+export type SetMaintenanceRequest = SetConfigRequest;

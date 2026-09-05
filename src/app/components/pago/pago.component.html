@@ -265,6 +265,7 @@
             </button>
 
             <!-- Herramientas de prueba / Simulador Local -->
+            @if (isDemoPagoActive()) {
             <div class="pt-4 border-t border-slate-200 space-y-3">
               <div class="flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
@@ -295,6 +296,7 @@
                 </button>
               </div>
             </div>
+            }
           </div>
           }
 
