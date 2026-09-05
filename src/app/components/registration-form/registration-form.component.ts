@@ -1,8 +1,17 @@
-import { Component, ElementRef, ViewChild, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { InscripcionFormData } from '../../models/inscripcion.model';
+import { ActivatedRoute, Router } from '@angular/router';
+import {
+  EstadoInscripcion,
+  InscripcionFormData,
+  ModalidadPago,
+  PagoConfigInfo
+} from '../../models/inscripcion.model';
 import { InscripcionService } from '../../services/inscripcion.service';
+import { PagoService } from '../../services/pago.service';
+
+export type RegistrationStep = 'form' | 'payment' | 'success';
 
 @Component({
   selector: 'app-registration-form',
@@ -11,9 +20,12 @@ import { InscripcionService } from '../../services/inscripcion.service';
   templateUrl: './registration-form.component.html',
   styleUrl: './registration-form.component.css'
 })
-export class RegistrationFormComponent {
+export class RegistrationFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly inscripcionService = inject(InscripcionService);
+  private readonly pagoService = inject(PagoService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   @ViewChild('nombreInput') nombreInputElement?: ElementRef<HTMLInputElement>;
   @ViewChild('apellidosInput') apellidosInputElement?: ElementRef<HTMLInputElement>;
@@ -23,14 +35,27 @@ export class RegistrationFormComponent {
   @ViewChild('origenInput') origenInputElement?: ElementRef<HTMLInputElement>;
 
   form: FormGroup;
-  isSubmitted = signal<boolean>(false);
+  currentStep = signal<RegistrationStep>('form');
   isLoading = signal<boolean>(false);
   serverError = signal<string | null>(null);
   isDuplicateError = signal<boolean>(false);
   serverFieldErrors = signal<Record<string, string>>({});
+
+  // Datos del participante registrado
+  registeredId = signal<number>(0);
   registeredFullName = signal<string>('');
   registeredArtistName = signal<string>('');
   registeredEmail = signal<string>('');
+  registeredPhone = signal<string>('');
+  registeredStatus = signal<EstadoInscripcion>('iniciada');
+
+  // Datos de pagos y pasarela
+  pagoConfig = signal<PagoConfigInfo | null>(null);
+  selectedModalidad = signal<ModalidadPago | null>(null);
+  isProcessingPayment = signal<boolean>(false);
+  paymentError = signal<string | null>(null);
+  paymentNotice = signal<string | null>(null);
+  copiedField = signal<string | null>(null);
 
   // Modales de información y legal
   showParticipacionModal = signal<boolean>(false);
@@ -68,6 +93,70 @@ export class RegistrationFormComponent {
           }
         }
       });
+    });
+  }
+
+  ngOnInit(): void {
+    // Cargar configuración de pago de antemano
+    this.loadPagoConfig();
+
+    // Comprobar si el usuario vuelve de la pasarela Redsys mediante query parameters
+    this.route.queryParams.subscribe(params => {
+      const pagoStatus = params['pago'];
+      const idParam = params['id'];
+
+      if (idParam && !isNaN(Number(idParam))) {
+        const id = Number(idParam);
+        this.registeredId.set(id);
+
+        if (pagoStatus === 'ok') {
+          // El pago en Redsys fue exitoso
+          this.registeredStatus.set('pagada');
+          this.currentStep.set('success');
+          this.paymentNotice.set('¡Tu pago ha sido procesado y verificado correctamente por la pasarela de Redsys!');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else if (pagoStatus === 'ko') {
+          // El pago en Redsys fue cancelado o rechazado
+          this.registeredStatus.set('pendiente');
+          this.currentStep.set('payment');
+          this.selectedModalidad.set('redsys');
+          this.paymentError.set('La pasarela de pago no completó la transacción o fue cancelada. Tu inscripción se encuentra en estado pendiente. Puedes reintentar el pago o elegir otra modalidad.');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }
+    });
+  }
+
+  loadPagoConfig(): void {
+    this.pagoService.getPagoConfig().subscribe({
+      next: (config) => {
+        this.pagoConfig.set(config);
+      },
+      error: () => {
+        // Fallback por defecto si hay problema temporal de conexión
+        this.pagoConfig.set({
+          success: true,
+          importe: '120.00',
+          bizum: {
+            telefono: '+34 600 000 000',
+            beneficiario: 'Encuentro Nacional de Magos Infantiles (ENMI)'
+          },
+          transferencia: {
+            iban: 'ES00 0000 0000 0000 0000 0000',
+            titular: 'Asociación ENMI 2027 / Eutikea',
+            banco: 'Banco Santander',
+            concepto_template: 'ENMI-2027-{ID}-{APELLIDOS}'
+          },
+          otras: {
+            texto: 'Si necesitas otra forma de pago, nos pondremos en contacto contigo por teléfono o email para coordinarlo.'
+          },
+          redsys: {
+            entorno: 'sandbox',
+            sandbox: true,
+            tpv_url: 'https://sis-t.redsys.es:25443/sis/realizarPago'
+          }
+        });
+      }
     });
   }
 
@@ -214,12 +303,19 @@ export class RegistrationFormComponent {
     const artistName = (data.nombre_artistico || '').trim();
 
     this.inscripcionService.inscribir(data).subscribe({
-      next: () => {
+      next: (res) => {
         this.isLoading.set(false);
+        const newId = res.id || 0;
+        this.registeredId.set(newId);
         this.registeredFullName.set(fullName);
         this.registeredArtistName.set(artistName);
         this.registeredEmail.set(data.email.trim());
-        this.isSubmitted.set(true);
+        this.registeredPhone.set(data.telefono.trim());
+        this.registeredStatus.set('iniciada');
+
+        // Pasar a la pantalla de modalidad de pago
+        this.currentStep.set('payment');
+        this.selectedModalidad.set('redsys'); // Por defecto Redsys seleccionado
         window.scrollTo({ top: 0, behavior: 'smooth' });
       },
       error: (err) => {
@@ -258,6 +354,116 @@ export class RegistrationFormComponent {
     });
   }
 
+  // =====================================================================
+  // GESTIÓN DE MODALIDADES DE PAGO
+  // =====================================================================
+  chooseModalidad(mod: ModalidadPago): void {
+    this.selectedModalidad.set(mod);
+    this.paymentError.set(null);
+  }
+
+  /**
+   * Procesa la opción 1: Pasarela Redsys Oficial
+   */
+  procederRedsysOficial(): void {
+    const id = this.registeredId();
+    if (id <= 0) return;
+
+    this.isProcessingPayment.set(true);
+    this.paymentError.set(null);
+
+    this.pagoService.iniciarRedsys(id).subscribe({
+      next: (params) => {
+        this.isProcessingPayment.set(false);
+        // Redirigir al formulario de Redsys
+        this.pagoService.submitToRedsysGateway(params);
+      },
+      error: (err) => {
+        this.isProcessingPayment.set(false);
+        this.paymentError.set(err?.error?.message || 'No se pudo conectar con la pasarela de pago. Por favor, inténtalo de nuevo.');
+      }
+    });
+  }
+
+  /**
+   * Ejecuta el simulador de Redsys (ideal para pruebas locales / Docker)
+   */
+  ejecutarSimuladorRedsys(resultado: 'ok' | 'ko'): void {
+    const id = this.registeredId();
+    if (id <= 0) return;
+
+    this.isProcessingPayment.set(true);
+    this.paymentError.set(null);
+
+    this.pagoService.simularRedsys(id, resultado).subscribe({
+      next: (res) => {
+        this.isProcessingPayment.set(false);
+        if (resultado === 'ok') {
+          this.registeredStatus.set('pagada');
+          this.currentStep.set('success');
+          this.paymentNotice.set(res.message || '¡Pago completado con éxito! Inscripción pagada y confirmada.');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          this.registeredStatus.set('pendiente');
+          this.paymentError.set(res.message || 'El pago no ha sido completado. Tu inscripción queda en estado pendiente.');
+        }
+      },
+      error: (err) => {
+        this.isProcessingPayment.set(false);
+        this.paymentError.set(err?.error?.message || 'Error al ejecutar la simulación de pago.');
+      }
+    });
+  }
+
+  /**
+   * Confirma la selección de Bizum, Transferencia u Otras modalidades
+   */
+  confirmarMetodoManual(modalidad: ModalidadPago): void {
+    const id = this.registeredId();
+    if (id <= 0) return;
+
+    this.isProcessingPayment.set(true);
+    this.paymentError.set(null);
+
+    this.pagoService.confirmarModalidad(id, modalidad).subscribe({
+      next: () => {
+        this.isProcessingPayment.set(false);
+        this.registeredStatus.set('pendiente');
+        this.currentStep.set('success');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      },
+      error: (err) => {
+        this.isProcessingPayment.set(false);
+        this.paymentError.set(err?.error?.message || 'No se pudo registrar la modalidad de pago.');
+      }
+    });
+  }
+
+  /**
+   * Obtiene la cadena del concepto personalizada con el ID y apellidos del participante
+   */
+  getConceptoPersonalizado(): string {
+    const template = this.pagoConfig()?.transferencia?.concepto_template || 'ENMI-2027-{ID}-{APELLIDOS}';
+    const idStr = this.registeredId() > 0 ? this.registeredId().toString() : '000';
+    const apellidos = (this.form.get('apellidos')?.value || 'PARTICIPANTE').trim().toUpperCase().replace(/\s+/g, '-');
+    return template.replace('{ID}', idStr).replace('{APELLIDOS}', apellidos);
+  }
+
+  /**
+   * Copia texto al portapapeles y activa el badge temporal
+   */
+  copyToClipboard(text: string, fieldId: string): void {
+    if (!navigator?.clipboard) return;
+    navigator.clipboard.writeText(text).then(() => {
+      this.copiedField.set(fieldId);
+      setTimeout(() => {
+        if (this.copiedField() === fieldId) {
+          this.copiedField.set(null);
+        }
+      }, 2500);
+    });
+  }
+
   onReset(): void {
     this.form.reset({
       nombre: '',
@@ -275,14 +481,24 @@ export class RegistrationFormComponent {
     });
     this.showNoImagenModal.set(false);
     this.noImagenConfirmedCheckbox.set(false);
-    this.isSubmitted.set(false);
+    this.currentStep.set('form');
     this.isLoading.set(false);
+    this.isProcessingPayment.set(false);
     this.serverError.set(null);
+    this.paymentError.set(null);
+    this.paymentNotice.set(null);
     this.isDuplicateError.set(false);
     this.serverFieldErrors.set({});
+    this.registeredId.set(0);
     this.registeredFullName.set('');
     this.registeredArtistName.set('');
     this.registeredEmail.set('');
+    this.registeredPhone.set('');
+    this.registeredStatus.set('iniciada');
+    this.selectedModalidad.set(null);
+
+    // Limpiar parámetros de URL si existieran
+    this.router.navigate([], { queryParams: {} });
 
     // Enfocar automáticamente el campo Nombre tras reiniciar
     setTimeout(() => {

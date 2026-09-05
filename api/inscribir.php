@@ -182,7 +182,7 @@ try {
                 AND RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(telefono, ' ', ''), '-', ''), '.', ''), '+', ''), '(', ''), ')', ''), 9) = :telefono_last9
             )
         )
-        AND (estado != 'cancelado' OR estado IS NULL)
+        AND (estado NOT IN ('cancelado', 'cancelada') OR estado IS NULL)
     ");
 
     $stmtCheck->execute([
@@ -280,7 +280,7 @@ try {
         INSERT INTO `enmi_inscripciones` 
             (`nombre`, `apellidos`, `nombre_artistico`, `nif_pasaporte`, `email`, `telefono`, `origen`, `asociacion`, `quiero_participar`, `acepta_privacidad`, `consentimiento_imagen`, `comentarios`, `estado`, `ip_registro`, `fecha_creacion`) 
         VALUES 
-            (:nombre, :apellidos, :nombre_artistico, :nif_pasaporte, :email, :telefono, :origen, :asociacion, :quiero_participar, :acepta_privacidad, :consentimiento_imagen, :comentarios, 'activo', :ip_registro, NOW())
+            (:nombre, :apellidos, :nombre_artistico, :nif_pasaporte, :email, :telefono, :origen, :asociacion, :quiero_participar, :acepta_privacidad, :consentimiento_imagen, :comentarios, 'iniciada', :ip_registro, NOW())
     ");
 
     $stmt->execute([
@@ -301,7 +301,7 @@ try {
 
     $insertedId = (int)$pdo->lastInsertId();
 
-    $logMsg = "Nueva inscripción ID #{$insertedId} registrada para {$nombre} {$apellidos}";
+    $logMsg = "Nueva inscripción ID #{$insertedId} registrada para {$nombre} {$apellidos} [Estado: iniciada]";
     if ($nombreArtistico) {
         $logMsg .= " ({$nombreArtistico})";
     }
@@ -316,6 +316,7 @@ try {
         'apellidos'         => $apellidos,
         'nombre_artistico'  => $nombreArtistico,
         'email'             => $email,
+        'estado'            => 'iniciada',
         'quiero_participar' => $quieroParticipar,
         'operador'          => $isAuthorizedOperator ? ($op['login'] ?? null) : null
     ], $isAuthorizedOperator ? (int)($op['id'] ?? null) : null);
@@ -333,11 +334,12 @@ try {
         'quiero_participar'     => $quieroParticipar,
         'consentimiento_imagen' => $consentimientoImagen,
         'comentarios'           => $comentarios,
+        'estado'                => 'iniciada',
         'ip_registro'           => $ipRegistro,
         'fecha'                 => date('d/m/Y H:i:s')
     ];
 
-    // 1. Enviar notificación por correo electrónico a los administradores
+    // 1. Notificación a administradores de inscripción iniciada
     $adminEmailResult = sendRegistrationNotification($emailPayload);
 
     // Registrar log del resultado del envío a los administradores
@@ -348,36 +350,23 @@ try {
         $adminEmailResult['success'] ?? false
     );
 
-    // 2. Enviar correo de confirmación con los datos registrados directamente al participante
-    $participantEmailResult = sendParticipantRegistrationEmail($emailPayload);
-
-    // Registrar log del resultado del envío al participante
-    logNotification(
-        'confirmacion_inscripcion_participante',
-        $participantEmailResult['message'] ?? 'Envío de correo de confirmación al participante',
-        ['inscripcion_id' => $insertedId, 'destinatario' => $email, 'detalle' => $participantEmailResult],
-        $participantEmailResult['success'] ?? false
-    );
-
     sendJsonResponse([
         'success'            => true,
-        'message'            => 'Inscripción guardada correctamente.',
+        'message'            => 'Inscripción iniciada correctamente. Procede a seleccionar la modalidad de pago.',
         'id'                 => $insertedId,
+        'estado'             => 'iniciada',
         'data'               => [
+            'id'                => $insertedId,
             'nombre'            => $nombre,
             'apellidos'         => $apellidos,
             'nombre_artistico'  => $nombreArtistico,
             'email'             => $email,
+            'estado'            => 'iniciada',
             'quiero_participar' => (bool)$quieroParticipar
         ],
         'notificacion_admin' => [
             'enviada' => $adminEmailResult['success'] ?? false,
             'mensaje' => $adminEmailResult['message'] ?? ''
-        ],
-        'email_participante' => [
-            'enviado'      => $participantEmailResult['success'] ?? false,
-            'destinatario' => $email,
-            'mensaje'      => $participantEmailResult['message'] ?? ''
         ]
     ], 201);
 

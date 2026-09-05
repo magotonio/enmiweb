@@ -45,7 +45,19 @@ export class AdminDashboardComponent implements OnInit {
   readonly totalInscritos = computed(() => this.inscripciones().length);
 
   readonly totalActivos = computed(() =>
-    this.inscripciones().filter(i => (i.estado || 'activo') === 'activo').length
+    this.inscripciones().filter(i => ['activo', 'pagada', 'pagado'].includes(i.estado || 'activo')).length
+  );
+
+  readonly totalPagadas = computed(() =>
+    this.inscripciones().filter(i => ['pagada', 'pagado'].includes(i.estado || '')).length
+  );
+
+  readonly totalPendientes = computed(() =>
+    this.inscripciones().filter(i => i.estado === 'pendiente').length
+  );
+
+  readonly totalIniciadas = computed(() =>
+    this.inscripciones().filter(i => i.estado === 'iniciada').length
   );
 
   readonly totalParticipantesArtisticos = computed(() =>

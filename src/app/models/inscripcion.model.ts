@@ -1,3 +1,6 @@
+export type EstadoInscripcion = 'iniciada' | 'pendiente' | 'pagada' | 'cancelada' | 'activo' | string;
+export type ModalidadPago = 'redsys' | 'bizum' | 'transferencia' | 'otras';
+
 export interface Inscripcion {
   id: number;
   nombre: string;
@@ -12,7 +15,7 @@ export interface Inscripcion {
   acepta_privacidad: boolean;
   consentimiento_imagen: boolean;
   comentarios?: string | null;
-  estado?: string;
+  estado?: EstadoInscripcion;
   ip_registro?: string | null;
   fecha_creacion: string;
   fecha_actualizacion?: string | null;
@@ -38,11 +41,14 @@ export interface InscripcionApiResponse {
   message: string;
   duplicado?: boolean;
   id?: number;
+  estado?: EstadoInscripcion;
   data?: {
+    id?: number;
     nombre: string;
     apellidos: string;
     nombre_artistico?: string | null;
     email: string;
+    estado?: EstadoInscripcion;
     quiero_participar: boolean;
   };
   errors?: Record<string, string>;
@@ -65,6 +71,10 @@ export interface InscripcionesStats {
   total: number;
   hoy: number;
   activos: number;
+  pagadas?: number;
+  pendientes?: number;
+  iniciadas?: number;
+  canceladas?: number;
   quieren_participar?: number;
 }
 
@@ -81,4 +91,49 @@ export interface InscripcionesFilterParams {
   estado?: string;
   sort?: 'id' | 'nombre' | 'apellidos' | 'nombre_artistico' | 'email' | 'nif_pasaporte' | 'origen' | 'quiero_participar' | 'fecha_creacion' | 'estado';
   order?: 'ASC' | 'DESC';
+}
+
+export interface PagoConfigInfo {
+  success: boolean;
+  importe: string;
+  bizum: {
+    telefono: string;
+    beneficiario: string;
+  };
+  transferencia: {
+    iban: string;
+    titular: string;
+    banco: string;
+    concepto_template: string;
+  };
+  otras: {
+    texto: string;
+  };
+  redsys: {
+    entorno: string;
+    sandbox: boolean;
+    tpv_url: string;
+  };
+}
+
+export interface RedsysFormParams {
+  success: boolean;
+  inscripcion_id: number;
+  tpv_url: string;
+  Ds_SignatureVersion: string;
+  Ds_MerchantParameters: string;
+  Ds_Signature: string;
+  order: string;
+  importe: string;
+  sandbox: boolean;
+  message?: string;
+}
+
+export interface PagoAccionResponse {
+  success: boolean;
+  inscripcion_id?: number;
+  estado?: EstadoInscripcion;
+  modalidad?: ModalidadPago;
+  resultado?: string;
+  message?: string;
 }

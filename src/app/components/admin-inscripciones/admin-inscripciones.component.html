@@ -276,6 +276,10 @@
                 class="py-1.5 px-3 text-xs font-medium bg-white border border-brand-silver/60 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-gold shadow-2xs">
                 <option value="todos">Todos los inscritos</option>
                 <option value="participa">⭐ Quieren participar</option>
+                <option value="pagada">🟢 Pagadas</option>
+                <option value="pendiente">🟡 Pendientes de pago</option>
+                <option value="iniciada">⚪ Iniciadas</option>
+                <option value="cancelada">🔴 Canceladas</option>
                 <option value="activo">Solo activos</option>
               </select>
             </div>
@@ -363,6 +367,21 @@
                   <span>Participa</span>
                   <span class="text-slate-400 group-hover:text-brand-navy">
                     @if (sortField() === 'quiero_participar') {
+                    <span>{{ sortDirection() === 'ASC' ? '▲' : '▼' }}</span>
+                    } @else {
+                    <span class="opacity-0 group-hover:opacity-60">⇅</span>
+                    }
+                  </span>
+                </div>
+              </th>
+
+              <!-- Columna Estado -->
+              <th scope="col" (click)="toggleSort('estado')"
+                class="py-3.5 px-4 sm:px-6 cursor-pointer hover:bg-slate-200/60 transition-colors group">
+                <div class="flex items-center gap-1.5">
+                  <span>Estado</span>
+                  <span class="text-slate-400 group-hover:text-brand-navy">
+                    @if (sortField() === 'estado') {
                     <span>{{ sortDirection() === 'ASC' ? '▲' : '▼' }}</span>
                     } @else {
                     <span class="opacity-0 group-hover:opacity-60">⇅</span>
@@ -487,6 +506,35 @@
                 <span
                   class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium text-slate-500 bg-slate-100">
                   Asistente
+                </span>
+                }
+              </td>
+
+              <!-- Estado -->
+              <td class="py-4 px-4 sm:px-6">
+                @if (item.estado === 'pagada' || item.estado === 'pagado') {
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-300">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  Pagada
+                </span>
+                } @else if (item.estado === 'pendiente') {
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-50 text-amber-900 border border-amber-300">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                  Pendiente
+                </span>
+                } @else if (item.estado === 'iniciada') {
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-sky-50 text-sky-800 border border-sky-300">
+                  <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+                  Iniciada
+                </span>
+                } @else if (item.estado === 'cancelada' || item.estado === 'cancelado') {
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-red-50 text-red-800 border border-red-300">
+                  <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                  Cancelada
+                </span>
+                } @else {
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-300">
+                  {{ item.estado || 'activo' }}
                 </span>
                 }
               </td>
@@ -664,11 +712,31 @@
 
             <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
               <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Estado de la Plaza</span>
-              <span
-                class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 mt-1">
+              @if (selectedInscripcion()!.estado === 'pagada' || selectedInscripcion()!.estado === 'pagado') {
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-300 mt-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                Pagada
+              </span>
+              } @else if (selectedInscripcion()!.estado === 'pendiente') {
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-300 mt-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                Pendiente de pago
+              </span>
+              } @else if (selectedInscripcion()!.estado === 'iniciada') {
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-sky-50 text-sky-700 border border-sky-300 mt-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+                Iniciada
+              </span>
+              } @else if (selectedInscripcion()!.estado === 'cancelada' || selectedInscripcion()!.estado === 'cancelado') {
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-red-50 text-red-700 border border-red-300 mt-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                Cancelada
+              </span>
+              } @else {
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-300 mt-1">
                 {{ selectedInscripcion()!.estado || 'activo' }}
               </span>
+              }
             </div>
 
           </div>

@@ -15,24 +15,47 @@
             class="h-44 sm:h-52 w-auto object-contain drop-shadow-sm transition-transform duration-300 hover:scale-105">
         </div>
 
+        @if (currentStep() === 'form') {
         <div
           class="inline-flex items-center gap-2 px-4 py-1 text-xs font-extrabold tracking-wider text-brand-navy bg-brand-gold/15 border border-brand-gold/40 rounded-full uppercase mb-3 shadow-2xs">
           <span class="w-2 h-2 rounded-full bg-brand-gold animate-pulse"></span>
-          Formulario Oficial de Inscripción
+          Paso 1 de 2 &bull; Datos de Inscripción
         </div>
-
         <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-brand-navy mb-2.5">
           Registro de Participante
         </h1>
-        @if (!isSubmitted()) {
         <p class="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
-          Completa tus datos personales, de contacto y artísticos para reservar tu plaza en el Encuentro Nacional de
+          Completa tus datos personales, de contacto y artísticos para iniciar tu inscripción en el Encuentro Nacional
+          de
           Magos Infantiles (ENMI).
         </p>
+        } @else if (currentStep() === 'payment') {
+        <div
+          class="inline-flex items-center gap-2 px-4 py-1 text-xs font-extrabold tracking-wider text-brand-navy bg-brand-gold/15 border border-brand-gold/40 rounded-full uppercase mb-3 shadow-2xs">
+          <span class="w-2 h-2 rounded-full bg-brand-gold animate-pulse"></span>
+          Paso 2 de 2 &bull; Modalidad de Pago
+        </div>
+        <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-brand-navy mb-2.5">
+          Elige tu Modalidad de Pago
+        </h1>
+        <p class="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
+          Inscripción <strong class="text-brand-navy">#ENMI-{{ registeredId() }}</strong> a nombre de <strong
+            class="text-brand-navy">{{ registeredFullName() }}</strong> &bull; Cuota: <strong
+            class="text-brand-gold-dark text-lg">{{ pagoConfig()?.importe || '120.00' }} €</strong>
+        </p>
+        } @else {
+        <div
+          class="inline-flex items-center gap-2 px-4 py-1 text-xs font-extrabold tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-300 rounded-full uppercase mb-3 shadow-2xs">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          Inscripción Procesada
+        </div>
+        <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-brand-navy mb-2.5">
+          Estado de tu Inscripción
+        </h1>
         }
       </header>
 
-      @if (!isSubmitted()) {
+      @if (currentStep() === 'form') {
       <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-8" novalidate id="registrationForm">
 
         <!-- Banner de Error / Duplicado de Servidor -->
@@ -513,46 +536,585 @@
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
               </path>
             </svg>
-            <span>Procesando y guardando inscripción...</span>
+            <span>Iniciando inscripción y preparando pasarela...</span>
             } @else {
-            <span>Completar Inscripción en ENMI</span>
+            <span>Inscribirme y ver opciones de pago</span>
             <svg class="w-5 h-5 text-brand-gold transition-transform duration-200 group-hover:translate-x-1"
               xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M5 12h14"></path>
-              <path d="m12 5 7 7-7 7"></path>
+              <rect width="20" height="14" x="2" y="5" rx="2" />
+              <line x1="2" x2="22" y1="10" y2="10" />
             </svg>
             }
           </button>
         </div>
 
       </form>
+      } @else if (currentStep() === 'payment') {
+
+      <!-- ============================================================ -->
+      <!-- PANTALLA DE MODALIDAD DE PAGO                               -->
+      <!-- ============================================================ -->
+      <div id="paymentModalitySection" class="flex flex-col gap-6 animate-in fade-in duration-300">
+
+        <!-- Banner de Error o Aviso si aplica -->
+        @if (paymentError()) {
+        <div
+          class="flex items-start gap-3.5 p-4 sm:p-5 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 text-sm shadow-sm"
+          role="alert">
+          <svg class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <div class="flex-1 space-y-1">
+            <strong class="font-bold text-amber-900 block">Aviso sobre el proceso de pago</strong>
+            <p class="text-amber-800 text-xs sm:text-sm leading-relaxed">{{ paymentError() }}</p>
+          </div>
+        </div>
+        }
+
+        <!-- Resumen Superior de la Inscripción -->
+        <div
+          class="bg-gradient-to-br from-brand-navy to-brand-navy-dark text-white p-5 sm:p-6 rounded-2xl border border-brand-gold/30 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span
+                class="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-brand-gold/20 text-brand-gold border border-brand-gold/40">
+                Inscripción iniciada
+              </span>
+              <span class="font-mono text-xs text-slate-300">#ENMI-{{ registeredId() }}</span>
+            </div>
+            <h2 class="text-lg sm:text-xl font-extrabold text-white">
+              {{ registeredFullName() }}
+              @if (registeredArtistName()) {
+              <span class="text-brand-gold font-semibold text-base">({{ registeredArtistName() }})</span>
+              }
+            </h2>
+            <p class="text-xs text-slate-300">
+              Elige cómo deseas abonar tu cuota para completar tu plaza.
+            </p>
+          </div>
+
+          <div
+            class="bg-white/10 border border-white/15 px-4 py-3 rounded-xl text-right shrink-0 w-full sm:w-auto flex sm:flex-col justify-between items-center sm:items-end">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-brand-gold">Total a abonar</span>
+            <span class="text-2xl sm:text-3xl font-black text-white font-mono">{{ pagoConfig()?.importe || '120.00' }}
+              €</span>
+          </div>
+        </div>
+
+        <!-- Selector de Modalidades: Grid de 4 opciones -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+          <!-- 1. REDSYS -->
+          <div (click)="chooseModalidad('redsys')"
+            class="relative rounded-2xl border-2 p-5 cursor-pointer transition-all duration-200 flex flex-col justify-between"
+            [class.border-brand-gold]="selectedModalidad() === 'redsys'"
+            [class.bg-brand-gold/5]="selectedModalidad() === 'redsys'"
+            [class.shadow-md]="selectedModalidad() === 'redsys'"
+            [class.border-slate-200]="selectedModalidad() !== 'redsys'"
+            [class.hover:border-brand-silver]="selectedModalidad() !== 'redsys'">
+            <div class="flex items-start justify-between gap-2 mb-3">
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-10 h-10 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-lg">
+                  💳
+                </div>
+                <div>
+                  <h3 class="font-extrabold text-brand-navy text-base">1. Tarjeta (Redsys)</h3>
+                  <span class="text-[11px] font-semibold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-md">
+                    Inmediato &bull; Sandbox
+                  </span>
+                </div>
+              </div>
+              <input type="radio" name="modalidadPago" [checked]="selectedModalidad() === 'redsys'"
+                class="mt-1 w-4 h-4 text-brand-gold focus:ring-brand-gold cursor-pointer">
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Pago seguro con tarjeta de crédito/débito en la pasarela bancaria Redsys (entorno de pruebas).
+            </p>
+          </div>
+
+          <!-- 2. BIZUM -->
+          <div (click)="chooseModalidad('bizum')"
+            class="relative rounded-2xl border-2 p-5 cursor-pointer transition-all duration-200 flex flex-col justify-between"
+            [class.border-brand-gold]="selectedModalidad() === 'bizum'"
+            [class.bg-brand-gold/5]="selectedModalidad() === 'bizum'"
+            [class.shadow-md]="selectedModalidad() === 'bizum'"
+            [class.border-slate-200]="selectedModalidad() !== 'bizum'"
+            [class.hover:border-brand-silver]="selectedModalidad() !== 'bizum'">
+            <div class="flex items-start justify-between gap-2 mb-3">
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-10 h-10 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-lg">
+                  📱
+                </div>
+                <div>
+                  <h3 class="font-extrabold text-brand-navy text-base">2. Bizum</h3>
+                  <span class="text-[11px] font-semibold text-teal-800 bg-teal-100/70 px-2 py-0.5 rounded-md">
+                    Envío móvil al instante
+                  </span>
+                </div>
+              </div>
+              <input type="radio" name="modalidadPago" [checked]="selectedModalidad() === 'bizum'"
+                class="mt-1 w-4 h-4 text-brand-gold focus:ring-brand-gold cursor-pointer">
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Realiza el pago directamente desde tu móvil a nuestro número habilitado.
+            </p>
+          </div>
+
+          <!-- 3. TRANSFERENCIA -->
+          <div (click)="chooseModalidad('transferencia')"
+            class="relative rounded-2xl border-2 p-5 cursor-pointer transition-all duration-200 flex flex-col justify-between"
+            [class.border-brand-gold]="selectedModalidad() === 'transferencia'"
+            [class.bg-brand-gold/5]="selectedModalidad() === 'transferencia'"
+            [class.shadow-md]="selectedModalidad() === 'transferencia'"
+            [class.border-slate-200]="selectedModalidad() !== 'transferencia'"
+            [class.hover:border-brand-silver]="selectedModalidad() !== 'transferencia'">
+            <div class="flex items-start justify-between gap-2 mb-3">
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-800 flex items-center justify-center font-bold text-lg">
+                  🏦
+                </div>
+                <div>
+                  <h3 class="font-extrabold text-brand-navy text-base">3. Transferencia</h3>
+                  <span class="text-[11px] font-semibold text-indigo-800 bg-indigo-100/70 px-2 py-0.5 rounded-md">
+                    Ingreso en cuenta bancaria
+                  </span>
+                </div>
+              </div>
+              <input type="radio" name="modalidadPago" [checked]="selectedModalidad() === 'transferencia'"
+                class="mt-1 w-4 h-4 text-brand-gold focus:ring-brand-gold cursor-pointer">
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Abona la cuota mediante transferencia ordinaria o inmediata con tu código de referencia.
+            </p>
+          </div>
+
+          <!-- 4. OTRAS MODALIDADES -->
+          <div (click)="chooseModalidad('otras')"
+            class="relative rounded-2xl border-2 p-5 cursor-pointer transition-all duration-200 flex flex-col justify-between"
+            [class.border-brand-gold]="selectedModalidad() === 'otras'"
+            [class.bg-brand-gold/5]="selectedModalidad() === 'otras'"
+            [class.shadow-md]="selectedModalidad() === 'otras'"
+            [class.border-slate-200]="selectedModalidad() !== 'otras'"
+            [class.hover:border-brand-silver]="selectedModalidad() !== 'otras'">
+            <div class="flex items-start justify-between gap-2 mb-3">
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-10 h-10 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center font-bold text-lg">
+                  💬
+                </div>
+                <div>
+                  <h3 class="font-extrabold text-brand-navy text-base">4. Otras Modalidades</h3>
+                  <span class="text-[11px] font-semibold text-purple-800 bg-purple-100/70 px-2 py-0.5 rounded-md">
+                    Atención personalizada
+                  </span>
+                </div>
+              </div>
+              <input type="radio" name="modalidadPago" [checked]="selectedModalidad() === 'otras'"
+                class="mt-1 w-4 h-4 text-brand-gold focus:ring-brand-gold cursor-pointer">
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              ¿Efectivo en acreditación, pago en plazos u otra situación? Nos pondremos en contacto contigo.
+            </p>
+          </div>
+
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- DETALLE DINÁMICO DE LA MODALIDAD SELECCIONADA                -->
+        <!-- ============================================================ -->
+        <div
+          class="bg-slate-50 border-2 border-brand-silver/50 rounded-2xl p-5 sm:p-7 shadow-sm transition-all duration-200">
+
+          <!-- 1. DETALLE REDSYS -->
+          @if (selectedModalidad() === 'redsys') {
+          <div class="space-y-6">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">💳</span>
+              <div>
+                <h4 class="text-base sm:text-lg font-extrabold text-brand-navy">Pasarela Redsys (Tarjeta bancaria)</h4>
+                <p class="text-xs text-slate-500">Conexión con el TPV Virtual oficial de Redsys (Modo Sandbox de
+                  Pruebas).</p>
+              </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl border border-slate-200 text-xs space-y-2 text-slate-700">
+              <div class="flex justify-between items-center py-1 border-b border-slate-100">
+                <span class="text-slate-500 font-medium">Concepto:</span>
+                <span class="font-bold text-slate-900">Inscripción ENMI 2027 #{{ registeredId() }}</span>
+              </div>
+              <div class="flex justify-between items-center py-1 border-b border-slate-100">
+                <span class="text-slate-500 font-medium">Titular del registro:</span>
+                <span class="font-bold text-slate-900">{{ registeredFullName() }}</span>
+              </div>
+              <div class="flex justify-between items-center py-1">
+                <span class="text-slate-500 font-medium">Importe a pagar:</span>
+                <span class="font-extrabold text-brand-navy text-sm font-mono">{{ pagoConfig()?.importe || '120.00' }}
+                  €</span>
+              </div>
+            </div>
+
+            <!-- Botón hacia la pasarela oficial Redsys Sandbox -->
+            <button type="button" id="redsysPayBtn" (click)="procederRedsysOficial()" [disabled]="isProcessingPayment()"
+              class="w-full inline-flex items-center justify-center gap-3 px-6 py-3.5 bg-brand-navy hover:bg-brand-navy-dark text-white font-bold text-sm sm:text-base rounded-xl shadow-md transition-all active:scale-98 cursor-pointer disabled:opacity-50">
+              @if (isProcessingPayment()) {
+              <span>Conectando con Redsys...</span>
+              } @else {
+              <span>Pagar con Tarjeta en Pasarela Redsys</span>
+              <svg class="w-4 h-4 text-brand-gold" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                stroke-width="2.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+              </svg>
+              }
+            </button>
+
+            <!-- Herramientas de prueba / Simulador Local -->
+            <div class="pt-4 border-t border-slate-200 space-y-3">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                <strong class="text-xs font-bold uppercase tracking-wider text-slate-700">Simulador de Pruebas Redsys
+                  (Entorno de Desarrollo)</strong>
+              </div>
+              <p class="text-xs text-slate-500">
+                Puedes simular instantáneamente el resultado de la pasarela para verificar el comportamiento:
+              </p>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button type="button" id="simulateOkBtn" (click)="ejecutarSimuladorRedsys('ok')"
+                  [disabled]="isProcessingPayment()"
+                  class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50">
+                  <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                    stroke-width="2.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                  </svg>
+                  <span>Simular Pago Exitoso (OK -> Pagada)</span>
+                </button>
+                <button type="button" id="simulateKoBtn" (click)="ejecutarSimuladorRedsys('ko')"
+                  [disabled]="isProcessingPayment()"
+                  class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-200 hover:bg-red-100 hover:text-red-700 text-slate-700 font-bold text-xs rounded-xl border border-slate-300 transition-colors cursor-pointer disabled:opacity-50">
+                  <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                    stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                  </svg>
+                  <span>Simular Pago Cancelado (KO -> Pendiente)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          }
+
+          <!-- 2. DETALLE BIZUM -->
+          @if (selectedModalidad() === 'bizum') {
+          <div class="space-y-6">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">📱</span>
+              <div>
+                <h4 class="text-base sm:text-lg font-extrabold text-brand-navy">Instrucciones para Pago por Bizum</h4>
+                <p class="text-xs text-slate-500">Envía el dinero a través de la opción "Enviar dinero con Bizum" de tu
+                  banco.</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <!-- Teléfono -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 flex flex-col justify-between gap-2">
+                <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Número de Teléfono
+                  Bizum</span>
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-base font-black text-brand-navy font-mono">{{ pagoConfig()?.bizum?.telefono || '+34
+                    600 000 000' }}</span>
+                  <button type="button"
+                    (click)="copyToClipboard(pagoConfig()?.bizum?.telefono || '+34 600 000 000', 'bizumTel')"
+                    class="px-2.5 py-1 text-xs font-semibold rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer">
+                    {{ copiedField() === 'bizumTel' ? '✓ ¡Copiado!' : 'Copiar' }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Beneficiario -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 flex flex-col justify-between gap-2">
+                <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Beneficiario</span>
+                <span class="font-bold text-slate-800">{{ pagoConfig()?.bizum?.beneficiario || 'Encuentro Nacional de
+                  Magos Infantiles' }}</span>
+              </div>
+
+              <!-- Importe -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 flex flex-col justify-between gap-2">
+                <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Importe Exacto</span>
+                <span class="text-lg font-black text-brand-gold-dark font-mono">{{ pagoConfig()?.importe || '120.00' }}
+                  €</span>
+              </div>
+
+              <!-- Concepto Obligatorio -->
+              <div
+                class="bg-white p-4 rounded-xl border border-amber-300 bg-amber-50/50 flex flex-col justify-between gap-2 sm:col-span-2">
+                <span class="text-amber-900 font-bold uppercase tracking-wider text-[10px]">Concepto Obligatorio del
+                  Bizum</span>
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-sm font-black text-amber-950 font-mono tracking-wide">{{ getConceptoPersonalizado()
+                    }}</span>
+                  <button type="button" (click)="copyToClipboard(getConceptoPersonalizado(), 'bizumConcepto')"
+                    class="px-3 py-1.5 text-xs font-bold rounded-lg border border-amber-300 bg-amber-100 text-amber-950 hover:bg-amber-200 transition-colors cursor-pointer">
+                    {{ copiedField() === 'bizumConcepto' ? '✓ ¡Copiado!' : 'Copiar Concepto' }}
+                  </button>
+                </div>
+                <span class="text-[11px] text-amber-800">Indicar este concepto exacto para que podamos identificar y
+                  conciliar tu inscripción de forma inmediata.</span>
+              </div>
+            </div>
+
+            <button type="button" id="confirmBizumBtn" (click)="confirmarMetodoManual('bizum')"
+              [disabled]="isProcessingPayment()"
+              class="w-full inline-flex items-center justify-center gap-3 px-6 py-3.5 bg-teal-700 hover:bg-teal-800 text-white font-bold text-sm sm:text-base rounded-xl shadow-md transition-all active:scale-98 cursor-pointer disabled:opacity-50">
+              @if (isProcessingPayment()) {
+              <span>Guardando selección...</span>
+              } @else {
+              <span>Entendido &bull; Confirmar Inscripción</span>
+              <svg class="w-4 h-4 text-teal-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                stroke-width="2.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+              </svg>
+              }
+            </button>
+          </div>
+          }
+
+          <!-- 3. DETALLE TRANSFERENCIA -->
+          @if (selectedModalidad() === 'transferencia') {
+          <div class="space-y-6">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">🏦</span>
+              <div>
+                <h4 class="text-base sm:text-lg font-extrabold text-brand-navy">Datos para la Transferencia Bancaria
+                </h4>
+                <p class="text-xs text-slate-500">Puedes realizar una transferencia ordinaria o inmediata desde tu
+                  entidad.</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <!-- IBAN -->
+              <div
+                class="bg-white p-4 rounded-xl border border-slate-200 flex flex-col justify-between gap-2 sm:col-span-2">
+                <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Número de Cuenta
+                  (IBAN)</span>
+                <div class="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+                  <span class="text-sm sm:text-base font-black text-brand-navy font-mono tracking-wider break-all">
+                    {{ pagoConfig()?.transferencia?.iban || 'ES00 0000 0000 0000 0000 0000' }}
+                  </span>
+                  <button type="button"
+                    (click)="copyToClipboard(pagoConfig()?.transferencia?.iban || 'ES00 0000 0000 0000 0000 0000', 'transfIban')"
+                    class="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer shrink-0">
+                    {{ copiedField() === 'transfIban' ? '✓ ¡Copiado!' : 'Copiar IBAN' }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Titular -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 flex flex-col justify-between gap-2">
+                <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Titular /
+                  Beneficiario</span>
+                <span class="font-bold text-slate-800">{{ pagoConfig()?.transferencia?.titular || 'Asociación ENMI 2027'
+                  }}</span>
+              </div>
+
+              <!-- Entidad Bancaria -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 flex flex-col justify-between gap-2">
+                <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Entidad Bancaria</span>
+                <span class="font-bold text-slate-800">{{ pagoConfig()?.transferencia?.banco || 'Banco Santander'
+                  }}</span>
+              </div>
+
+              <!-- Importe -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 flex flex-col justify-between gap-2">
+                <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Importe a Transferir</span>
+                <span class="text-lg font-black text-brand-gold-dark font-mono">{{ pagoConfig()?.importe || '120.00' }}
+                  €</span>
+              </div>
+
+              <!-- Concepto Obligatorio -->
+              <div
+                class="bg-white p-4 rounded-xl border border-amber-300 bg-amber-50/50 flex flex-col justify-between gap-2 sm:col-span-2">
+                <span class="text-amber-900 font-bold uppercase tracking-wider text-[10px]">Concepto a Indicar en la
+                  Transferencia</span>
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-sm font-black text-amber-950 font-mono tracking-wide">{{ getConceptoPersonalizado()
+                    }}</span>
+                  <button type="button" (click)="copyToClipboard(getConceptoPersonalizado(), 'transfConcepto')"
+                    class="px-3 py-1.5 text-xs font-bold rounded-lg border border-amber-300 bg-amber-100 text-amber-950 hover:bg-amber-200 transition-colors cursor-pointer">
+                    {{ copiedField() === 'transfConcepto' ? '✓ ¡Copiado!' : 'Copiar Concepto' }}
+                  </button>
+                </div>
+                <span class="text-[11px] text-amber-800">Tienes 5 días hábiles para realizar la transferencia. Tu plaza
+                  quedará en estado pendiente de validación.</span>
+              </div>
+            </div>
+
+            <button type="button" id="confirmTransferBtn" (click)="confirmarMetodoManual('transferencia')"
+              [disabled]="isProcessingPayment()"
+              class="w-full inline-flex items-center justify-center gap-3 px-6 py-3.5 bg-indigo-700 hover:bg-indigo-800 text-white font-bold text-sm sm:text-base rounded-xl shadow-md transition-all active:scale-98 cursor-pointer disabled:opacity-50">
+              @if (isProcessingPayment()) {
+              <span>Guardando selección...</span>
+              } @else {
+              <span>Entendido &bull; Finalizar Inscripción</span>
+              <svg class="w-4 h-4 text-indigo-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                stroke-width="2.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+              </svg>
+              }
+            </button>
+          </div>
+          }
+
+          <!-- 4. DETALLE OTRAS MODALIDADES -->
+          @if (selectedModalidad() === 'otras') {
+          <div class="space-y-6">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">💬</span>
+              <div>
+                <h4 class="text-base sm:text-lg font-extrabold text-brand-navy">Otras Modalidades de Pago</h4>
+                <p class="text-xs text-slate-500">Atención directa y personalizada con el equipo de organización.</p>
+              </div>
+            </div>
+
+            <div
+              class="bg-purple-50/70 border border-purple-200 rounded-xl p-5 text-xs sm:text-sm text-purple-950 space-y-3 leading-relaxed">
+              <p>
+                {{ pagoConfig()?.otras?.texto || 'Si necesitas otra forma de pago (efectivo durante la acreditación,
+                pago fraccionado, etc.), nos pondremos en contacto contigo personalmente a través de tu teléfono o email
+                para acordarlo.' }}
+              </p>
+              <div class="bg-white/80 p-3.5 rounded-lg border border-purple-200/80 text-xs space-y-1">
+                <div class="font-bold text-purple-900">Datos de contacto registrados para coordinar el pago:</div>
+                <div class="text-slate-700 font-medium">📧 Correo: <strong class="text-brand-navy">{{ registeredEmail()
+                    }}</strong></div>
+                <div class="text-slate-700 font-medium">📞 Teléfono: <strong class="text-brand-navy">{{
+                    registeredPhone() }}</strong></div>
+              </div>
+            </div>
+
+            <button type="button" id="confirmOtrasBtn" (click)="confirmarMetodoManual('otras')"
+              [disabled]="isProcessingPayment()"
+              class="w-full inline-flex items-center justify-center gap-3 px-6 py-3.5 bg-purple-700 hover:bg-purple-800 text-white font-bold text-sm sm:text-base rounded-xl shadow-md transition-all active:scale-98 cursor-pointer disabled:opacity-50">
+              @if (isProcessingPayment()) {
+              <span>Guardando solicitud...</span>
+              } @else {
+              <span>Solicitar contacto &bull; Finalizar Inscripción</span>
+              <svg class="w-4 h-4 text-purple-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                stroke-width="2.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+              </svg>
+              }
+            </button>
+          </div>
+          }
+
+        </div>
+
+      </div>
       } @else {
 
       <!-- ============================================================ -->
-      <!-- MENSAJE DE CONFIRMACIÓN TRAS EL ENVÍO                       -->
+      <!-- PANTALLA FINAL: ¡INSCRIPCIÓN RECIBIDA CON ÉXITO!            -->
       <!-- ============================================================ -->
-      <div id="successState" class="text-center py-8 px-4 animate-in zoom-in-95 duration-300">
+      <div id="successState" class="text-center py-8 px-4 animate-in zoom-in-95 duration-300 space-y-6">
+
+        <!-- Icono de Éxito según Estado -->
+        @if (registeredStatus() === 'pagada') {
         <div
-          class="w-20 h-20 rounded-full bg-brand-gold/15 text-brand-gold-dark border border-brand-gold/30 ring-8 ring-brand-gold/20 flex items-center justify-center mx-auto mb-6">
+          class="w-20 h-20 rounded-full bg-emerald-100 text-emerald-700 border-2 border-emerald-300 ring-8 ring-emerald-50 flex items-center justify-center mx-auto shadow-sm">
           <svg class="w-10 h-10" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         </div>
-        <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-brand-navy mb-2">¡Inscripción Recibida con
-          Éxito!</h2>
-        <p class="text-slate-600 text-sm sm:text-base max-w-lg mx-auto leading-relaxed mb-6">
-          Gracias, <strong id="registeredName" class="font-bold text-brand-navy">{{ registeredFullName() }}</strong>
-          @if (registeredArtistName()) {
-          (<span class="text-brand-gold-dark font-semibold">{{ registeredArtistName() }}</span>)
-          }.
-          Tu solicitud de inscripción ha sido registrada en el sistema del Encuentro Nacional de Magos Infantiles.
-        </p>
+        } @else {
+        <div
+          class="w-20 h-20 rounded-full bg-amber-100 text-amber-700 border-2 border-amber-300 ring-8 ring-amber-50 flex items-center justify-center mx-auto shadow-sm">
+          <svg class="w-10 h-10" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </div>
+        }
+
+        <!-- Encabezado de la Pantalla de Éxito -->
+        <div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-brand-navy mb-2">
+            ¡Inscripción Recibida con Éxito!
+          </h2>
+
+          <!-- Badge de Estado -->
+          <div
+            class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider mb-3 shadow-2xs"
+            [class.bg-emerald-100]="registeredStatus() === 'pagada'"
+            [class.text-emerald-800]="registeredStatus() === 'pagada'" [class.border]="true"
+            [class.border-emerald-300]="registeredStatus() === 'pagada'"
+            [class.bg-amber-100]="registeredStatus() === 'pendiente'"
+            [class.text-amber-900]="registeredStatus() === 'pendiente'"
+            [class.border-amber-300]="registeredStatus() === 'pendiente'">
+            <span class="w-2 h-2 rounded-full" [class.bg-emerald-500]="registeredStatus() === 'pagada'"
+              [class.bg-amber-500]="registeredStatus() === 'pendiente'"></span>
+            @if (registeredStatus() === 'pagada') {
+            <span>Pago Confirmado &bull; Inscripción Pagada</span>
+            } @else {
+            <span>Inscripción Registrada &bull; Pendiente de Pago</span>
+            }
+          </div>
+
+          <p class="text-slate-600 text-sm sm:text-base max-w-lg mx-auto leading-relaxed">
+            Gracias, <strong id="registeredName" class="font-bold text-brand-navy">{{ registeredFullName() }}</strong>
+            @if (registeredArtistName()) {
+            (<span class="text-brand-gold-dark font-semibold">{{ registeredArtistName() }}</span>)
+            }.
+            @if (registeredStatus() === 'pagada') {
+            Tu pago ha sido verificado con éxito y tu plaza en el Encuentro Nacional de Magos Infantiles (ENMI) se
+            encuentra <strong>totalmente confirmada</strong>.
+            } @else {
+            Tu solicitud de inscripción ha sido registrada en el sistema. Queda en estado <strong>pendiente de recibir y
+              verificar el pago</strong> para confirmar tu plaza definitiva.
+            }
+          </p>
+        </div>
+
+        <!-- Tarjeta de Resumen de la Inscripción -->
+        <div
+          class="bg-slate-50 border border-slate-200 rounded-2xl p-5 max-w-lg mx-auto text-left space-y-3 text-xs shadow-2xs">
+          <div class="flex justify-between items-center pb-2 border-b border-slate-200 font-bold">
+            <span class="text-slate-500 uppercase tracking-wider text-[11px]">Número de Acreditación</span>
+            <span class="text-base font-black font-mono text-brand-gold-dark">#ENMI-{{ registeredId() }}</span>
+          </div>
+          <div class="flex justify-between items-center py-1 border-b border-slate-100">
+            <span class="text-slate-500">Participante:</span>
+            <span class="font-bold text-slate-800">{{ registeredFullName() }}</span>
+          </div>
+          <div class="flex justify-between items-center py-1 border-b border-slate-100">
+            <span class="text-slate-500">Correo de contacto:</span>
+            <span class="font-medium text-slate-800 font-mono">{{ registeredEmail() }}</span>
+          </div>
+          <div class="flex justify-between items-center py-1 border-b border-slate-100">
+            <span class="text-slate-500">Cuota de inscripción:</span>
+            <span class="font-bold text-brand-navy font-mono">{{ pagoConfig()?.importe || '120.00' }} €</span>
+          </div>
+          <div class="flex justify-between items-center pt-1">
+            <span class="text-slate-500">Estado de la plaza:</span>
+            <span class="font-bold uppercase tracking-wider text-[11px]"
+              [class.text-emerald-700]="registeredStatus() === 'pagada'"
+              [class.text-amber-700]="registeredStatus() === 'pendiente'">
+              {{ registeredStatus() }}
+            </span>
+          </div>
+        </div>
 
         <!-- Tarjeta de Confirmación de Envío de Email -->
         <div id="emailConfirmationNotice"
-          class="bg-blue-50/80 border border-blue-200/90 rounded-2xl p-4 sm:p-5 max-w-lg mx-auto mb-5 text-left shadow-xs">
+          class="bg-blue-50/80 border border-blue-200/90 rounded-2xl p-4 sm:p-5 max-w-lg mx-auto text-left shadow-xs">
           <div class="flex items-start gap-3.5">
             <div class="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 mt-0.5">
               <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
@@ -566,7 +1128,7 @@
                 Te hemos enviado un correo de confirmación
               </strong>
               <p class="text-xs sm:text-sm text-blue-900 leading-relaxed">
-                Hemos enviado un email con todos los datos que has registrado a:
+                Hemos enviado un email con todos los datos y el estado de tu registro a:
                 <strong id="confirmedEmail"
                   class="font-bold text-blue-950 block sm:inline mt-0.5 sm:mt-0 underline decoration-blue-300 underline-offset-2">{{
                   registeredEmail() }}</strong>
@@ -586,7 +1148,7 @@
 
         <!-- Bloque de Próximos Pasos -->
         <div
-          class="bg-brand-navy-soft/60 border border-brand-navy/10 rounded-2xl p-4 max-w-lg mx-auto mb-8 text-xs text-slate-700 text-left space-y-2">
+          class="bg-brand-navy-soft/60 border border-brand-navy/10 rounded-2xl p-4 max-w-lg mx-auto text-xs text-slate-700 text-left space-y-2">
           <div class="flex items-center gap-2 font-bold text-brand-navy">
             <svg class="w-4 h-4 text-brand-gold-dark" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
               stroke-width="2" stroke="currentColor">
@@ -595,15 +1157,23 @@
             </svg>
             Próximos pasos:
           </div>
-          <p>Los organizadores revisarán tu solicitud. Si marcaste la opción de participación activa, nos pondremos en
-            contacto por email o teléfono para ultimar detalles.</p>
+          @if (registeredStatus() === 'pagada') {
+          <p>Tu acreditación oficial estará lista para recoger en la recepción del encuentro. Si indicaste que quieres
+            participar activamente en galas o conferencias, el equipo organizador se pondrá en contacto contigo para
+            coordinar el programa artístico.</p>
+          } @else {
+          <p>Una vez completado y verificado el pago correspondiente, recibirás un correo definitivo confirmando tu
+            plaza. Recuerda indicar tu código de referencia en caso de transferencia o Bizum.</p>
+          }
         </div>
 
-        <button type="button" id="resetBtn"
-          class="inline-flex items-center justify-center px-6 py-3 rounded-xl border border-brand-silver text-sm font-semibold text-brand-navy bg-brand-white hover:bg-brand-silver-light hover:border-brand-navy active:bg-brand-silver/20 transition-all duration-200 shadow-sm cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-navy"
-          (click)="onReset()">
-          Registrar a otro participante
-        </button>
+        <div class="pt-2">
+          <button type="button" id="resetBtn"
+            class="inline-flex items-center justify-center px-6 py-3 rounded-xl border border-brand-silver text-sm font-semibold text-brand-navy bg-brand-white hover:bg-brand-silver-light hover:border-brand-navy active:bg-brand-silver/20 transition-all duration-200 shadow-sm cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-navy"
+            (click)="onReset()">
+            Registrar a otro participante
+          </button>
+        </div>
       </div>
       }
 

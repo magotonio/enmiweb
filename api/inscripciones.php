@@ -204,6 +204,10 @@ try {
             'total'              => count($formattedInscripciones),
             'hoy'                => 0,
             'activos'            => count($formattedInscripciones),
+            'pagadas'            => count(array_filter($formattedInscripciones, fn($i) => in_array($i['estado'], ['pagada', 'pagado']))),
+            'pendientes'         => count(array_filter($formattedInscripciones, fn($i) => $i['estado'] === 'pendiente')),
+            'iniciadas'          => count(array_filter($formattedInscripciones, fn($i) => $i['estado'] === 'iniciada')),
+            'canceladas'         => count(array_filter($formattedInscripciones, fn($i) => in_array($i['estado'], ['cancelada', 'cancelado']))),
             'quieren_participar' => (count($formattedInscripciones) > 0 && $formattedInscripciones[0]['quiero_participar']) ? 1 : 0
         ];
     } else {
@@ -211,7 +215,11 @@ try {
             SELECT 
                 COUNT(*) AS total,
                 SUM(CASE WHEN DATE(fecha_creacion) = CURDATE() THEN 1 ELSE 0 END) AS hoy,
-                SUM(CASE WHEN estado = 'activo' THEN 1 ELSE 0 END) AS activos,
+                SUM(CASE WHEN estado IN ('activo', 'pagada', 'pagado') THEN 1 ELSE 0 END) AS activos,
+                SUM(CASE WHEN estado IN ('pagada', 'pagado') THEN 1 ELSE 0 END) AS pagadas,
+                SUM(CASE WHEN estado = 'pendiente' THEN 1 ELSE 0 END) AS pendientes,
+                SUM(CASE WHEN estado = 'iniciada' THEN 1 ELSE 0 END) AS iniciadas,
+                SUM(CASE WHEN estado IN ('cancelada', 'cancelado') THEN 1 ELSE 0 END) AS canceladas,
                 SUM(CASE WHEN quiero_participar = 1 THEN 1 ELSE 0 END) AS quieren_participar
             FROM `enmi_inscripciones`
         ");
@@ -221,6 +229,10 @@ try {
             'total'              => (int)($statsData['total'] ?? count($formattedInscripciones)),
             'hoy'                => (int)($statsData['hoy'] ?? 0),
             'activos'            => (int)($statsData['activos'] ?? count($formattedInscripciones)),
+            'pagadas'            => (int)($statsData['pagadas'] ?? 0),
+            'pendientes'         => (int)($statsData['pendientes'] ?? 0),
+            'iniciadas'          => (int)($statsData['iniciadas'] ?? 0),
+            'canceladas'         => (int)($statsData['canceladas'] ?? 0),
             'quieren_participar' => (int)($statsData['quieren_participar'] ?? 0)
         ];
     }
