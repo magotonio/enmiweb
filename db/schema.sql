@@ -202,7 +202,7 @@ VALUES
   ('pago_redsys_entorno', 'sandbox', 'Entorno de la pasarela Redsys: sandbox (pruebas) o produccion', NOW()),
   ('pago_redsys_fuc', '999008881', 'Código de comercio FUC proporcionado por Redsys / Banco', NOW()),
   ('pago_redsys_terminal', '1', 'Número de terminal asignado por Redsys', NOW()),
-  ('pago_redsys_clave_secreta', 'sq7HjrUqKpOuHaSYNdTe73cbVQRwRN92', 'Clave secreta HMAC SHA-256 de Redsys (sandbox oficial)', NOW()),
+  ('pago_redsys_clave_secreta', 'sq7HjrUOBfKmC576ILgskD5srU870gJ7', 'Clave secreta HMAC SHA-256 de Redsys (sandbox oficial)', NOW()),
   ('pago_redsys_moneda', '978', 'Código ISO de moneda (978 = Euro)', NOW()),
   ('pago_redsys_url_sandbox', 'https://sis-t.redsys.es:25443/sis/realizarPago', 'URL del TPV Virtual de Redsys en entorno de pruebas', NOW()),
   ('pago_redsys_url_produccion', 'https://sis.redsys.es/sis/realizarPago', 'URL del TPV Virtual de Redsys en producción', NOW()),

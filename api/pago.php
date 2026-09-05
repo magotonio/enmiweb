@@ -17,15 +17,15 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 /**
  * Función auxiliar para calcular la firma HMAC-SHA256 oficial de Redsys
+ * Aplica diversificación de clave 3DES-CBC con relleno nulo (Zero-Padding) según el estándar oficial de Redsys
  */
 function redsysComputeSignature(string $merchantParameters, string $order, string $secretKeyB64): string {
     $secretKey = base64_decode($secretKeyB64);
-    // Diversificación de clave con 3DES (DES-EDE3-CBC) usando vector de inicialización nulo de 8 bytes
+    $l = (int)ceil(strlen($order) / 8) * 8;
+    $paddedOrder = $order . str_repeat("\0", $l - strlen($order));
     $iv = "\0\0\0\0\0\0\0\0";
-    $keyOrder = openssl_encrypt($order, 'des-ede3-cbc', $secretKey, OPENSSL_RAW_DATA, $iv);
-    // HMAC-SHA256 de los parámetros con la clave diversificada
+    $keyOrder = substr(openssl_encrypt($paddedOrder, 'des-ede3-cbc', $secretKey, OPENSSL_RAW_DATA, $iv), 0, $l);
     $res = hash_hmac('sha256', $merchantParameters, $keyOrder, true);
-    // Codificación Base64 estándar Redsys
     return base64_encode($res);
 }
 
@@ -120,7 +120,7 @@ if ($method === 'POST') {
 
             $fuc             = (string)getConfigValue('pago_redsys_fuc', '999008881', $pdo);
             $terminal        = (string)getConfigValue('pago_redsys_terminal', '1', $pdo);
-            $secretKeyB64    = (string)getConfigValue('pago_redsys_clave_secreta', 'sq7HjrUqKpOuHaSYNdTe73cbVQRwRN92', $pdo);
+            $secretKeyB64    = (string)getConfigValue('pago_redsys_clave_secreta', 'sq7HjrUOBfKmC576ILgskD5srU870gJ7', $pdo);
             $moneda          = (string)getConfigValue('pago_redsys_moneda', '978', $pdo);
             $entorno         = (string)getConfigValue('pago_redsys_entorno', 'sandbox', $pdo);
             $urlSandbox      = (string)getConfigValue('pago_redsys_url_sandbox', 'https://sis-t.redsys.es:25443/sis/realizarPago', $pdo);
@@ -130,12 +130,15 @@ if ($method === 'POST') {
             // Formato de orden Redsys: 12 caracteres (primeros 4 numéricos, ej. fecha + ID)
             $order = date('ymd') . sprintf('%06d', $inscripcionId % 1000000);
 
-            // URLs de retorno
-            $host = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
-            $urlOk = $host . '/pago?pago=ok&id=' . $inscripcionId;
-            $urlKo = $host . '/pago?pago=ko&id=' . $inscripcionId;
+            // URLs de retorno: Redirigen de vuelta al frontend Angular
+            $appUrl = rtrim(getAppUrl(), '/');
+            $urlOk = $appUrl . '/pago?pago=ok&id=' . $inscripcionId;
+            $urlKo = $appUrl . '/pago?pago=ko&id=' . $inscripcionId;
 
-            $urlNotify = $host . '/api/pago.php?accion=redsys_retorno';
+            // Notificación servidor a servidor (debe ser accesible desde internet si es público)
+            $urlNotify = (strpos($appUrl, 'localhost') === false)
+                ? $appUrl . '/api/pago.php?accion=redsys_retorno'
+                : 'https://enmi.eutikea.com/api/pago.php?accion=redsys_retorno';
 
             $merchantParamsArray = [
                 'DS_MERCHANT_AMOUNT'             => (string)$amountInCents,
@@ -347,7 +350,7 @@ if ($method === 'POST') {
 
             $order        = $params['Ds_Order'] ?? ($params['DS_ORDER'] ?? '');
             $responseCode = (int)($params['Ds_Response'] ?? ($params['DS_RESPONSE'] ?? 9999));
-            $secretKeyB64 = (string)getConfigValue('pago_redsys_clave_secreta', 'sq7HjrUqKpOuHaSYNdTe73cbVQRwRN92', $pdo);
+            $secretKeyB64 = (string)getConfigValue('pago_redsys_clave_secreta', 'sq7HjrUOBfKmC576ILgskD5srU870gJ7', $pdo);
 
             // Validar firma
             $expectedSignature = redsysComputeSignature($merchantParamsB64, $order, $secretKeyB64);
