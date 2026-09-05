@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -19,6 +19,10 @@ export class RegistrationFormComponent implements OnInit {
   private readonly sessionService = inject(InscripcionSessionService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+
+  // Estado de sesión activa si el usuario retrocede desde /pago
+  hasActiveSession = computed(() => this.sessionService.hasSession());
+  activeSession = this.sessionService.currentSession;
 
   @ViewChild('nombreInput') nombreInputElement?: ElementRef<HTMLInputElement>;
   @ViewChild('apellidosInput') apellidosInputElement?: ElementRef<HTMLInputElement>;
@@ -318,4 +322,14 @@ export class RegistrationFormComponent implements OnInit {
       this.nombreInputElement?.nativeElement.focus();
     }, 0);
   }
+
+  continuarAlPago(): void {
+    this.router.navigate(['/pago']);
+  }
+
+  iniciarNuevoRegistro(): void {
+    this.sessionService.clearSession();
+    this.onReset();
+  }
 }
+

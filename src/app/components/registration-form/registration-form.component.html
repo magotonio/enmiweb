@@ -15,6 +15,19 @@
             class="h-44 sm:h-52 w-auto object-contain drop-shadow-sm transition-transform duration-300 hover:scale-105">
         </div>
 
+        @if (hasActiveSession()) {
+        <div
+          class="inline-flex items-center gap-2 px-4 py-1 text-xs font-extrabold tracking-wider text-brand-gold-dark bg-brand-gold/15 border border-brand-gold/40 rounded-full uppercase mb-3 shadow-2xs">
+          <span class="w-2 h-2 rounded-full bg-brand-gold animate-pulse"></span>
+          Inscripción en Curso Detectada
+        </div>
+        <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-brand-navy mb-2.5">
+          Ya has completado tu registro
+        </h1>
+        <p class="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
+          Existe una inscripción activa a nombre de <strong class="text-brand-navy">{{ activeSession()?.fullName }}</strong> (<span class="font-mono font-bold text-brand-gold-dark">#ENMI-{{ activeSession()?.id }}</span>).
+        </p>
+        } @else {
         <div
           class="inline-flex items-center gap-2 px-4 py-1 text-xs font-extrabold tracking-wider text-brand-navy bg-brand-gold/15 border border-brand-gold/40 rounded-full uppercase mb-3 shadow-2xs">
           <span class="w-2 h-2 rounded-full bg-brand-gold animate-pulse"></span>
@@ -28,9 +41,88 @@
           de
           Magos Infantiles (ENMI).
         </p>
+        }
       </header>
 
+      @if (hasActiveSession()) {
+      <!-- ============================================================ -->
+      <!-- VISTA EN MODO LECTURA CUANDO HAY INSCRIPCIÓN EN CURSO        -->
+      <!-- ============================================================ -->
+      <div id="activeSessionCard" class="flex flex-col gap-6 animate-in fade-in duration-300">
+        <div class="flex items-start gap-4 p-5 rounded-2xl bg-amber-50/90 border-2 border-amber-300 text-amber-950 shadow-xs">
+          <div class="w-10 h-10 rounded-xl bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center shrink-0 font-bold text-lg shadow-2xs">
+            ℹ️
+          </div>
+          <div class="flex-1 space-y-1">
+            <strong class="font-bold text-amber-900 block text-sm sm:text-base">
+              Inscripción registrada previamente en esta sesión
+            </strong>
+            <p class="text-xs sm:text-sm text-amber-900/90 leading-relaxed">
+              Tus datos ya están guardados en el sistema. Puedes continuar al paso de pago para abonar tu plaza o, si deseas registrar a una persona diferente, puedes iniciar un nuevo registro en blanco.
+            </p>
+          </div>
+        </div>
+
+        <!-- Tarjeta de Resumen en Lectura -->
+        <div class="bg-gradient-to-br from-brand-navy to-brand-navy-dark text-white p-6 rounded-3xl border border-brand-gold/30 shadow-xl space-y-4">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+            <div>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-brand-gold block">
+                Acreditación asignada
+              </span>
+              <span class="font-mono text-xl font-black text-white">#ENMI-{{ activeSession()?.id }}</span>
+            </div>
+            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-brand-gold/20 text-brand-gold border border-brand-gold/40">
+              {{ activeSession()?.status === 'pagada' ? 'Pago Confirmado' : 'Pendiente de Pago' }}
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div class="bg-white/10 p-3.5 rounded-xl border border-white/10">
+              <span class="text-slate-300 block mb-0.5">Participante:</span>
+              <strong class="text-white text-sm font-bold block">{{ activeSession()?.fullName }}</strong>
+              @if (activeSession()?.artistName) {
+              <span class="text-brand-gold font-medium">({{ activeSession()?.artistName }})</span>
+              }
+            </div>
+
+            <div class="bg-white/10 p-3.5 rounded-xl border border-white/10">
+              <span class="text-slate-300 block mb-0.5">Correo de contacto:</span>
+              <strong class="text-white text-sm font-bold font-mono block">{{ activeSession()?.email }}</strong>
+            </div>
+
+            <div class="bg-white/10 p-3.5 rounded-xl border border-white/10">
+              <span class="text-slate-300 block mb-0.5">Teléfono móvil:</span>
+              <strong class="text-white text-sm font-bold font-mono block">{{ activeSession()?.telefono }}</strong>
+            </div>
+
+            <div class="bg-white/10 p-3.5 rounded-xl border border-white/10">
+              <span class="text-slate-300 block mb-0.5">Fecha de solicitud:</span>
+              <strong class="text-white text-sm font-bold block">{{ (activeSession()?.registeredAt | date:'dd/MM/yyyy HH:mm') || 'Hoy' }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
+          <button type="button" id="continuePayBtn" (click)="continuarAlPago()"
+            class="flex-1 inline-flex items-center justify-center gap-2.5 px-6 py-4 text-base font-bold text-white bg-brand-navy hover:bg-brand-navy-dark border border-brand-gold/40 rounded-2xl shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer">
+            <span>Continuar al Paso de Pago</span>
+            <svg class="w-5 h-5 text-brand-gold" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+              stroke-width="2.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+            </svg>
+          </button>
+
+          <button type="button" id="newRegistrationBtn" (click)="iniciarNuevoRegistro()"
+            class="inline-flex items-center justify-center px-6 py-4 rounded-2xl border border-brand-silver text-sm font-semibold text-brand-navy bg-white hover:bg-slate-50 transition-colors shadow-sm cursor-pointer">
+            Registrar a otro participante
+          </button>
+        </div>
+      </div>
+      } @else {
       <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-8" novalidate id="registrationForm">
+
 
 
         <!-- Banner de Error / Duplicado de Servidor -->
@@ -525,6 +617,7 @@
         </div>
 
       </form>
+      }
 
     </div>
   </section>
