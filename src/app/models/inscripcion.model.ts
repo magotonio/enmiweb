@@ -137,3 +137,16 @@ export interface PagoAccionResponse {
   resultado?: string;
   message?: string;
 }
+
+export interface InscripcionSessionData {
+  id: number;
+  fullName: string;
+  artistName?: string;
+  apellidos: string;
+  email: string;
+  telefono: string;
+  status: EstadoInscripcion;
+  modalidad?: ModalidadPago | null;
+  registeredAt?: string;
+}
+

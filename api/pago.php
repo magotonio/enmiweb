@@ -131,8 +131,9 @@ if ($method === 'POST') {
 
             // URLs de retorno
             $host = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
-            $urlOk = $host . '/registro?pago=ok&id=' . $inscripcionId;
-            $urlKo = $host . '/registro?pago=ko&id=' . $inscripcionId;
+            $urlOk = $host . '/pago?pago=ok&id=' . $inscripcionId;
+            $urlKo = $host . '/pago?pago=ko&id=' . $inscripcionId;
+
             $urlNotify = $host . '/api/pago.php?accion=redsys_retorno';
 
             $merchantParamsArray = [

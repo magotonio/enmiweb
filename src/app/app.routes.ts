@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { HomeComponent } from './components/home/home.component';
 import { RegistrationFormComponent } from './components/registration-form/registration-form.component';
+import { PagoComponent } from './components/pago/pago.component';
 import { LoginComponent } from './components/login/login.component';
 import { ResetPasswordComponent } from './components/reset-password/reset-password.component';
 import { AdminDashboardComponent } from './components/admin-dashboard/admin-dashboard.component';
@@ -13,6 +14,7 @@ import { AccesoDenegadoComponent } from './components/acceso-denegado/acceso-den
 import { MantenimientoComponent } from './components/mantenimiento/mantenimiento.component';
 import { roleGuard } from './guards/role.guard';
 import { maintenanceGuard } from './guards/maintenance.guard';
+import { pagoGuard } from './guards/pago.guard';
 
 export const routes: Routes = [
   // Rutas Públicas (Nivel 0 - Abiertas con control de Modo Mantenimiento)
@@ -27,6 +29,12 @@ export const routes: Routes = [
     component: RegistrationFormComponent,
     canActivate: [maintenanceGuard],
     title: 'Inscripción | ENMI 2027 Madrid'
+  },
+  {
+    path: 'pago',
+    component: PagoComponent,
+    canActivate: [maintenanceGuard, pagoGuard],
+    title: 'Modalidad de Pago | ENMI 2027 Madrid'
   },
   {
     path: 'login',

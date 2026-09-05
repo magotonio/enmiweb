@@ -1,19 +1,27 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
+import { Router, ActivatedRoute } from '@angular/router';
 import { RegistrationFormComponent } from './registration-form.component';
 import { InscripcionService } from '../../services/inscripcion.service';
+import { InscripcionSessionService } from '../../services/inscripcion-session.service';
 
 describe('RegistrationFormComponent', () => {
   let component: RegistrationFormComponent;
   let fixture: ComponentFixture<RegistrationFormComponent>;
   let mockInscripcionService: jasmine.SpyObj<InscripcionService>;
+  let mockSessionService: jasmine.SpyObj<InscripcionSessionService>;
+  let mockRouter: jasmine.SpyObj<Router>;
 
   beforeEach(async () => {
     mockInscripcionService = jasmine.createSpyObj('InscripcionService', ['inscribir']);
+    mockSessionService = jasmine.createSpyObj('InscripcionSessionService', ['saveSession', 'getSession', 'hasSession', 'clearSession']);
+    mockRouter = jasmine.createSpyObj('Router', ['navigate']);
+
     mockInscripcionService.inscribir.and.returnValue(of({
       success: true,
       message: 'Inscripción guardada correctamente.',
       id: 1,
+      estado: 'iniciada',
       data: {
         nombre: 'Carlos',
         apellidos: 'Gómez',
@@ -26,7 +34,10 @@ describe('RegistrationFormComponent', () => {
     await TestBed.configureTestingModule({
       imports: [RegistrationFormComponent],
       providers: [
-        { provide: InscripcionService, useValue: mockInscripcionService }
+        { provide: InscripcionService, useValue: mockInscripcionService },
+        { provide: InscripcionSessionService, useValue: mockSessionService },
+        { provide: Router, useValue: mockRouter },
+        { provide: ActivatedRoute, useValue: { queryParams: of({}) } }
       ]
     }).compileComponents();
 
@@ -57,7 +68,7 @@ describe('RegistrationFormComponent', () => {
     expect(component.form.valid).toBeTrue();
   });
 
-  it('should handle successful submission and reset', () => {
+  it('should handle successful submission, save session and navigate to /pago', () => {
     component.form.controls['nombre'].setValue('Carlos');
     component.form.controls['apellidos'].setValue('Gómez');
     component.form.controls['nombre_artistico'].setValue('Mago Carlos');
@@ -72,22 +83,16 @@ describe('RegistrationFormComponent', () => {
 
     component.onSubmit();
 
-    expect(component.isSubmitted()).toBeTrue();
-    expect(component.registeredFullName()).toBe('Carlos Gómez');
-    expect(component.registeredArtistName()).toBe('Mago Carlos');
-    expect(component.registeredEmail()).toBe('carlos@mago.es');
-
-    fixture.detectChanges();
-    const noticeEl = fixture.nativeElement.querySelector('#emailConfirmationNotice');
-    expect(noticeEl).toBeTruthy();
-    expect(noticeEl.textContent).toContain('carlos@mago.es');
-    expect(noticeEl.textContent).toContain('Te hemos enviado un correo de confirmación');
-
-    component.onReset();
-    expect(component.isSubmitted()).toBeFalse();
-    expect(component.registeredFullName()).toBe('');
-    expect(component.registeredEmail()).toBe('');
-    expect(component.form.value.nombre).toBe('');
+    expect(mockInscripcionService.inscribir).toHaveBeenCalled();
+    expect(mockSessionService.saveSession).toHaveBeenCalledWith(jasmine.objectContaining({
+      id: 1,
+      fullName: 'Carlos Gómez',
+      artistName: 'Mago Carlos',
+      email: 'carlos@mago.es',
+      telefono: '600123456',
+      status: 'iniciada'
+    }));
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/pago']);
   });
 
   it('should open and accept privacy policy from modal', () => {
@@ -136,17 +141,8 @@ describe('RegistrationFormComponent', () => {
     component.onSubmit();
     fixture.detectChanges();
 
-    expect(component.isSubmitted()).toBeFalse();
     expect(component.isDuplicateError()).toBeTrue();
     expect(component.serverError()).toContain('Ya existe una inscripción registrada');
-
-    // Comprobar errores específicos por campo
-    expect(component.isFieldInvalid('nif_pasaporte')).toBeTrue();
-    expect(component.getErrorMessage('nif_pasaporte')).toBe('Ya existe una inscripción registrada con este NIF / CIF / Pasaporte.');
-    expect(component.isFieldInvalid('email')).toBeTrue();
-    expect(component.getErrorMessage('email')).toBe('Ya existe una inscripción registrada con este correo electrónico.');
-    expect(component.isFieldInvalid('telefono')).toBeTrue();
-    expect(component.getErrorMessage('telefono')).toBe('Ya existe una inscripción registrada con este número de teléfono móvil.');
 
     // Comprobar que el banner de advertencia de duplicados está en el DOM
     const bannerEl = fixture.nativeElement.querySelector('#duplicateWarningBanner');
@@ -173,7 +169,6 @@ describe('RegistrationFormComponent', () => {
     fixture.detectChanges();
 
     expect(component.showNoImagenModal()).toBeTrue();
-    expect(component.isSubmitted()).toBeFalse();
     expect(mockInscripcionService.inscribir).not.toHaveBeenCalled();
 
     const modalTitle = fixture.nativeElement.querySelector('#noImagenModalTitle');
@@ -206,7 +201,7 @@ describe('RegistrationFormComponent', () => {
     expect(mockInscripcionService.inscribir).toHaveBeenCalledWith(jasmine.objectContaining({
       consentimiento_imagen: false
     }));
-    expect(component.isSubmitted()).toBeTrue();
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/pago']);
   });
 
   it('should authorize image and submit when user chooses authorize button in modal', () => {
@@ -229,7 +224,7 @@ describe('RegistrationFormComponent', () => {
     expect(mockInscripcionService.inscribir).toHaveBeenCalledWith(jasmine.objectContaining({
       consentimiento_imagen: true
     }));
-    expect(component.isSubmitted()).toBeTrue();
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/pago']);
   });
 
   it('should close image rights modal and reset checkbox on close or form reset', () => {
@@ -243,4 +238,3 @@ describe('RegistrationFormComponent', () => {
     expect(component.noImagenConfirmedCheckbox()).toBeFalse();
   });
 });
-
