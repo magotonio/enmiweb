@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { HomeComponent } from './components/home/home.component';
-import { RegistrationFormComponent } from './components/registration-form/registration-form.component';
+import { RegistrationComponent } from './components/registration/registration.component';
 import { PagoComponent } from './components/pago/pago.component';
 import { LoginComponent } from './components/login/login.component';
 import { ResetPasswordComponent } from './components/reset-password/reset-password.component';
@@ -26,7 +26,7 @@ export const routes: Routes = [
   },
   {
     path: 'registro',
-    component: RegistrationFormComponent,
+    component: RegistrationComponent,
     canActivate: [maintenanceGuard],
     title: 'Inscripción | ENMI 2027 Madrid'
   },

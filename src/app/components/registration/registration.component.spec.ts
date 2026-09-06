@@ -1,13 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { Router, ActivatedRoute } from '@angular/router';
-import { RegistrationFormComponent } from './registration-form.component';
+import { RegistrationComponent } from './registration.component';
 import { InscripcionService } from '../../services/inscripcion.service';
 import { InscripcionSessionService } from '../../services/inscripcion-session.service';
 
-describe('RegistrationFormComponent', () => {
-  let component: RegistrationFormComponent;
-  let fixture: ComponentFixture<RegistrationFormComponent>;
+describe('RegistrationComponent', () => {
+  let component: RegistrationComponent;
+  let fixture: ComponentFixture<RegistrationComponent>;
   let mockInscripcionService: jasmine.SpyObj<InscripcionService>;
   let mockSessionService: jasmine.SpyObj<InscripcionSessionService>;
   let mockRouter: jasmine.SpyObj<Router>;
@@ -32,7 +32,7 @@ describe('RegistrationFormComponent', () => {
     }));
 
     await TestBed.configureTestingModule({
-      imports: [RegistrationFormComponent],
+      imports: [RegistrationComponent],
       providers: [
         { provide: InscripcionService, useValue: mockInscripcionService },
         { provide: InscripcionSessionService, useValue: mockSessionService },
@@ -41,7 +41,7 @@ describe('RegistrationFormComponent', () => {
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(RegistrationFormComponent);
+    fixture = TestBed.createComponent(RegistrationComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

@@ -64,7 +64,7 @@ Sistema modular y accesible de captación y registro de inscripciones, desarroll
 │   └── migrations/          # Scripts SQL incrementales versionados
 └── src/                     # Código fuente de la aplicación Angular
     ├── app/
-    │   ├── components/      # Componentes (registration-form, etc.)
+    │   ├── components/      # Componentes (registration, etc.)
     │   ├── models/          # Interfaces TypeScript del modelo
     │   └── services/        # Servicios HTTP para conectar con la API
     └── styles.css           # Sistema de diseño y variables globales CSS

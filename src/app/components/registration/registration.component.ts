@@ -7,13 +7,13 @@ import { InscripcionService } from '../../services/inscripcion.service';
 import { InscripcionSessionService } from '../../services/inscripcion-session.service';
 
 @Component({
-  selector: 'app-registration-form',
+  selector: 'app-registration',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
-  templateUrl: './registration-form.component.html',
-  styleUrl: './registration-form.component.css'
+  templateUrl: './registration.component.html',
+  styleUrl: './registration.component.css'
 })
-export class RegistrationFormComponent implements OnInit {
+export class RegistrationComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly inscripcionService = inject(InscripcionService);
   private readonly sessionService = inject(InscripcionSessionService);

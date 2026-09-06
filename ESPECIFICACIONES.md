@@ -62,7 +62,7 @@ Aplicación web moderna, accesible y modular construida con **Angular 21** conec
 │           ├── home/                            # Portada y presentación del encuentro
 │           ├── login/                           # Formulario de acceso de administradores
 │           ├── mantenimiento/                   # Página pública de estado de mantenimiento
-│           ├── registration-form/               # Formulario de inscripción pública
+│           ├── registration/                    # Formulario y vista de inscripción pública
 │           ├── admin-dashboard/                 # Panel general de administración con control de mantenimiento
 │           ├── admin-inscripciones/             # Panel de revisión, búsqueda y exportación de inscritos
 │           ├── admin-usuarios/                  # Panel de gestión de usuarios y roles
@@ -338,7 +338,7 @@ CREATE TABLE IF NOT EXISTS `enmi_configuracion` (
 - **RF-08: Confirmación de Inscripción por Correo al Participante y Aviso en la Web**:
   - Tras procesar el registro en MariaDB (`api/inscribir.php`), se envía automáticamente un correo electrónico personalizado al participante (`sendParticipantRegistrationEmail` en `api/mailer.php`).
   - El correo contiene un diseño HTML institucional y versión alternativa en texto plano con el resumen completo de los datos registrados (ID de registro, Nombre, Apellidos, Nombre Artístico, Documento de Identidad, Email, Teléfono, Lugar de Residencia, Asociación, Modalidad de participación activa, Consentimiento de imagen, Comentarios y Fecha/Hora).
-  - En la interfaz web (`RegistrationFormComponent`), tras el envío exitoso, se muestra un aviso visual destacado que confirma al participante que se le ha enviado un correo con todos los datos que ha registrado a su dirección de email, recomendando revisar la carpeta de spam o correo no deseado.
+  - En la interfaz web (`RegistrationComponent`), tras el envío exitoso, se muestra un aviso visual destacado que confirma al participante que se le ha enviado un correo con todos los datos que ha registrado a su dirección de email, recomendando revisar la carpeta de spam o correo no deseado.
 
 ---
 
@@ -348,7 +348,7 @@ CREATE TABLE IF NOT EXISTS `enmi_configuracion` (
 - **Envío de Correo de Confirmación al Participante (`api/mailer.php` & `api/inscribir.php`)**:
   - Implementación de la función `sendParticipantRegistrationEmail(array $data)` con plantilla HTML y texto plano corporativa de ENMI / Eutikea.
   - Integración en `api/inscribir.php` para disparar el envío directo al email del participante tras guardar en BD con registro en auditoría de logs (`confirmacion_inscripcion_participante`).
-- **Aviso en Pantalla de Envío de Email (`RegistrationFormComponent`)**:
+- **Aviso en Pantalla de Envío de Email (`RegistrationComponent`)**:
   - Visualización en la tarjeta de éxito de un bloque destacado con icono, dirección de correo del participante registrada y recordatorio de revisión de bandeja de entrada/spam.
   - Almacenamiento y limpieza reactiva del email con Signal (`registeredEmail`).
 
