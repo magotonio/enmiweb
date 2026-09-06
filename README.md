@@ -248,5 +248,6 @@ Para desplegar en un hosting compartido o servidor tradicional (ej. Dinahosting)
 
 ## 📖 Documentación Adicional
 
-Para más detalles sobre especificaciones funcionales, reglas de negocio, esquema de base de datos y control de versiones, consulta el archivo:
-- [ESPECIFICACIONES.md](file:///c:/codigo/otros/enmi/ESPECIFICACIONES.md)
+Para más detalles sobre especificaciones funcionales, reglas de negocio, esquema de base de datos, pruebas de pago y control de versiones, consulta:
+- [ESPECIFICACIONES.md](file:///c:/codigo/otros/enmiweb/ESPECIFICACIONES.md)
+- [DATOS_PRUEBA_PAGO.md](file:///c:/codigo/otros/enmiweb/DATOS_PRUEBA_PAGO.md)
