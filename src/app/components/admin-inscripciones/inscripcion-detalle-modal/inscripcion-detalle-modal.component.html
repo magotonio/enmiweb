@@ -1,0 +1,226 @@
+@if (inscripcion; as item) {
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
+  role="dialog" aria-modal="true" aria-labelledby="detailModalTitle" (click)="closeModal()">
+
+  <div
+    class="bg-brand-white rounded-3xl border border-brand-silver/40 shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
+    (click)="$event.stopPropagation()">
+
+    <!-- Cabecera del Modal -->
+    <div class="bg-brand-navy p-6 text-white flex items-center justify-between">
+      <div class="flex items-center gap-3.5">
+        <div
+          class="w-12 h-12 rounded-xl bg-brand-gold text-brand-navy flex items-center justify-center font-black text-base shadow-xs">
+          {{ getInitials(item.nombre, item.apellidos) }}
+        </div>
+        <div>
+          <span class="text-[11px] font-bold uppercase tracking-widest text-brand-gold block">
+            Ficha Oficial de Inscripción #{{ item.id }}
+          </span>
+          <h3 id="detailModalTitle" class="text-xl font-extrabold text-white">
+            {{ item.nombre }} {{ item.apellidos }}
+          </h3>
+        </div>
+      </div>
+      <button type="button" (click)="closeModal()"
+        class="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+        title="Cerrar ficha">
+        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+          stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Contenido del Modal con Scroll -->
+    <div class="p-6 sm:p-8 overflow-y-auto space-y-6">
+
+      <!-- Bloque 1: Identidad y Datos Artísticos -->
+      <div>
+        <h4 class="text-xs font-bold uppercase tracking-wider text-brand-navy mb-3 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-brand-gold"></span>
+          Datos Personales e Identidad
+        </h4>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Nombre Completo</span>
+            <span class="text-slate-900 font-bold text-sm mt-0.5 block">
+              {{ item.nombre }} {{ item.apellidos }}
+            </span>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Nombre Artístico</span>
+            <span class="text-brand-navy font-bold text-sm mt-0.5 block">
+              {{ item.nombre_artistico || 'Sin nombre artístico' }}
+            </span>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">NIF / CIF / Pasaporte</span>
+            <span class="font-mono text-slate-900 font-bold text-sm mt-0.5 block">
+              {{ item.nif_pasaporte || 'No registrado' }}
+            </span>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Estado de la Plaza</span>
+            @if (item.estado === 'pagada' || item.estado === 'pagado') {
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-300 mt-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              Pagada
+            </span>
+            } @else if (item.estado === 'pendiente') {
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-300 mt-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+              Pendiente de pago
+            </span>
+            } @else if (item.estado === 'iniciada') {
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-sky-50 text-sky-700 border border-sky-300 mt-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+              Iniciada
+            </span>
+            } @else if (item.estado === 'cancelada' || item.estado === 'cancelado') {
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-red-50 text-red-700 border border-red-300 mt-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+              Cancelada
+            </span>
+            } @else {
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-300 mt-1">
+              {{ item.estado || 'activo' }}
+            </span>
+            }
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Bloque 2: Contacto y Residencia -->
+      <div>
+        <h4 class="text-xs font-bold uppercase tracking-wider text-brand-navy mb-3 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-brand-gold"></span>
+          Contacto y Residencia
+        </h4>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Correo Electrónico</span>
+            <a href="mailto:{{ item.email }}" class="text-sky-700 font-bold text-sm mt-0.5 block hover:underline">
+              {{ item.email || 'No registrado' }}
+            </a>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Teléfono Móvil</span>
+            <a href="tel:{{ item.telefono }}" class="text-slate-900 font-bold text-sm mt-0.5 block hover:text-brand-navy">
+              {{ item.telefono || 'No registrado' }}
+            </a>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Lugar de Residencia</span>
+            <span class="text-slate-900 font-semibold text-xs mt-0.5 block">
+              {{ item.origen || 'No especificado' }}
+            </span>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Asociación / Círculo Mágico</span>
+            <span class="text-slate-900 font-semibold text-xs mt-0.5 block">
+              {{ item.asociacion || 'Ninguna / Independiente' }}
+            </span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Bloque 3: Participación Activa y Consentimientos -->
+      <div>
+        <h4 class="text-xs font-bold uppercase tracking-wider text-brand-navy mb-3 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-brand-gold"></span>
+          Participación y Consentimientos
+        </h4>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          
+          <div class="p-3.5 rounded-xl border"
+            [class.bg-amber-50]="item.quiero_participar"
+            [class.border-amber-300]="item.quiero_participar"
+            [class.bg-slate-50]="!item.quiero_participar"
+            [class.border-slate-200]="!item.quiero_participar">
+            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Deseo de Participación</span>
+            <div class="mt-1">
+              @if (item.quiero_participar) {
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold text-amber-900 bg-amber-200/60">
+                ⭐ SÍ, quiere participar activamente
+              </span>
+              } @else {
+              <span class="text-slate-600 font-medium text-xs">No / Solo asistente regular</span>
+              }
+            </div>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Derechos de Imagen</span>
+            <div class="mt-1">
+              @if (item.consentimiento_imagen) {
+              <span class="text-emerald-700 font-bold flex items-center gap-1">
+                ✓ Autorizado para fotos/vídeos
+              </span>
+              } @else {
+              <span class="text-slate-500">No autorizado expresamente</span>
+              }
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Bloque 4: Comentarios Adicionales -->
+      @if (item.comentarios) {
+      <div>
+        <h4 class="text-xs font-bold uppercase tracking-wider text-brand-navy mb-2 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-brand-gold"></span>
+          Comentarios y Observaciones
+        </h4>
+        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 leading-relaxed whitespace-pre-line">
+          {{ item.comentarios }}
+        </div>
+      </div>
+      }
+
+      <!-- Bloque 5: Auditoría y Metadatos Técnicos -->
+      <div class="p-4 rounded-2xl bg-slate-100/70 border border-slate-200/80 text-[11px] text-slate-600 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <strong class="text-slate-700 block">Fecha y Hora de Creación:</strong>
+          <span>{{ item.fecha_creacion | date:"EEEE, d 'de' MMMM 'de' yyyy, HH:mm:ss":'':'es' }}</span>
+        </div>
+        <div>
+          <strong class="text-slate-700 block">Dirección IP de Registro:</strong>
+          <span class="font-mono">{{ item.ip_registro || 'No registrada' }}</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Pie del Modal -->
+    <div class="bg-slate-50 p-4 px-6 border-t border-brand-silver/30 flex items-center justify-between gap-3">
+      <a href="mailto:{{ item.email }}"
+        class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-brand-navy bg-brand-gold/20 hover:bg-brand-gold/30 rounded-xl transition-colors">
+        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+        </svg>
+        <span>Contactar por email</span>
+      </a>
+
+      <button type="button" (click)="closeModal()"
+        class="px-5 py-2 text-xs font-semibold text-slate-700 bg-white border border-brand-silver/60 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer">
+        Cerrar
+      </button>
+    </div>
+
+  </div>
+
+</div>
+}

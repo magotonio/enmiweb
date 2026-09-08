@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { Inscripcion, InscripcionesStats } from '../../models/inscripcion.model';
 import { InscripcionService } from '../../services/inscripcion.service';
 import { AuthService } from '../../services/auth.service';
+import { InscripcionDetalleModalComponent } from './inscripcion-detalle-modal/inscripcion-detalle-modal.component';
 
 type SortField = 'id' | 'nombre' | 'apellidos' | 'nombre_artistico' | 'email' | 'nif_pasaporte' | 'origen' | 'quiero_participar' | 'fecha_creacion' | 'estado';
 type SortDirection = 'ASC' | 'DESC';
@@ -12,7 +13,7 @@ type SortDirection = 'ASC' | 'DESC';
 @Component({
   selector: 'app-admin-inscripciones',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DatePipe],
+  imports: [CommonModule, FormsModule, RouterLink, DatePipe, InscripcionDetalleModalComponent],
   templateUrl: './admin-inscripciones.component.html',
   styleUrl: './admin-inscripciones.component.css'
 })
