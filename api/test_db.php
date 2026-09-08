@@ -40,6 +40,15 @@ try {
         $countLogs = -1;
     }
 
+    // Verificar existencia de la tabla enmi_compras
+    $countCompras = 0;
+    try {
+        $countComprasStmt = $pdo->query("SELECT COUNT(*) as total FROM `enmi_compras`");
+        $countCompras = (int)$countComprasStmt->fetch()['total'];
+    } catch (Exception $e) {
+        $countCompras = -1;
+    }
+
     // Listar las últimas 5 inscripciones para verificación
     $ultimasInscripciones = [];
     try {
@@ -62,6 +71,7 @@ try {
             'enmi_inscripciones' => $countInscripciones >= 0 ? ['estado' => 'ok', 'total' => $countInscripciones] : ['estado' => 'no_creada'],
             'enmi_usuarios'      => $countUsuarios >= 0 ? ['estado' => 'ok', 'total' => $countUsuarios] : ['estado' => 'no_creada'],
             'enmi_logs'          => $countLogs >= 0 ? ['estado' => 'ok', 'total' => $countLogs] : ['estado' => 'no_creada'],
+            'enmi_compras'       => $countCompras >= 0 ? ['estado' => 'ok', 'total' => $countCompras] : ['estado' => 'no_creada'],
         ],
         'configuracion'        => [
             'log_level'          => getLogLevel(),
