@@ -57,6 +57,17 @@ export class PagoService {
   }
 
   /**
+   * Sincroniza el retorno de pasarela Redsys (ok / ko) para registrar el resultado en la tabla de compras/pagos
+   */
+  sincronizarRetornoRedsys(inscripcionId: number, pagoStatus: 'ok' | 'ko'): Observable<PagoAccionResponse> {
+    return this.http.post<PagoAccionResponse>(this.pagoApiUrl, {
+      accion: 'sincronizar_retorno_redsys',
+      inscripcion_id: inscripcionId,
+      pago_status: pagoStatus
+    });
+  }
+
+  /**
    * Redirige formalmente a la pasarela Redsys mediante POST dinámico
    */
   submitToRedsysGateway(params: RedsysFormParams): void {

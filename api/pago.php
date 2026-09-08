@@ -29,6 +29,143 @@ function redsysComputeSignature(string $merchantParameters, string $order, strin
     return base64_encode($res);
 }
 
+/**
+ * Registra o actualiza una entrada en la tabla `enmi_pagos` para auditoría y control de pagos.
+ *
+ * @param PDO $pdo Conexión PDO
+ * @param int $inscripcionId ID de la inscripción
+ * @param string $modalidad 'redsys', 'bizum', 'transferencia', 'otras'
+ * @param string $estado 'pagado' o 'no-pagado'
+ * @param float|null $importe Cantidad pagada (en euros)
+ * @param string|null $referencia Código único de referencia / pedido
+ * @param string|null $concepto Descripción del pago
+ * @param string|null $notas Información adicional relevante
+ * @param array|null $datosTransaccion Datos técnicos y parámetros adicionales
+ * @return int ID del registro en enmi_pagos
+ */
+function registrarPago(
+    PDO $pdo,
+    int $inscripcionId,
+    string $modalidad,
+    string $estado,
+    ?float $importe = null,
+    ?string $referencia = null,
+    ?string $concepto = null,
+    ?string $notas = null,
+    ?array $datosTransaccion = null
+): int {
+    if ($importe === null || $importe <= 0) {
+        $importe = (float)getConfigValue('pago_importe', '120.00', $pdo);
+    }
+
+    if (empty($concepto)) {
+        try {
+            $stmtIns = $pdo->prepare("SELECT nombre, apellidos FROM `enmi_inscripciones` WHERE id = :id LIMIT 1");
+            $stmtIns->execute([':id' => $inscripcionId]);
+            $insData = $stmtIns->fetch(PDO::FETCH_ASSOC);
+            $nombreComp = $insData ? trim(($insData['nombre'] ?? '') . ' ' . ($insData['apellidos'] ?? '')) : 'Participante #' . $inscripcionId;
+            $concepto = 'Inscripción ENMI 2027 #' . $inscripcionId . ' - ' . $nombreComp;
+        } catch (Throwable $e) {
+            $concepto = 'Inscripción ENMI 2027 #' . $inscripcionId;
+        }
+    }
+
+    if (empty($referencia)) {
+        $prefix = strtoupper(substr($modalidad, 0, 3));
+        $referencia = sprintf('ENMI-%s-%d-%s', $prefix, $inscripcionId, strtoupper(substr(uniqid(), -6)));
+    }
+
+    $fechaCompra = ($estado === 'pagado') ? date('Y-m-d H:i:s') : null;
+    $datosJson = !empty($datosTransaccion) ? json_encode($datosTransaccion, JSON_UNESCAPED_UNICODE) : null;
+
+    // Comprobar si ya existe un registro con esta referencia para actualizarlo, o insertar uno nuevo
+    $stmtCheck = $pdo->prepare("SELECT id FROM `enmi_pagos` WHERE referencia = :ref LIMIT 1");
+    $stmtCheck->execute([':ref' => $referencia]);
+    $existente = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+
+    if ($existente) {
+        $pagoId = (int)$existente['id'];
+        $stmtUp = $pdo->prepare("
+            UPDATE `enmi_pagos` 
+            SET `estado` = :estado,
+                `cantidad_pagada` = :cantidad,
+                `modalidad_pago` = :modalidad,
+                `fecha_compra` = :fecha_compra,
+                `notas` = :notas,
+                `datos_transaccion` = :datos,
+                `fecha_actualizacion` = NOW()
+            WHERE id = :id
+        ");
+        $stmtUp->execute([
+            ':estado'       => $estado,
+            ':cantidad'     => $importe,
+            ':modalidad'    => $modalidad,
+            ':fecha_compra' => $fechaCompra,
+            ':notas'        => $notas,
+            ':datos'        => $datosJson,
+            ':id'           => $pagoId
+        ]);
+        return $pagoId;
+    }
+
+    $stmtInsert = $pdo->prepare("
+        INSERT INTO `enmi_pagos` (
+            `inscripcion_id`,
+            `referencia`,
+            `concepto`,
+            `cantidad_pagada`,
+            `modalidad_pago`,
+            `estado`,
+            `fecha_compra`,
+            `notas`,
+            `datos_transaccion`,
+            `fecha_creacion`
+        ) VALUES (
+            :inscripcion_id,
+            :referencia,
+            :concepto,
+            :cantidad_pagada,
+            :modalidad_pago,
+            :estado,
+            :fecha_compra,
+            :notas,
+            :datos_transaccion,
+            NOW()
+        )
+    ");
+
+    $stmtInsert->execute([
+        ':inscripcion_id'   => $inscripcionId,
+        ':referencia'       => $referencia,
+        ':concepto'         => $concepto,
+        ':cantidad_pagada'  => $importe,
+        ':modalidad_pago'   => $modalidad,
+        ':estado'           => $estado,
+        ':fecha_compra'     => $fechaCompra,
+        ':notas'            => $notas,
+        ':datos_transaccion'=> $datosJson
+    ]);
+
+    return (int)$pdo->lastInsertId();
+}
+
+/**
+ * Alias de compatibilidad
+ */
+function registrarCompraPago(
+    PDO $pdo,
+    int $inscripcionId,
+    string $modalidad,
+    string $estado,
+    ?float $importe = null,
+    ?string $referencia = null,
+    ?string $concepto = null,
+    ?string $notas = null,
+    ?array $datosTransaccion = null
+): int {
+    return registrarPago($pdo, $inscripcionId, $modalidad, $estado, $importe, $referencia, $concepto, $notas, $datosTransaccion);
+}
+
 // =====================================================================
 // 1. GET: Consulta de información pública de pago o retorno Redsys
 // =====================================================================
@@ -162,9 +299,35 @@ if ($method === 'POST') {
                 'entorno' => $entorno
             ]);
 
+            // Registrar orden previa en la tabla enmi_pagos (marcado como no-pagado)
+            $nombreParticipante = trim($inscripcion['nombre'] . ' ' . $inscripcion['apellidos']);
+            $conceptoCompra = 'Inscripción ENMI 2027 #' . $inscripcionId . ' - ' . $nombreParticipante;
+            $notasInicio = "Sesión de pago Redsys ({$entorno}) iniciada para pedido #{$order}";
+
+            $pagoId = registrarPago(
+                $pdo,
+                $inscripcionId,
+                'redsys',
+                'no-pagado',
+                $importeNum,
+                $order,
+                $conceptoCompra,
+                $notasInicio,
+                [
+                    'order'       => $order,
+                    'fuc'         => $fuc,
+                    'terminal'    => $terminal,
+                    'entorno'     => $entorno,
+                    'ip'          => $_SERVER['REMOTE_ADDR'] ?? null,
+                    'user_agent'  => $_SERVER['HTTP_USER_AGENT'] ?? null
+                ]
+            );
+
             sendJsonResponse([
                 'success'                => true,
                 'inscripcion_id'         => $inscripcionId,
+                'pago_id'                => $pagoId,
+                'compra_id'              => $pagoId,
                 'tpv_url'                => $tpvUrl,
                 'Ds_SignatureVersion'    => 'HMAC_SHA256_V1',
                 'Ds_MerchantParameters'  => $merchantParameters,
@@ -198,16 +361,48 @@ if ($method === 'POST') {
                 sendJsonResponse(['success' => false, 'message' => 'Inscripción no encontrada.'], 404);
             }
 
-            // Para Bizum, Transferencia u Otras, el estado pasa a 'pendiente'
+            // Para Bizum, Transferencia u Otras, el estado de la inscripción pasa a 'pendiente'
             $nuevoEstado = 'pendiente';
             $stmtUp = $pdo->prepare("UPDATE `enmi_inscripciones` SET `estado` = :estado WHERE id = :id");
             $stmtUp->execute([':estado' => $nuevoEstado, ':id' => $inscripcionId]);
 
+            // Registrar en la tabla enmi_pagos como 'no-pagado'
+            $importeNum = (float)getConfigValue('pago_importe', '120.00', $pdo);
+            $nombreParticipante = trim($inscripcion['nombre'] . ' ' . $inscripcion['apellidos']);
+            $conceptoCompra = 'Inscripción ENMI 2027 #' . $inscripcionId . ' - ' . $nombreParticipante;
+            $notasModalidad = "Modalidad seleccionada: " . strtoupper($modalidad) . ". Pago en espera de recepción.";
+            if ($modalidad === 'bizum') {
+                $telBizum = (string)getConfigValue('pago_bizum_telefono', '+34 600 000 000', $pdo);
+                $notasModalidad .= " Destino Bizum: {$telBizum}.";
+            } elseif ($modalidad === 'transferencia') {
+                $iban = (string)getConfigValue('pago_transferencia_iban', '', $pdo);
+                $notasModalidad .= " Cuenta IBAN: {$iban}.";
+            }
+
+            $pagoId = registrarPago(
+                $pdo,
+                $inscripcionId,
+                $modalidad,
+                'no-pagado',
+                $importeNum,
+                null,
+                $conceptoCompra,
+                $notasModalidad,
+                [
+                    'modalidad'     => $modalidad,
+                    'inscripcion_id'=> $inscripcionId,
+                    'ip'            => $_SERVER['REMOTE_ADDR'] ?? null,
+                    'user_agent'    => $_SERVER['HTTP_USER_AGENT'] ?? null,
+                    'origen'        => 'confirmar_modalidad'
+                ]
+            );
+
             // Registrar log de auditoría
-            logInfo('pagos', 'modalidad_seleccionada', "Modalidad '{$modalidad}' seleccionada para inscripción #{$inscripcionId}. Estado: {$nuevoEstado}", [
+            logInfo('pagos', 'modalidad_seleccionada', "Modalidad '{$modalidad}' seleccionada para inscripción #{$inscripcionId}. Estado inscripción: {$nuevoEstado}. Registro pago #{$pagoId} (no-pagado)", [
                 'inscripcion_id' => $inscripcionId,
                 'modalidad'      => $modalidad,
-                'nuevo_estado'   => $nuevoEstado
+                'nuevo_estado'   => $nuevoEstado,
+                'pago_id'        => $pagoId
             ]);
 
             // Enviar correo de confirmación de inscripción al participante indicando modalidad
@@ -243,6 +438,10 @@ if ($method === 'POST') {
                 'inscripcion_id' => $inscripcionId,
                 'estado'         => $nuevoEstado,
                 'modalidad'      => $modalidad,
+                'estado_pago'    => 'no-pagado',
+                'estado_compra'  => 'no-pagado',
+                'pago_id'        => $pagoId,
+                'compra_id'      => $pagoId,
                 'message'        => 'Modalidad de pago registrada correctamente.'
             ], 200);
 
@@ -279,15 +478,47 @@ if ($method === 'POST') {
 
             // Si es OK -> 'pagada'; si no -> 'pendiente'
             $nuevoEstado = ($resultado === 'ok') ? 'pagada' : 'pendiente';
+            $estadoCompra = ($resultado === 'ok') ? 'pagado' : 'no-pagado';
+            $importeNum = (float)getConfigValue('pago_importe', '120.00', $pdo);
+            $nombreParticipante = trim($inscripcion['nombre'] . ' ' . $inscripcion['apellidos']);
+            $conceptoCompra = 'Inscripción ENMI 2027 #' . $inscripcionId . ' - ' . $nombreParticipante;
+            $orderSim = 'SIM-' . date('ymd') . sprintf('%06d', $inscripcionId % 1000000) . '-' . strtoupper(substr(uniqid(), -4));
+
+            $notasSim = ($resultado === 'ok')
+                ? 'Simulador Redsys (Demo/Sandbox): Pago autorizado y verificado con éxito.'
+                : 'Simulador Redsys (Demo/Sandbox): Transacción denegada o cancelada por el usuario.';
+
+            $pagoId = registrarPago(
+                $pdo,
+                $inscripcionId,
+                'redsys',
+                $estadoCompra,
+                $importeNum,
+                $orderSim,
+                $conceptoCompra,
+                $notasSim,
+                [
+                    'modalidad'     => 'redsys',
+                    'resultado'     => $resultado,
+                    'inscripcion_id'=> $inscripcionId,
+                    'simulador'     => true,
+                    'ip'            => $_SERVER['REMOTE_ADDR'] ?? null,
+                    'user_agent'    => $_SERVER['HTTP_USER_AGENT'] ?? null
+                ]
+            );
 
             $stmtUp = $pdo->prepare("UPDATE `enmi_inscripciones` SET `estado` = :estado WHERE id = :id");
             $stmtUp->execute([':estado' => $nuevoEstado, ':id' => $inscripcionId]);
 
             $logAction = ($resultado === 'ok') ? 'pago_redsys_exito_simulado' : 'pago_redsys_fallido_simulado';
-            logInfo('pagos', $logAction, "Simulación Redsys ({$resultado}): inscripción #{$inscripcionId} -> {$nuevoEstado}", [
+            logInfo('pagos', $logAction, "Simulación Redsys ({$resultado}): inscripción #{$inscripcionId} -> {$nuevoEstado}. Registro pago #{$pagoId} ({$estadoCompra})", [
                 'inscripcion_id' => $inscripcionId,
                 'resultado'      => $resultado,
-                'estado'         => $nuevoEstado
+                'estado'         => $nuevoEstado,
+                'pago_id'        => $pagoId,
+                'compra_id'      => $pagoId,
+                'estado_pago'    => $estadoCompra,
+                'estado_compra'  => $estadoCompra
             ]);
 
             // Si ha sido pagada, enviamos correo con estado 'pagada'
@@ -323,6 +554,10 @@ if ($method === 'POST') {
                 'success'        => true,
                 'inscripcion_id' => $inscripcionId,
                 'estado'         => $nuevoEstado,
+                'estado_pago'    => $estadoCompra,
+                'estado_compra'  => $estadoCompra,
+                'pago_id'        => $pagoId,
+                'compra_id'      => $pagoId,
                 'resultado'      => $resultado,
                 'message'        => ($resultado === 'ok')
                     ? '¡Pago completado con éxito! Tu inscripción ha sido pagada y confirmada.'
@@ -364,16 +599,36 @@ if ($method === 'POST') {
 
             $isPagoOk = $signaturesMatch && ($responseCode >= 0 && $responseCode <= 99);
             $nuevoEstado = $isPagoOk ? 'pagada' : 'pendiente';
+            $estadoCompra = $isPagoOk ? 'pagado' : 'no-pagado';
+            $notasRetorno = $isPagoOk
+                ? "Retorno Redsys: Pago aprobado exitosamente (código {$responseCode})."
+                : "Retorno Redsys: Pago denegado o no autorizado (código {$responseCode}).";
 
+            $pagoId = null;
             if ($inscripcionId > 0) {
                 $stmtUp = $pdo->prepare("UPDATE `enmi_inscripciones` SET `estado` = :estado WHERE id = :id");
                 $stmtUp->execute([':estado' => $nuevoEstado, ':id' => $inscripcionId]);
 
-                logInfo('pagos', 'redsys_callback', "Retorno Redsys recibido para inscripción #{$inscripcionId}. Código: {$responseCode}. Estado: {$nuevoEstado}", [
+                $pagoId = registrarPago(
+                    $pdo,
+                    $inscripcionId,
+                    'redsys',
+                    $estadoCompra,
+                    null,
+                    $order,
+                    null,
+                    $notasRetorno,
+                    $params
+                );
+
+                logInfo('pagos', 'redsys_callback', "Retorno Redsys recibido para inscripción #{$inscripcionId}. Código: {$responseCode}. Estado inscripción: {$nuevoEstado}. Estado pago: {$estadoCompra}", [
                     'order'            => $order,
                     'responseCode'     => $responseCode,
                     'signaturesMatch'  => $signaturesMatch,
-                    'nuevo_estado'     => $nuevoEstado
+                    'nuevo_estado'     => $nuevoEstado,
+                    'estado_pago'      => $estadoCompra,
+                    'pago_id'          => $pagoId,
+                    'compra_id'        => $pagoId
                 ]);
             }
 
@@ -381,12 +636,80 @@ if ($method === 'POST') {
                 'success'        => true,
                 'inscripcion_id' => $inscripcionId,
                 'estado'         => $nuevoEstado,
+                'estado_pago'    => $estadoCompra,
+                'estado_compra'  => $estadoCompra,
+                'pago_id'        => $pagoId,
+                'compra_id'      => $pagoId,
                 'pago_ok'        => $isPagoOk
             ], 200);
 
         } catch (Throwable $e) {
             logError('pagos', 'error_redsys_retorno', $e->getMessage());
             sendJsonResponse(['success' => false, 'message' => 'Error al procesar retorno Redsys.'], 500);
+        }
+    }
+
+    // E) SINCRONIZAR RETORNO REDSYS (Llamado cuando el frontend detecta retorno con queryParam pago=ok o ko)
+    if ($accion === 'sincronizar_retorno_redsys') {
+        $inscripcionId = isset($data['inscripcion_id']) ? (int)$data['inscripcion_id'] : 0;
+        $pagoStatus    = isset($data['pago_status']) ? strtolower(trim((string)$data['pago_status'])) : '';
+
+        if ($inscripcionId <= 0 || !in_array($pagoStatus, ['ok', 'ko'], true)) {
+            sendJsonResponse(['success' => false, 'message' => 'Parámetros inválidos.'], 400);
+        }
+
+        try {
+            $stmt = $pdo->prepare("SELECT * FROM `enmi_inscripciones` WHERE id = :id LIMIT 1");
+            $stmt->execute([':id' => $inscripcionId]);
+            $inscripcion = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$inscripcion) {
+                sendJsonResponse(['success' => false, 'message' => 'Inscripción no encontrada.'], 404);
+            }
+
+            $isPagoOk = ($pagoStatus === 'ok');
+            $nuevoEstado = $isPagoOk ? 'pagada' : 'pendiente';
+            $estadoCompra = $isPagoOk ? 'pagado' : 'no-pagado';
+
+            $stmtUp = $pdo->prepare("UPDATE `enmi_inscripciones` SET `estado` = :estado WHERE id = :id");
+            $stmtUp->execute([':estado' => $nuevoEstado, ':id' => $inscripcionId]);
+
+            $nombreParticipante = trim($inscripcion['nombre'] . ' ' . $inscripcion['apellidos']);
+            $conceptoCompra = 'Inscripción ENMI 2027 #' . $inscripcionId . ' - ' . $nombreParticipante;
+            $order = date('ymd') . sprintf('%06d', $inscripcionId % 1000000);
+            $notasSync = $isPagoOk
+                ? "Retorno Redsys verificado vía URL pública (éxito)."
+                : "Retorno Redsys vía URL pública (cancelado/fallido).";
+
+            $pagoId = registrarPago(
+                $pdo,
+                $inscripcionId,
+                'redsys',
+                $estadoCompra,
+                null,
+                $order,
+                $conceptoCompra,
+                $notasSync,
+                [
+                    'pago_status'    => $pagoStatus,
+                    'inscripcion_id' => $inscripcionId,
+                    'origen'         => 'sincronizar_retorno_redsys'
+                ]
+            );
+
+            sendJsonResponse([
+                'success'        => true,
+                'inscripcion_id' => $inscripcionId,
+                'estado'         => $nuevoEstado,
+                'estado_pago'    => $estadoCompra,
+                'estado_compra'  => $estadoCompra,
+                'pago_id'        => $pagoId,
+                'compra_id'      => $pagoId
+            ], 200);
+
+        } catch (Throwable $e) {
+            logError('pagos', 'error_sincronizar_retorno_redsys', $e->getMessage());
+            sendJsonResponse(['success' => false, 'message' => 'Error al sincronizar retorno: ' . $e->getMessage()], 500);
         }
     }
 }

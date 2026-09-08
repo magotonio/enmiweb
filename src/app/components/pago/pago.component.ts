@@ -81,6 +81,7 @@ export class PagoComponent implements OnInit {
           this.sessionService.updateStatus('pagada', 'redsys');
           this.isCompleted.set(true);
           this.paymentNotice.set('¡Tu pago ha sido procesado y verificado correctamente por la pasarela de Redsys!');
+          this.pagoService.sincronizarRetornoRedsys(id, 'ok').subscribe();
           window.scrollTo({ top: 0, behavior: 'smooth' });
         } else if (pagoStatus === 'ko') {
           // El pago en Redsys fue cancelado o rechazado
@@ -88,6 +89,7 @@ export class PagoComponent implements OnInit {
           this.selectedModalidad.set('redsys');
           this.isCompleted.set(false);
           this.paymentError.set('La pasarela de pago no completó la transacción o fue cancelada. Tu inscripción se encuentra en estado pendiente. Puedes reintentar el pago o elegir otra modalidad.');
+          this.pagoService.sincronizarRetornoRedsys(id, 'ko').subscribe();
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       }

@@ -18,8 +18,10 @@ describe('PagoComponent', () => {
       'iniciarRedsys',
       'confirmarModalidad',
       'simularRedsys',
+      'sincronizarRetornoRedsys',
       'submitToRedsysGateway'
     ]);
+    mockPagoService.sincronizarRetornoRedsys.and.returnValue(of({ success: true }));
     mockSessionService = jasmine.createSpyObj('InscripcionSessionService', [
       'saveSession',
       'getSession',

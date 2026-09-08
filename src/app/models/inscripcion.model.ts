@@ -136,6 +136,8 @@ export interface PagoAccionResponse {
   estado?: EstadoInscripcion;
   modalidad?: ModalidadPago;
   resultado?: string;
+  compra_id?: number;
+  estado_compra?: string;
   message?: string;
 }
 
