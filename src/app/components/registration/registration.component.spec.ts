@@ -1,9 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { of } from 'rxjs';
 import { Router, ActivatedRoute } from '@angular/router';
+import { signal } from '@angular/core';
 import { RegistrationComponent } from './registration.component';
 import { InscripcionService } from '../../services/inscripcion.service';
 import { InscripcionSessionService } from '../../services/inscripcion-session.service';
+import { InscripcionSessionData } from '../../models/inscripcion.model';
 
 describe('RegistrationComponent', () => {
   let component: RegistrationComponent;
@@ -11,25 +13,16 @@ describe('RegistrationComponent', () => {
   let mockInscripcionService: jasmine.SpyObj<InscripcionService>;
   let mockSessionService: jasmine.SpyObj<InscripcionSessionService>;
   let mockRouter: jasmine.SpyObj<Router>;
+  let currentSessionSignal = signal<InscripcionSessionData | null>(null);
 
   beforeEach(async () => {
     mockInscripcionService = jasmine.createSpyObj('InscripcionService', ['inscribir']);
-    mockSessionService = jasmine.createSpyObj('InscripcionSessionService', ['saveSession', 'getSession', 'hasSession', 'clearSession']);
+    mockSessionService = jasmine.createSpyObj('InscripcionSessionService', ['saveSession', 'getSession', 'hasSession', 'clearSession'], {
+      currentSession: currentSessionSignal
+    });
     mockRouter = jasmine.createSpyObj('Router', ['navigate']);
 
-    mockInscripcionService.inscribir.and.returnValue(of({
-      success: true,
-      message: 'Inscripción guardada correctamente.',
-      id: 1,
-      estado: 'iniciada',
-      data: {
-        nombre: 'Carlos',
-        apellidos: 'Gómez',
-        nombre_artistico: 'Mago Carlos',
-        email: 'carlos@mago.es',
-        quiero_participar: true
-      }
-    }));
+    mockSessionService.hasSession.and.callFake(() => currentSessionSignal() !== null);
 
     await TestBed.configureTestingModule({
       imports: [RegistrationComponent],
@@ -41,200 +34,49 @@ describe('RegistrationComponent', () => {
       ]
     }).compileComponents();
 
+    currentSessionSignal.set(null);
     fixture = TestBed.createComponent(RegistrationComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
-  it('should create the registration form', () => {
+  it('should create the registration component', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should initialize form as invalid', () => {
-    expect(component.form.valid).toBeFalse();
+  it('should show registration form component when there is no active session', () => {
+    expect(component.hasActiveSession()).toBeFalse();
+    const formEl = fixture.nativeElement.querySelector('app-registration-form');
+    expect(formEl).toBeTruthy();
   });
 
-  it('should validate required fields and email format', () => {
-    component.form.controls['nombre'].setValue('Carlos');
-    component.form.controls['apellidos'].setValue('Gómez');
-    component.form.controls['nif_pasaporte'].setValue('12345678Z');
-    component.form.controls['email'].setValue('invalid-email');
-    component.form.controls['telefono'].setValue('600123456');
-    component.form.controls['origen'].setValue('Madrid');
-    component.form.controls['acepta_privacidad'].setValue(true);
-    expect(component.form.valid).toBeFalse();
+  it('should show active session card when an active session exists', () => {
+    currentSessionSignal.set({
+      id: 99,
+      fullName: 'Mago Test',
+      artistName: 'El Gran Mago',
+      apellidos: 'Test',
+      email: 'test@mago.es',
+      telefono: '600000000',
+      status: 'iniciada',
+      modalidad: null,
+      registeredAt: new Date().toISOString()
+    });
 
-    component.form.controls['email'].setValue('carlos@mago.es');
-    expect(component.form.valid).toBeTrue();
-  });
-
-  it('should handle successful submission, save session and navigate to /pago', () => {
-    component.form.controls['nombre'].setValue('Carlos');
-    component.form.controls['apellidos'].setValue('Gómez');
-    component.form.controls['nombre_artistico'].setValue('Mago Carlos');
-    component.form.controls['nif_pasaporte'].setValue('12345678Z');
-    component.form.controls['email'].setValue('carlos@mago.es');
-    component.form.controls['telefono'].setValue('600123456');
-    component.form.controls['origen'].setValue('Segovia');
-    component.form.controls['quiero_participar'].setValue(true);
-    component.form.controls['acepta_privacidad'].setValue(true);
-    component.form.controls['consentimiento_imagen'].setValue(true);
-    component.form.controls['comentarios'].setValue('Interesado en participar en el concurso o taller');
-
-    component.onSubmit();
-
-    expect(mockInscripcionService.inscribir).toHaveBeenCalled();
-    expect(mockSessionService.saveSession).toHaveBeenCalledWith(jasmine.objectContaining({
-      id: 1,
-      fullName: 'Carlos Gómez',
-      artistName: 'Mago Carlos',
-      email: 'carlos@mago.es',
-      telefono: '600123456',
-      status: 'iniciada'
-    }));
-    expect(mockRouter.navigate).toHaveBeenCalledWith(['/pago']);
-  });
-
-  it('should open and accept privacy policy from modal', () => {
-    component.openPrivacidadModal();
-    expect(component.showPrivacidadModal()).toBeTrue();
-
-    component.acceptPrivacidadFromModal();
-    expect(component.showPrivacidadModal()).toBeFalse();
-    expect(component.form.get('acepta_privacidad')?.value).toBeTrue();
-  });
-
-  it('should open and close participacion info modal', () => {
-    component.openParticipacionModal();
-    expect(component.showParticipacionModal()).toBeTrue();
-
-    component.closeParticipacionModal();
-    expect(component.showParticipacionModal()).toBeFalse();
-  });
-
-  it('should handle duplicate registration errors (NIF, email, phone) from API', () => {
-    const errorResponse = {
-      status: 409,
-      error: {
-        success: false,
-        duplicado: true,
-        message: 'Ya existe una inscripción registrada en el sistema con el mismo NIF/Pasaporte, correo electrónico, número de móvil.',
-        errors: {
-          nif_pasaporte: 'Ya existe una inscripción registrada con este NIF / CIF / Pasaporte.',
-          email: 'Ya existe una inscripción registrada con este correo electrónico.',
-          telefono: 'Ya existe una inscripción registrada con este número de teléfono móvil.'
-        }
-      }
-    };
-
-    mockInscripcionService.inscribir.and.returnValue(throwError(() => errorResponse));
-
-    component.form.controls['nombre'].setValue('Carlos');
-    component.form.controls['apellidos'].setValue('Gómez');
-    component.form.controls['nif_pasaporte'].setValue('12345678Z');
-    component.form.controls['email'].setValue('carlos@mago.es');
-    component.form.controls['telefono'].setValue('600123456');
-    component.form.controls['origen'].setValue('Madrid');
-    component.form.controls['acepta_privacidad'].setValue(true);
-    component.form.controls['consentimiento_imagen'].setValue(true);
-
-    component.onSubmit();
     fixture.detectChanges();
 
-    expect(component.isDuplicateError()).toBeTrue();
-    expect(component.serverError()).toContain('Ya existe una inscripción registrada');
-
-    // Comprobar que el banner de advertencia de duplicados está en el DOM
-    const bannerEl = fixture.nativeElement.querySelector('#duplicateWarningBanner');
-    expect(bannerEl).toBeTruthy();
-    expect(bannerEl.textContent).toContain('Inscripción ya registrada');
-    expect(bannerEl.textContent).toContain('Datos Duplicados');
-
-    // Modificar un campo y comprobar que su error de servidor se limpia
-    component.form.controls['nif_pasaporte'].setValue('87654321A');
-    expect(component.serverFieldErrors()['nif_pasaporte']).toBeUndefined();
+    expect(component.hasActiveSession()).toBeTrue();
+    const activeCard = fixture.nativeElement.querySelector('#activeSessionCard');
+    expect(activeCard).toBeTruthy();
   });
 
-  it('should show image rights confirmation modal when consentimiento_imagen is false on submit', () => {
-    component.form.controls['nombre'].setValue('Carlos');
-    component.form.controls['apellidos'].setValue('Gómez');
-    component.form.controls['nif_pasaporte'].setValue('12345678Z');
-    component.form.controls['email'].setValue('carlos@mago.es');
-    component.form.controls['telefono'].setValue('600123456');
-    component.form.controls['origen'].setValue('Madrid');
-    component.form.controls['acepta_privacidad'].setValue(true);
-    component.form.controls['consentimiento_imagen'].setValue(false);
-
-    component.onSubmit();
-    fixture.detectChanges();
-
-    expect(component.showNoImagenModal()).toBeTrue();
-    expect(mockInscripcionService.inscribir).not.toHaveBeenCalled();
-
-    const modalTitle = fixture.nativeElement.querySelector('#noImagenModalTitle');
-    expect(modalTitle).toBeTruthy();
-    expect(modalTitle.textContent).toContain('No autorizo el uso de mi imagen');
-  });
-
-  it('should submit without image rights when user checks mandatory checkbox and confirms in modal', () => {
-    component.form.controls['nombre'].setValue('Carlos');
-    component.form.controls['apellidos'].setValue('Gómez');
-    component.form.controls['nif_pasaporte'].setValue('12345678Z');
-    component.form.controls['email'].setValue('carlos@mago.es');
-    component.form.controls['telefono'].setValue('600123456');
-    component.form.controls['origen'].setValue('Madrid');
-    component.form.controls['acepta_privacidad'].setValue(true);
-    component.form.controls['consentimiento_imagen'].setValue(false);
-
-    component.onSubmit();
-    expect(component.showNoImagenModal()).toBeTrue();
-
-    // Trying to submit without checking checkbox should do nothing
-    component.confirmNoImagenAndSubmit();
-    expect(mockInscripcionService.inscribir).not.toHaveBeenCalled();
-
-    // Check mandatory confirmation checkbox and submit
-    component.toggleNoImagenConfirmedCheckbox(true);
-    component.confirmNoImagenAndSubmit();
-
-    expect(component.showNoImagenModal()).toBeFalse();
-    expect(mockInscripcionService.inscribir).toHaveBeenCalledWith(jasmine.objectContaining({
-      consentimiento_imagen: false
-    }));
+  it('should navigate to /pago when continuarAlPago() is called', () => {
+    component.continuarAlPago();
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/pago']);
   });
 
-  it('should authorize image and submit when user chooses authorize button in modal', () => {
-    component.form.controls['nombre'].setValue('Carlos');
-    component.form.controls['apellidos'].setValue('Gómez');
-    component.form.controls['nif_pasaporte'].setValue('12345678Z');
-    component.form.controls['email'].setValue('carlos@mago.es');
-    component.form.controls['telefono'].setValue('600123456');
-    component.form.controls['origen'].setValue('Madrid');
-    component.form.controls['acepta_privacidad'].setValue(true);
-    component.form.controls['consentimiento_imagen'].setValue(false);
-
-    component.onSubmit();
-    expect(component.showNoImagenModal()).toBeTrue();
-
-    component.authorizeImagenAndSubmit();
-
-    expect(component.showNoImagenModal()).toBeFalse();
-    expect(component.form.get('consentimiento_imagen')?.value).toBeTrue();
-    expect(mockInscripcionService.inscribir).toHaveBeenCalledWith(jasmine.objectContaining({
-      consentimiento_imagen: true
-    }));
-    expect(mockRouter.navigate).toHaveBeenCalledWith(['/pago']);
-  });
-
-  it('should close image rights modal and reset checkbox on close or form reset', () => {
-    component.openNoImagenModal();
-    component.toggleNoImagenConfirmedCheckbox(true);
-    expect(component.showNoImagenModal()).toBeTrue();
-    expect(component.noImagenConfirmedCheckbox()).toBeTrue();
-
-    component.closeNoImagenModal();
-    expect(component.showNoImagenModal()).toBeFalse();
-    expect(component.noImagenConfirmedCheckbox()).toBeFalse();
+  it('should clear session when iniciarNuevoRegistro() is called', () => {
+    component.iniciarNuevoRegistro();
+    expect(mockSessionService.clearSession).toHaveBeenCalled();
   });
 });
