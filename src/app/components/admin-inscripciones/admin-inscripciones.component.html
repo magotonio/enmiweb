@@ -645,6 +645,7 @@
   <!-- ===================================================================== -->
   <app-inscripcion-detalle-modal
     [inscripcion]="selectedInscripcion()"
+    (inscripcionActualizada)="onInscripcionActualizada($event)"
     (close)="closeDetail()" />
 
 </div>

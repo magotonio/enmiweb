@@ -4,35 +4,82 @@ import {
   HostListener,
   Input,
   OnChanges,
+  OnInit,
   Output,
   SimpleChanges,
   inject,
   signal
 } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
-import { Inscripcion, PagoRegistro } from '../../../models/inscripcion.model';
+import { FormsModule } from '@angular/forms';
+import { Inscripcion, PagoManualRequest, PagoRegistro } from '../../../models/inscripcion.model';
 import { PagoService } from '../../../services/pago.service';
+import { AuthService } from '../../../services/auth.service';
+import { TARIFA_DEFECTO } from '../../../constants/app.constants';
 
 @Component({
   selector: 'app-inscripcion-detalle-modal',
   standalone: true,
-  imports: [CommonModule, DatePipe, CurrencyPipe],
+  imports: [CommonModule, FormsModule, DatePipe, CurrencyPipe],
   templateUrl: './inscripcion-detalle-modal.component.html',
   styleUrl: './inscripcion-detalle-modal.component.css'
 })
-export class InscripcionDetalleModalComponent implements OnChanges {
+export class InscripcionDetalleModalComponent implements OnInit, OnChanges {
   @Input() inscripcion: Inscripcion | null = null;
   @Output() close = new EventEmitter<void>();
+  @Output() inscripcionActualizada = new EventEmitter<Inscripcion>();
 
   private readonly pagoService = inject(PagoService);
+  readonly authService = inject(AuthService);
+
+  readonly isSupervisor = this.authService.isSupervisor;
 
   readonly pagos = signal<PagoRegistro[]>([]);
   readonly cargandoPagos = signal<boolean>(false);
   readonly errorPagos = signal<string | null>(null);
   readonly detallePagoExpandido = signal<number | null>(null);
 
+  // Tarifa oficial de inscripción obtenida de BD (fallback a constante 250)
+  readonly tarifaInscripcion = signal<number>(TARIFA_DEFECTO);
+
+  // Estados reactivos para el formulario de Registro Manual de Pago
+  readonly mostrarFormPagoManual = signal<boolean>(false);
+  readonly modalidadPagoManual = signal<string>('transferencia');
+  readonly cantidadPagoManual = signal<number>(TARIFA_DEFECTO);
+  readonly notasPagoManual = signal<string>('');
+  readonly enviarEmailPagoManual = signal<boolean>(true);
+  readonly guardandoPagoManual = signal<boolean>(false);
+  readonly errorPagoManual = signal<string | null>(null);
+  readonly mensajeExitoPagoManual = signal<string | null>(null);
+
+  ngOnInit(): void {
+    this.cargarConfiguracionPago();
+  }
+
+  private cargarConfiguracionPago(): void {
+    this.pagoService.getPagoConfig().subscribe({
+      next: (config) => {
+        if (config?.importe) {
+          const imp = parseFloat(config.importe);
+          if (!isNaN(imp) && imp > 0) {
+            this.tarifaInscripcion.set(imp);
+            if (this.cantidadPagoManual() === TARIFA_DEFECTO) {
+              this.cantidadPagoManual.set(imp);
+            }
+          }
+        }
+      },
+      error: () => {
+        // Fallback a TARIFA_DEFECTO ya establecido en el signal
+      }
+    });
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['inscripcion']) {
+      this.mostrarFormPagoManual.set(false);
+      this.errorPagoManual.set(null);
+      this.mensajeExitoPagoManual.set(null);
       if (this.inscripcion?.id) {
         this.cargarPagos(this.inscripcion.id);
       } else {
@@ -150,6 +197,91 @@ export class InscripcionDetalleModalComponent implements OnChanges {
       default:
         return { label: estado || 'Desconocido', class: 'bg-slate-100 text-slate-700 border-slate-200', dotClass: 'bg-slate-400' };
     }
+  }
+
+  abrirFormPagoManual(): void {
+    const totalAbonado = this.getTotalPagado();
+    const tarifa = this.tarifaInscripcion();
+    const saldoPendiente = Math.max(0, tarifa - totalAbonado);
+    this.cantidadPagoManual.set(saldoPendiente > 0 ? saldoPendiente : tarifa);
+    this.modalidadPagoManual.set('transferencia');
+    this.notasPagoManual.set('');
+    this.enviarEmailPagoManual.set(true);
+    this.errorPagoManual.set(null);
+    this.mensajeExitoPagoManual.set(null);
+    this.mostrarFormPagoManual.set(true);
+  }
+
+  cancelarFormPagoManual(): void {
+    this.mostrarFormPagoManual.set(false);
+    this.errorPagoManual.set(null);
+  }
+
+  confirmarPagoManual(): void {
+    if (!this.inscripcion?.id || this.guardandoPagoManual()) {
+      return;
+    }
+
+    const cantidad = Number(this.cantidadPagoManual());
+    if (isNaN(cantidad) || cantidad <= 0) {
+      this.errorPagoManual.set('Por favor, indica un importe válido superior a 0 €.');
+      return;
+    }
+
+    const modalidad = this.modalidadPagoManual();
+    const notas = this.notasPagoManual().trim();
+    const enviarEmail = this.enviarEmailPagoManual();
+
+    this.guardandoPagoManual.set(true);
+    this.errorPagoManual.set(null);
+    this.mensajeExitoPagoManual.set(null);
+
+    const request: PagoManualRequest = {
+      inscripcion_id: this.inscripcion.id,
+      modalidad,
+      cantidad,
+      notas,
+      enviar_email: enviarEmail
+    };
+
+    this.pagoService.registrarPagoManual(request).subscribe({
+      next: (res) => {
+        this.guardandoPagoManual.set(false);
+        if (res.success) {
+          // Actualizar el estado de la inscripción en el modal local
+          if (this.inscripcion) {
+            this.inscripcion = {
+              ...this.inscripcion,
+              estado: 'pagada'
+            };
+            this.inscripcionActualizada.emit(this.inscripcion);
+          }
+
+          // Añadir el nuevo pago al principio de la lista de pagos reactiva
+          if (res.pago) {
+            this.pagos.update((prev) => [
+              res.pago,
+              ...prev.map((p) => (p.estado === 'pendiente' ? { ...p, estado: 'cancelado' } : p))
+            ]);
+          } else {
+            this.cargarPagos(this.inscripcion!.id);
+          }
+
+          let msg = res.message || 'Pago registrado y plaza marcada como pagada con éxito.';
+          if (res.email_enviado) {
+            msg += ' Correo oficial de confirmación enviado al participante.';
+          }
+          this.mensajeExitoPagoManual.set(msg);
+          this.mostrarFormPagoManual.set(false);
+        } else {
+          this.errorPagoManual.set(res.message || 'No se pudo registrar el pago manual.');
+        }
+      },
+      error: (err) => {
+        this.guardandoPagoManual.set(false);
+        this.errorPagoManual.set(err?.error?.message || 'Error en el servidor al registrar el pago manual.');
+      }
+    });
   }
 }
 

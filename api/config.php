@@ -4,6 +4,8 @@
  * Compatible con Docker en local y Hosting Privado (Dinahosting)
  */
 
+require_once __DIR__ . '/constants.php';
+
 // Configuración de cabeceras CORS y JSON
 header('Content-Type: application/json; charset=UTF-8');
 header('Access-Control-Allow-Origin: *');
@@ -140,6 +142,35 @@ function getDbConfig(?PDO $pdo = null): array {
 function getConfigValue(string $clave, mixed $default = null, ?PDO $pdo = null): mixed {
     $dbConfig = getDbConfig($pdo);
     return $dbConfig[$clave] ?? $default;
+}
+
+/**
+ * Obtiene el importe de la cuota de inscripción configurado en la base de datos (pago_importe).
+ * Si no está configurado en tabla o es inválido, recurre a la constante PAGO_IMPORTE_DEFECTO (250.00 €).
+ * 
+ * @param PDO|null $pdo Conexión PDO opcional
+ * @return float
+ */
+function getPagoImporteConfig(?PDO $pdo = null): float {
+    $val = getConfigValue('pago_importe', null, $pdo);
+    if ($val !== null && is_numeric($val) && (float)$val > 0) {
+        return (float)$val;
+    }
+    return PAGO_IMPORTE_DEFECTO;
+}
+
+/**
+ * Obtiene el importe de la cuota de inscripción formateado como string decimal (ej. '250.00').
+ * 
+ * @param PDO|null $pdo Conexión PDO opcional
+ * @return string
+ */
+function getPagoImporteConfigString(?PDO $pdo = null): string {
+    $val = getConfigValue('pago_importe', null, $pdo);
+    if ($val !== null && is_numeric($val) && (float)$val > 0) {
+        return number_format((float)$val, 2, '.', '');
+    }
+    return PAGO_IMPORTE_DEFECTO_STR;
 }
 
 /**

@@ -16,7 +16,7 @@ UPDATE `enmi_inscripciones`
 -- 3. Insertar parámetros de configuración para modalidades de pago
 INSERT INTO `enmi_configuracion` (`clave`, `valor`, `descripcion`, `fecha_creacion`)
 VALUES
-  ('pago_importe', '120.00', 'Importe de la cuota de inscripción en euros (ej. 120.00)', NOW()),
+  ('pago_importe', '250.00', 'Importe de la cuota de inscripción en euros (ej. 250.00)', NOW()),
   ('pago_bizum_telefono', '+34 600 000 000', 'Número de teléfono móvil habilitado para recibir pagos por Bizum', NOW()),
   ('pago_bizum_beneficiario', 'Encuentro Nacional de Magos Infantiles (ENMI)', 'Titular o beneficiario a mostrar para pagos con Bizum', NOW()),
   ('pago_transferencia_iban', 'ES00 0000 0000 0000 0000 0000', 'Código IBAN de la cuenta bancaria para transferencias', NOW()),

@@ -168,11 +168,29 @@ export interface PagoRegistro {
   fecha_actualizacion?: string | null;
 }
 
+export interface PagoManualRequest {
+  inscripcion_id: number;
+  modalidad: string;
+  cantidad: number;
+  notas?: string;
+  enviar_email?: boolean;
+}
+
+export interface PagoManualResponse {
+  success: boolean;
+  message?: string;
+  inscripcion_id: number;
+  nuevo_estado: EstadoInscripcion;
+  pago_id: number;
+  pago: PagoRegistro;
+  email_enviado?: boolean;
+  email_mensaje?: string;
+}
+
 export interface PagosInscripcionResponse {
   success: boolean;
-  inscripcion_id: number;
-  total: number;
+  inscripcion_id?: number;
+  total?: number;
   pagos: PagoRegistro[];
   message?: string;
 }
-

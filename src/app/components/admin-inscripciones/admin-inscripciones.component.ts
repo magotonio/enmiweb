@@ -255,6 +255,17 @@ export class AdminInscripcionesComponent implements OnInit {
   }
 
   /**
+   * Recibe la actualización de una inscripción (por ejemplo, al registrar un pago manual)
+   * y actualiza reactivamente la lista de registros en memoria.
+   */
+  onInscripcionActualizada(actualizada: Inscripcion): void {
+    this.rawInscripciones.update((list) =>
+      list.map((item) => (item.id === actualizada.id ? { ...item, ...actualizada } : item))
+    );
+    this.selectedInscripcion.set(actualizada);
+  }
+
+  /**
    * Exporta la lista actual (filtrada) a un archivo CSV compatible con Excel.
    */
   exportCsv(): void {

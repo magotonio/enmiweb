@@ -34,7 +34,7 @@ describe('PagoComponent', () => {
 
     mockPagoService.getPagoConfig.and.returnValue(of({
       success: true,
-      importe: '120.00',
+      importe: '250.00',
       bizum: { telefono: '+34 600 000 000', beneficiario: 'ENMI' },
       transferencia: { iban: 'ES00 1234', titular: 'ENMI', banco: 'Santander', concepto_template: 'ENMI-{ID}-{APELLIDOS}' },
       otras: { texto: 'Coordinación directa' },
@@ -120,7 +120,7 @@ describe('PagoComponent', () => {
   it('should show simulator buttons when demo_pago is true', () => {
     component.pagoConfig.set({
       success: true,
-      importe: '120.00',
+      importe: '250.00',
       bizum: { telefono: '+34 600 000 000', beneficiario: 'ENMI' },
       transferencia: { iban: 'ES00 1234', titular: 'ENMI', banco: 'Santander', concepto_template: 'ENMI' },
       otras: { texto: 'Directo' },
@@ -139,7 +139,7 @@ describe('PagoComponent', () => {
   it('should hide simulator buttons when demo_pago is false', () => {
     component.pagoConfig.set({
       success: true,
-      importe: '120.00',
+      importe: '250.00',
       bizum: { telefono: '+34 600 000 000', beneficiario: 'ENMI' },
       transferencia: { iban: 'ES00 1234', titular: 'ENMI', banco: 'Santander', concepto_template: 'ENMI' },
       otras: { texto: 'Directo' },

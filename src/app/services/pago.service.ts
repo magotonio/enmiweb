@@ -7,6 +7,8 @@ import {
   ModalidadPago,
   PagoAccionResponse,
   PagoConfigInfo,
+  PagoManualRequest,
+  PagoManualResponse,
   PagosInscripcionResponse,
   RedsysFormParams
 } from '../models/inscripcion.model';
@@ -92,6 +94,27 @@ export class PagoService {
       inscripcion_id: inscripcionId,
       pago_status: pagoStatus
     });
+  }
+
+  /**
+   * Registra un pago manual autorizado por supervisor o superadministrador.
+   * Crea un nuevo registro auditado en enmi_pagos y actualiza el estado a 'pagada'.
+   */
+  registrarPagoManual(request: PagoManualRequest): Observable<PagoManualResponse> {
+    const currentUser = this.authService.currentUser();
+    const payload = {
+      accion: 'registrar_pago_manual',
+      inscripcion_id: request.inscripcion_id,
+      modalidad: request.modalidad,
+      cantidad: request.cantidad,
+      notas: request.notas || '',
+      enviar_email: !!request.enviar_email,
+      user_id: currentUser?.id,
+      user_login: currentUser?.login,
+      user_email: currentUser?.email
+    };
+
+    return this.http.post<PagoManualResponse>(this.pagoApiUrl, payload);
   }
 
   /**

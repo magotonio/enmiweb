@@ -222,7 +222,7 @@ VALUES
   ('smtp_from_name', 'Eutikea - ENMI', 'Nombre legible mostrado del remitente', NOW()),
   ('notification_emails', 'enmi@eutikea.com', 'Direcciones de correo para notificaciones de inscripción (separadas por comas)', NOW()),
   ('token_resetpwd_expiracion_horas', '24', 'Horas de validez predeterminadas para los tokens de restablecimiento de contraseña (resetpwd)', NOW()),
-  ('pago_importe', '120.00', 'Importe de la cuota de inscripción en euros (ej. 120.00)', NOW()),
+  ('pago_importe', '250.00', 'Importe de la cuota de inscripción en euros (ej. 250.00)', NOW()),
   ('pago_bizum_telefono', '+34 600 000 000', 'Número de teléfono móvil habilitado para recibir pagos por Bizum', NOW()),
   ('pago_bizum_beneficiario', 'Encuentro Nacional de Magos Infantiles (ENMI)', 'Titular o beneficiario a mostrar para pagos con Bizum', NOW()),
   ('pago_transferencia_iban', 'ES00 0000 0000 0000 0000 0000', 'Código IBAN de la cuenta bancaria para transferencias', NOW()),

@@ -55,7 +55,7 @@ function registrarPago(
     ?array $datosTransaccion = null
 ): int {
     if ($importe === null || $importe <= 0) {
-        $importe = (float)getConfigValue('pago_importe', '120.00', $pdo);
+        $importe = getPagoImporteConfig($pdo);
     }
 
     if (empty($concepto)) {
@@ -169,10 +169,10 @@ function registrarCompraPago(
 /**
  * Obtiene el usuario autenticado para aplicar las restricciones de seguridad por rol en pagos.
  */
-function getAuthenticatedPagoUser(PDO $pdo): ?array {
-    $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : null;
-    $userLogin = isset($_GET['user_login']) ? trim((string)$_GET['user_login']) : null;
-    $userEmail = isset($_GET['user_email']) ? trim((string)$_GET['user_email']) : null;
+function getAuthenticatedPagoUser(PDO $pdo, ?array $postData = null): ?array {
+    $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : (isset($postData['user_id']) ? (int)$postData['user_id'] : null);
+    $userLogin = isset($_GET['user_login']) ? trim((string)$_GET['user_login']) : (isset($postData['user_login']) ? trim((string)$postData['user_login']) : null);
+    $userEmail = isset($_GET['user_email']) ? trim((string)$_GET['user_email']) : (isset($postData['user_email']) ? trim((string)$postData['user_email']) : null);
 
     if (!$userId && isset($_SERVER['HTTP_X_USER_ID'])) {
         $userId = (int)$_SERVER['HTTP_X_USER_ID'];
@@ -215,7 +215,7 @@ if ($method === 'GET') {
 
     if ($accion === 'info') {
         try {
-            $importe           = (string)getConfigValue('pago_importe', '120.00', $pdo);
+            $importe           = getPagoImporteConfigString($pdo);
             $bizumTelefono     = (string)getConfigValue('pago_bizum_telefono', '+34 600 000 000', $pdo);
             $bizumBeneficiario = (string)getConfigValue('pago_bizum_beneficiario', 'Encuentro Nacional de Magos Infantiles (ENMI)', $pdo);
             $transfIban        = (string)getConfigValue('pago_transferencia_iban', 'ES00 0000 0000 0000 0000 0000', $pdo);
@@ -375,7 +375,7 @@ if ($method === 'POST') {
                 sendJsonResponse(['success' => false, 'message' => 'No se encontró la inscripción solicitada.'], 404);
             }
 
-            $importeNum = (float)getConfigValue('pago_importe', '120.00', $pdo);
+            $importeNum = getPagoImporteConfig($pdo);
             $amountInCents = (int)round($importeNum * 100);
 
             $fuc             = (string)getConfigValue('pago_redsys_fuc', '999008881', $pdo);
@@ -490,7 +490,7 @@ if ($method === 'POST') {
             $stmtUp->execute([':estado' => $nuevoEstado, ':id' => $inscripcionId]);
 
             // Registrar en la tabla enmi_pagos como 'no-pagado'
-            $importeNum = (float)getConfigValue('pago_importe', '120.00', $pdo);
+            $importeNum = getPagoImporteConfig($pdo);
             $nombreParticipante = trim($inscripcion['nombre'] . ' ' . $inscripcion['apellidos']);
             $conceptoCompra = 'Inscripción ENMI 2027 #' . $inscripcionId . ' - ' . $nombreParticipante;
             $notasModalidad = "Modalidad seleccionada: " . strtoupper($modalidad) . ". Pago en espera de recepción.";
@@ -602,7 +602,7 @@ if ($method === 'POST') {
             // Si es OK -> 'pagada'; si no -> 'pendiente'
             $nuevoEstado = ($resultado === 'ok') ? 'pagada' : 'pendiente';
             $estadoCompra = ($resultado === 'ok') ? 'pagado' : 'no-pagado';
-            $importeNum = (float)getConfigValue('pago_importe', '120.00', $pdo);
+            $importeNum = getPagoImporteConfig($pdo);
             $nombreParticipante = trim($inscripcion['nombre'] . ' ' . $inscripcion['apellidos']);
             $conceptoCompra = 'Inscripción ENMI 2027 #' . $inscripcionId . ' - ' . $nombreParticipante;
             $orderSim = 'SIM-' . date('ymd') . sprintf('%06d', $inscripcionId % 1000000) . '-' . strtoupper(substr(uniqid(), -4));
@@ -833,6 +833,177 @@ if ($method === 'POST') {
         } catch (Throwable $e) {
             logError('pagos', 'error_sincronizar_retorno_redsys', $e->getMessage());
             sendJsonResponse(['success' => false, 'message' => 'Error al sincronizar retorno: ' . $e->getMessage()], 500);
+        }
+    }
+
+    // F) REGISTRAR PAGO MANUAL (Solo Supervisor y Superadministrador)
+    if ($accion === 'registrar_pago_manual') {
+        $authUser = getAuthenticatedPagoUser($pdo, $data);
+        $userRole = $authUser['rol'] ?? null;
+
+        if (!$authUser || !in_array($userRole, ['superadministrador', 'supervisor'], true)) {
+            sendJsonResponse([
+                'success' => false,
+                'message' => 'Acceso denegado. Se requieren permisos de supervisor o superadministrador.'
+            ], 403);
+        }
+
+        $inscripcionId = isset($data['inscripcion_id']) ? (int)$data['inscripcion_id'] : 0;
+        $modalidadRaw = isset($data['modalidad']) ? strtolower(trim((string)$data['modalidad'])) : 'transferencia';
+        $cantidad = isset($data['cantidad']) ? (float)$data['cantidad'] : 0.0;
+        $notasSupervisor = isset($data['notas']) ? trim((string)$data['notas']) : '';
+        $enviarEmail = !empty($data['enviar_email']);
+
+        if ($inscripcionId <= 0) {
+            sendJsonResponse(['success' => false, 'message' => 'Identificador de inscripción inválido.'], 400);
+        }
+
+        // Mapear y normalizar modalidad
+        $modalidadesPermitidas = ['bizum', 'transferencia', 'efectivo', 'otras', 'redsys'];
+        $modalidad = in_array($modalidadRaw, $modalidadesPermitidas, true) ? $modalidadRaw : 'otras';
+
+        if ($cantidad <= 0) {
+            $cantidad = getPagoImporteConfig($pdo);
+        }
+
+        try {
+            // Verificar existencia de la inscripción
+            $stmt = $pdo->prepare("SELECT * FROM `enmi_inscripciones` WHERE id = :id LIMIT 1");
+            $stmt->execute([':id' => $inscripcionId]);
+            $inscripcion = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$inscripcion) {
+                sendJsonResponse(['success' => false, 'message' => 'Inscripción no encontrada.'], 404);
+            }
+
+            $nombreParticipante = trim($inscripcion['nombre'] . ' ' . $inscripcion['apellidos']);
+            $conceptoPago = 'Inscripción ENMI 2027 #' . $inscripcionId . ' - ' . $nombreParticipante;
+
+            // Generar referencia única de cobro manual
+            $prefijo = strtoupper(substr($modalidad, 0, 3));
+            $referencia = sprintf('ENMI-MAN-%s-%d-%s', $prefijo, $inscripcionId, strtoupper(substr(uniqid(), -6)));
+
+            // Formatear nota de auditoría
+            $adminInfo = ($authUser['login'] ?? 'admin') . ' (' . ($authUser['rol'] ?? 'supervisor') . ')';
+            $notaFinal = "Validado y registrado manualmente por: {$adminInfo}";
+            if (!empty($notasSupervisor)) {
+                $notaFinal .= " | Observaciones: {$notasSupervisor}";
+            }
+
+            $datosAuditoria = [
+                'tipo_registro'   => 'manual_administracion',
+                'admin_id'        => (int)($authUser['id'] ?? 0),
+                'admin_login'     => $authUser['login'] ?? '',
+                'admin_rol'       => $authUser['rol'] ?? '',
+                'fecha_registro'  => date('c'),
+                'ip_admin'        => $_SERVER['REMOTE_ADDR'] ?? null,
+                'notas_admin'     => $notasSupervisor
+            ];
+
+            // 1. Actualizar estado de la inscripción a 'pagada'
+            $stmtUpIns = $pdo->prepare("UPDATE `enmi_inscripciones` SET `estado` = 'pagada' WHERE id = :id");
+            $stmtUpIns->execute([':id' => $inscripcionId]);
+
+            // 2. Si existían órdenes 'pendiente' previas, marcarlas como canceladas/resueltas con nota
+            $stmtPendientes = $pdo->prepare("
+                UPDATE `enmi_pagos` 
+                SET `estado` = 'cancelado',
+                    `notas` = CONCAT(IFNULL(notas, ''), ' [Saldado mediante pago manual #{$referencia}]'),
+                    `fecha_actualizacion` = NOW()
+                WHERE inscripcion_id = :inscripcion_id AND estado = 'pendiente'
+            ");
+            $stmtPendientes->execute([':inscripcion_id' => $inscripcionId]);
+
+            // 3. Registrar el nuevo pago en 'enmi_pagos' con estado 'pagado'
+            $pagoId = registrarPago(
+                $pdo,
+                $inscripcionId,
+                $modalidad,
+                'pagado',
+                $cantidad,
+                $referencia,
+                $conceptoPago,
+                $notaFinal,
+                $datosAuditoria
+            );
+
+            logInfo('pagos', 'registro_pago_manual', "Pago manual registrado por {$adminInfo} para inscripción #{$inscripcionId}. Importe: {$cantidad}€. Modalidad: {$modalidad}.", [
+                'inscripcion_id' => $inscripcionId,
+                'pago_id'        => $pagoId,
+                'referencia'     => $referencia,
+                'cantidad'       => $cantidad,
+                'modalidad'      => $modalidad,
+                'admin'          => $adminInfo
+            ]);
+
+            // 4. Envío opcional de email de confirmación de pago al participante
+            $emailEnviado = false;
+            $emailMensaje = null;
+            if ($enviarEmail && !empty($inscripcion['email'])) {
+                $emailPayload = [
+                    'id'                    => $inscripcion['id'],
+                    'nombre'                => $inscripcion['nombre'],
+                    'apellidos'             => $inscripcion['apellidos'],
+                    'nombre_artistico'      => $inscripcion['nombre_artistico'] ?? null,
+                    'nif_pasaporte'         => $inscripcion['nif_pasaporte'] ?? null,
+                    'email'                 => $inscripcion['email'],
+                    'telefono'              => $inscripcion['telefono'] ?? null,
+                    'origen'                => $inscripcion['origen'],
+                    'asociacion'            => $inscripcion['asociacion'] ?? null,
+                    'quiero_participar'     => (bool)$inscripcion['quiero_participar'],
+                    'consentimiento_imagen' => (bool)$inscripcion['consentimiento_imagen'],
+                    'comentarios'           => $inscripcion['comentarios'] ?? null,
+                    'estado'                => 'pagada',
+                    'modalidad_pago'        => $modalidad,
+                    'pago_confirmado'       => true,
+                    'ip_registro'           => $inscripcion['ip_registro'] ?? null,
+                    'fecha'                 => date('d/m/Y H:i:s')
+                ];
+
+                $emailRes = sendParticipantRegistrationEmail($emailPayload);
+                $emailEnviado = $emailRes['success'] ?? false;
+                $emailMensaje = $emailRes['message'] ?? '';
+
+                logNotification(
+                    'confirmacion_pago_manual_participante',
+                    "Envío de confirmación de pago manual para inscripción #{$inscripcionId}",
+                    ['inscripcion_id' => $inscripcionId, 'resultado' => $emailRes],
+                    $emailEnviado
+                );
+            }
+
+            // Obtener el registro completo del nuevo pago para el frontend
+            $stmtNuevo = $pdo->prepare("SELECT * FROM `enmi_pagos` WHERE id = :id LIMIT 1");
+            $stmtNuevo->execute([':id' => $pagoId]);
+            $pagoRow = $stmtNuevo->fetch(PDO::FETCH_ASSOC);
+
+            sendJsonResponse([
+                'success'        => true,
+                'message'        => 'Pago registrado con éxito y la inscripción ha sido marcada como pagada.',
+                'inscripcion_id' => $inscripcionId,
+                'nuevo_estado'   => 'pagada',
+                'pago_id'        => $pagoId,
+                'pago'           => [
+                    'id'                  => (int)$pagoId,
+                    'inscripcion_id'      => $inscripcionId,
+                    'referencia'          => $referencia,
+                    'concepto'            => $conceptoPago,
+                    'cantidad_pagada'     => $cantidad,
+                    'modalidad_pago'      => $modalidad,
+                    'estado'              => 'pagado',
+                    'fecha_compra'        => date('Y-m-d H:i:s'),
+                    'notas'               => $notaFinal,
+                    'datos_transaccion'   => $datosAuditoria,
+                    'fecha_creacion'      => date('Y-m-d H:i:s'),
+                    'fecha_actualizacion' => date('Y-m-d H:i:s')
+                ],
+                'email_enviado'  => $emailEnviado,
+                'email_mensaje'  => $emailMensaje
+            ], 200);
+
+        } catch (Throwable $e) {
+            logError('pagos', 'error_registrar_pago_manual', $e->getMessage());
+            sendJsonResponse(['success' => false, 'message' => 'Error al registrar el pago manual: ' . $e->getMessage()], 500);
         }
     }
 }

@@ -27,7 +27,7 @@
         <p class="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
           Inscripción <strong class="text-brand-navy">#ENMI-{{ registeredId() }}</strong> a nombre de <strong
             class="text-brand-navy">{{ registeredFullName() }}</strong> &bull; Cuota: <strong
-            class="text-brand-gold-dark text-lg">{{ pagoConfig()?.importe || '120.00' }} €</strong>
+            class="text-brand-gold-dark text-lg">{{ pagoConfig()?.importe || '250.00' }} €</strong>
         </p>
         } @else {
         <div
@@ -90,7 +90,7 @@
           <div
             class="bg-white/10 border border-white/15 px-4 py-3 rounded-xl text-right shrink-0 w-full sm:w-auto flex sm:flex-col justify-between items-center sm:items-end">
             <span class="text-[11px] font-bold uppercase tracking-wider text-brand-gold">Total a abonar</span>
-            <span class="text-2xl sm:text-3xl font-black text-white font-mono">{{ pagoConfig()?.importe || '120.00' }}
+            <span class="text-2xl sm:text-3xl font-black text-white font-mono">{{ pagoConfig()?.importe || '250.00' }}
               €</span>
           </div>
         </div>
@@ -245,7 +245,7 @@
               </div>
               <div class="flex justify-between items-center py-1">
                 <span class="text-slate-500 font-medium">Importe a pagar:</span>
-                <span class="font-extrabold text-brand-navy text-sm font-mono">{{ pagoConfig()?.importe || '120.00' }}
+                <span class="font-extrabold text-brand-navy text-sm font-mono">{{ pagoConfig()?.importe || '250.00' }}
                   €</span>
               </div>
             </div>
@@ -336,7 +336,7 @@
               <!-- Importe -->
               <div class="bg-white p-4 rounded-xl border border-slate-200 flex flex-col justify-between gap-2">
                 <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Importe Exacto</span>
-                <span class="text-lg font-black text-brand-gold-dark font-mono">{{ pagoConfig()?.importe || '120.00' }}
+                <span class="text-lg font-black text-brand-gold-dark font-mono">{{ pagoConfig()?.importe || '250.00' }}
                   €</span>
               </div>
 
@@ -419,7 +419,7 @@
               <!-- Importe -->
               <div class="bg-white p-4 rounded-xl border border-slate-200 flex flex-col justify-between gap-2">
                 <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Importe a Transferir</span>
-                <span class="text-lg font-black text-brand-gold-dark font-mono">{{ pagoConfig()?.importe || '120.00' }}
+                <span class="text-lg font-black text-brand-gold-dark font-mono">{{ pagoConfig()?.importe || '250.00' }}
                   €</span>
               </div>
 
@@ -583,7 +583,7 @@
           }
           <div class="flex justify-between items-center py-1 border-b border-slate-100">
             <span class="text-slate-500">Cuota de inscripción:</span>
-            <span class="font-bold text-brand-navy font-mono">{{ pagoConfig()?.importe || '120.00' }} €</span>
+            <span class="font-bold text-brand-navy font-mono">{{ pagoConfig()?.importe || '250.00' }} €</span>
           </div>
           <div class="flex justify-between items-center pt-1">
             <span class="text-slate-500">Estado de la plaza:</span>
