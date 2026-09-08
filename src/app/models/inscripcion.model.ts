@@ -153,3 +153,26 @@ export interface InscripcionSessionData {
   registeredAt?: string;
 }
 
+export interface PagoRegistro {
+  id: number;
+  inscripcion_id: number;
+  referencia: string;
+  concepto?: string;
+  cantidad_pagada: number;
+  modalidad_pago: string;
+  estado: string;
+  fecha_compra?: string | null;
+  notas?: string | null;
+  datos_transaccion?: Record<string, any> | string | null;
+  fecha_creacion: string;
+  fecha_actualizacion?: string | null;
+}
+
+export interface PagosInscripcionResponse {
+  success: boolean;
+  inscripcion_id: number;
+  total: number;
+  pagos: PagoRegistro[];
+  message?: string;
+}
+

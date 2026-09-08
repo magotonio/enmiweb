@@ -166,6 +166,47 @@ function registrarCompraPago(
     return registrarPago($pdo, $inscripcionId, $modalidad, $estado, $importe, $referencia, $concepto, $notas, $datosTransaccion);
 }
 
+/**
+ * Obtiene el usuario autenticado para aplicar las restricciones de seguridad por rol en pagos.
+ */
+function getAuthenticatedPagoUser(PDO $pdo): ?array {
+    $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : null;
+    $userLogin = isset($_GET['user_login']) ? trim((string)$_GET['user_login']) : null;
+    $userEmail = isset($_GET['user_email']) ? trim((string)$_GET['user_email']) : null;
+
+    if (!$userId && isset($_SERVER['HTTP_X_USER_ID'])) {
+        $userId = (int)$_SERVER['HTTP_X_USER_ID'];
+    }
+    if (!$userLogin && isset($_SERVER['HTTP_X_USER_LOGIN'])) {
+        $userLogin = trim((string)$_SERVER['HTTP_X_USER_LOGIN']);
+    }
+
+    if (!$userId && empty($userLogin) && empty($userEmail)) {
+        return null;
+    }
+
+    try {
+        if ($userId) {
+            $stmt = $pdo->prepare("SELECT id, login, email, rol, bloqueado FROM `enmi_usuarios` WHERE id = :id LIMIT 1");
+            $stmt->execute([':id' => $userId]);
+        } elseif (!empty($userLogin)) {
+            $stmt = $pdo->prepare("SELECT id, login, email, rol, bloqueado FROM `enmi_usuarios` WHERE login = :login LIMIT 1");
+            $stmt->execute([':login' => $userLogin]);
+        } else {
+            $stmt = $pdo->prepare("SELECT id, login, email, rol, bloqueado FROM `enmi_usuarios` WHERE email = :email LIMIT 1");
+            $stmt->execute([':email' => $userEmail]);
+        }
+
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$user || (int)$user['bloqueado'] === 1) {
+            return null;
+        }
+        return $user;
+    } catch (PDOException $e) {
+        return null;
+    }
+}
+
 // =====================================================================
 // 1. GET: Consulta de información pública de pago o retorno Redsys
 // =====================================================================
@@ -218,6 +259,88 @@ if ($method === 'GET') {
                 'success' => false,
                 'message' => 'Error al obtener la configuración de pago: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    // Listar pagos relacionados con una inscripción concreta
+    if ($accion === 'por_inscripcion' || $accion === 'listar_por_inscripcion') {
+        $inscripcionId = isset($_GET['inscripcion_id']) ? (int)$_GET['inscripcion_id'] : 0;
+        if ($inscripcionId <= 0) {
+            sendJsonResponse(['success' => false, 'message' => 'Identificador de inscripción inválido.'], 400);
+        }
+
+        try {
+            $authUser = getAuthenticatedPagoUser($pdo);
+            $userRole = $authUser['rol'] ?? null;
+            $userEmail = $authUser['email'] ?? '';
+
+            // Si el rol es 'asistente', verificar que la inscripción pertenezca a su email
+            if ($userRole === 'asistente' && !empty($userEmail)) {
+                $stmtCheck = $pdo->prepare("SELECT id FROM `enmi_inscripciones` WHERE id = :id AND LOWER(TRIM(email)) = LOWER(TRIM(:email)) LIMIT 1");
+                $stmtCheck->execute([':id' => $inscripcionId, ':email' => $userEmail]);
+                if (!$stmtCheck->fetch()) {
+                    sendJsonResponse(['success' => false, 'message' => 'Acceso denegado a los pagos de esta inscripción.'], 403);
+                }
+            }
+
+            $stmt = $pdo->prepare("
+                SELECT 
+                    id, 
+                    inscripcion_id, 
+                    referencia, 
+                    concepto, 
+                    cantidad_pagada, 
+                    modalidad_pago, 
+                    estado, 
+                    fecha_compra, 
+                    notas, 
+                    datos_transaccion, 
+                    fecha_creacion, 
+                    fecha_actualizacion 
+                FROM `enmi_pagos` 
+                WHERE inscripcion_id = :inscripcion_id 
+                ORDER BY id DESC
+            ");
+            $stmt->execute([':inscripcion_id' => $inscripcionId]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $pagos = array_map(function ($p) {
+                $datosTrx = null;
+                if (!empty($p['datos_transaccion'])) {
+                    if (is_array($p['datos_transaccion'])) {
+                        $datosTrx = $p['datos_transaccion'];
+                    } else {
+                        $decoded = json_decode((string)$p['datos_transaccion'], true);
+                        $datosTrx = (json_last_error() === JSON_ERROR_NONE) ? $decoded : $p['datos_transaccion'];
+                    }
+                }
+
+                return [
+                    'id'                  => (int)$p['id'],
+                    'inscripcion_id'      => (int)$p['inscripcion_id'],
+                    'referencia'          => $p['referencia'] ?? '',
+                    'concepto'            => $p['concepto'] ?? '',
+                    'cantidad_pagada'     => (float)$p['cantidad_pagada'],
+                    'modalidad_pago'      => $p['modalidad_pago'] ?? '',
+                    'estado'              => $p['estado'] ?? '',
+                    'fecha_compra'        => $p['fecha_compra'] ?? null,
+                    'notas'               => $p['notas'] ?? null,
+                    'datos_transaccion'   => $datosTrx,
+                    'fecha_creacion'      => $p['fecha_creacion'],
+                    'fecha_actualizacion' => $p['fecha_actualizacion'] ?? null
+                ];
+            }, $rows);
+
+            sendJsonResponse([
+                'success'        => true,
+                'inscripcion_id' => $inscripcionId,
+                'total'          => count($pagos),
+                'pagos'          => $pagos
+            ], 200);
+
+        } catch (Throwable $e) {
+            logError('pagos', 'error_listar_pagos_inscripcion', $e->getMessage());
+            sendJsonResponse(['success' => false, 'message' => 'Error al consultar pagos: ' . $e->getMessage()], 500);
         }
     }
 }

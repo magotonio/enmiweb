@@ -1,11 +1,13 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { AuthService } from './auth.service';
 import {
   ModalidadPago,
   PagoAccionResponse,
   PagoConfigInfo,
+  PagosInscripcionResponse,
   RedsysFormParams
 } from '../models/inscripcion.model';
 
@@ -14,6 +16,7 @@ import {
 })
 export class PagoService {
   private readonly http = inject(HttpClient);
+  private readonly authService = inject(AuthService);
   private readonly pagoApiUrl = `${environment.apiUrl}/pago.php`;
 
   /**
@@ -21,6 +24,30 @@ export class PagoService {
    */
   getPagoConfig(): Observable<PagoConfigInfo> {
     return this.http.get<PagoConfigInfo>(`${this.pagoApiUrl}?accion=info`);
+  }
+
+  /**
+   * Obtiene la lista completa de pagos registrados para una inscripción específica
+   */
+  getPagosByInscripcion(inscripcionId: number): Observable<PagosInscripcionResponse> {
+    let params = new HttpParams()
+      .set('accion', 'por_inscripcion')
+      .set('inscripcion_id', inscripcionId.toString());
+
+    const currentUser = this.authService.currentUser();
+    if (currentUser) {
+      if (currentUser.id) {
+        params = params.set('user_id', currentUser.id.toString());
+      }
+      if (currentUser.login) {
+        params = params.set('user_login', currentUser.login);
+      }
+      if (currentUser.email) {
+        params = params.set('user_email', currentUser.email);
+      }
+    }
+
+    return this.http.get<PagosInscripcionResponse>(this.pagoApiUrl, { params });
   }
 
   /**
