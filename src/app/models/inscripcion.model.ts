@@ -130,6 +130,26 @@ export interface RedsysFormParams {
   message?: string;
 }
 
+export interface DescuentoTokenInfo {
+  valido: boolean;
+  token_id: number;
+  token: string;
+  descuento: number;
+  descuento_str: string;
+  precio_original: number;
+  nuevo_total: number;
+  nuevo_total_str: string;
+  usos_restantes: number;
+  descripcion?: string;
+  mensaje?: string;
+}
+
+export interface DescuentoValidarResponse {
+  success: boolean;
+  descuento?: DescuentoTokenInfo;
+  message?: string;
+}
+
 export interface PagoAccionResponse {
   success: boolean;
   inscripcion_id?: number;
@@ -138,6 +158,8 @@ export interface PagoAccionResponse {
   resultado?: string;
   compra_id?: number;
   estado_compra?: string;
+  importe?: string;
+  descuento_aplicado?: any;
   message?: string;
 }
 

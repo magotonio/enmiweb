@@ -143,7 +143,7 @@ CREATE TABLE IF NOT EXISTS `enmi_tokens` (
   `valor` TEXT DEFAULT NULL COMMENT 'Dato o payload asociado (ID de usuario, URL de destino, código de descuento, etc.)',
   `fecha_caducidad` DATETIME NOT NULL COMMENT 'Fecha y hora exacta en la que expira el token',
   `descripcion` VARCHAR(255) DEFAULT NULL COMMENT 'Descripción o contexto del propósito del token',
-  `utilizado` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0: Pendiente / Válido, 1: Ya utilizado / Canjeado',
+  `utilizado` INT NOT NULL DEFAULT 0 COMMENT 'Número de usos disponibles restantes (se resta 1 por cada canje)',
   `fecha_creacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha de generación del token',
   `fecha_uso` DATETIME DEFAULT NULL COMMENT 'Fecha y hora en la que fue consumido el token',
   PRIMARY KEY (`id`),

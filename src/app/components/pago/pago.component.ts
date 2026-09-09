@@ -1,14 +1,15 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PagoService } from '../../services/pago.service';
 import { InscripcionSessionService } from '../../services/inscripcion-session.service';
-import { ModalidadPago, PagoConfigInfo } from '../../models/inscripcion.model';
+import { DescuentoTokenInfo, ModalidadPago, PagoConfigInfo } from '../../models/inscripcion.model';
 
 @Component({
   selector: 'app-pago',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './pago.component.html',
   styleUrls: []
 })
@@ -27,6 +28,24 @@ export class PagoComponent implements OnInit {
   paymentError = signal<string | null>(null);
   paymentNotice = signal<string | null>(null);
   copiedField = signal<string | null>(null);
+
+  // Gestión de Códigos de Descuento
+  codigoDescuentoInput = signal<string>('');
+  descuentoInfo = signal<DescuentoTokenInfo | null>(null);
+  isValidatingDescuento = signal<boolean>(false);
+  descuentoError = signal<string | null>(null);
+  descuentoExito = signal<string | null>(null);
+
+  // Importes calculados reactivamente
+  importeBase = computed(() => parseFloat(this.pagoConfig()?.importe || '250.00'));
+  importeDescuento = computed(() => this.descuentoInfo()?.descuento || 0);
+  importeFinal = computed(() => {
+    const base = this.importeBase();
+    const desc = this.importeDescuento();
+    const final = base - desc;
+    return final > 0 ? final : 0;
+  });
+  importeFinalStr = computed(() => this.importeFinal().toFixed(2));
 
   // Control de pantalla: selector de pago vs pantalla de confirmación/éxito
   isCompleted = signal<boolean>(false);
@@ -136,6 +155,51 @@ export class PagoComponent implements OnInit {
   }
 
   /**
+   * Aplica un código de descuento introducido por el usuario
+   */
+  aplicarDescuento(): void {
+    const raw = this.codigoDescuentoInput().trim();
+    if (!raw) {
+      this.descuentoError.set('Por favor, introduce un código de descuento.');
+      this.descuentoExito.set(null);
+      return;
+    }
+
+    this.isValidatingDescuento.set(true);
+    this.descuentoError.set(null);
+    this.descuentoExito.set(null);
+
+    this.pagoService.validarDescuento(raw).subscribe({
+      next: (res) => {
+        this.isValidatingDescuento.set(false);
+        if (res.success && res.descuento) {
+          this.descuentoInfo.set(res.descuento);
+          this.descuentoExito.set(`¡Descuento de ${res.descuento.descuento_str} € aplicado! Total a abonar: ${res.descuento.nuevo_total_str} €`);
+          this.descuentoError.set(null);
+        } else {
+          this.descuentoInfo.set(null);
+          this.descuentoError.set(res.message || 'El código de descuento no está disponible.');
+        }
+      },
+      error: (err) => {
+        this.isValidatingDescuento.set(false);
+        this.descuentoInfo.set(null);
+        this.descuentoError.set(err?.error?.message || 'El código de descuento no está disponible o ha caducado.');
+      }
+    });
+  }
+
+  /**
+   * Retira el código de descuento aplicado
+   */
+  quitarDescuento(): void {
+    this.descuentoInfo.set(null);
+    this.codigoDescuentoInput.set('');
+    this.descuentoError.set(null);
+    this.descuentoExito.set(null);
+  }
+
+  /**
    * Procesa la opción 1: Pasarela Redsys Oficial
    */
   procederRedsysOficial(): void {
@@ -145,7 +209,9 @@ export class PagoComponent implements OnInit {
     this.isProcessingPayment.set(true);
     this.paymentError.set(null);
 
-    this.pagoService.iniciarRedsys(id).subscribe({
+    const codigo = this.descuentoInfo()?.token;
+
+    this.pagoService.iniciarRedsys(id, codigo).subscribe({
       next: (params) => {
         this.isProcessingPayment.set(false);
         this.sessionService.updateModalidad('redsys');
@@ -168,7 +234,9 @@ export class PagoComponent implements OnInit {
     this.isProcessingPayment.set(true);
     this.paymentError.set(null);
 
-    this.pagoService.simularRedsys(id, resultado).subscribe({
+    const codigo = this.descuentoInfo()?.token;
+
+    this.pagoService.simularRedsys(id, resultado, codigo).subscribe({
       next: (res) => {
         this.isProcessingPayment.set(false);
         if (resultado === 'ok') {
@@ -199,8 +267,10 @@ export class PagoComponent implements OnInit {
     this.isProcessingPayment.set(true);
     this.paymentError.set(null);
 
-    this.pagoService.confirmarModalidad(id, modalidad).subscribe({
-      next: () => {
+    const codigo = this.descuentoInfo()?.token;
+
+    this.pagoService.confirmarModalidad(id, modalidad, codigo).subscribe({
+      next: (res) => {
         this.isProcessingPayment.set(false);
         this.sessionService.updateStatus('pendiente', modalidad);
         this.isCompleted.set(true);

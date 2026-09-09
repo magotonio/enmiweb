@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 import {
+  DescuentoValidarResponse,
   EstadoInscripcion,
   ModalidadPago,
   PagoAccionResponse,
@@ -27,6 +28,13 @@ export class PagoService {
    */
   getPagoConfig(): Observable<PagoConfigInfo> {
     return this.http.get<PagoConfigInfo>(`${this.pagoApiUrl}?accion=info`);
+  }
+
+  /**
+   * Valida un código de descuento comprobando vigencia y disponibilidad de usos
+   */
+  validarDescuento(codigo: string): Observable<DescuentoValidarResponse> {
+    return this.http.get<DescuentoValidarResponse>(`${this.pagoApiUrl}?accion=validar_descuento&codigo=${encodeURIComponent(codigo)}`);
   }
 
   /**
@@ -56,21 +64,23 @@ export class PagoService {
   /**
    * Solicita al backend los parámetros y firma HMAC-SHA256 para iniciar el pago por Redsys
    */
-  iniciarRedsys(inscripcionId: number): Observable<RedsysFormParams> {
+  iniciarRedsys(inscripcionId: number, codigoDescuento?: string): Observable<RedsysFormParams> {
     return this.http.post<RedsysFormParams>(this.pagoApiUrl, {
       accion: 'iniciar_redsys',
-      inscripcion_id: inscripcionId
+      inscripcion_id: inscripcionId,
+      codigo_descuento: codigoDescuento || undefined
     });
   }
 
   /**
    * Registra la modalidad de pago elegida (bizum, transferencia, otras) y sitúa la inscripción en 'pendiente'
    */
-  confirmarModalidad(inscripcionId: number, modalidad: ModalidadPago): Observable<PagoAccionResponse> {
+  confirmarModalidad(inscripcionId: number, modalidad: ModalidadPago, codigoDescuento?: string): Observable<PagoAccionResponse> {
     return this.http.post<PagoAccionResponse>(this.pagoApiUrl, {
       accion: 'confirmar_modalidad',
       inscripcion_id: inscripcionId,
-      modalidad
+      modalidad,
+      codigo_descuento: codigoDescuento || undefined
     });
   }
 
@@ -78,11 +88,12 @@ export class PagoService {
    * Ejecuta el simulador de Redsys para pruebas en desarrollo/sandbox local
    * resultado: 'ok' -> pasa a 'pagada' | 'ko' -> pasa a 'pendiente'
    */
-  simularRedsys(inscripcionId: number, resultado: 'ok' | 'ko'): Observable<PagoAccionResponse> {
+  simularRedsys(inscripcionId: number, resultado: 'ok' | 'ko', codigoDescuento?: string): Observable<PagoAccionResponse> {
     return this.http.post<PagoAccionResponse>(this.pagoApiUrl, {
       accion: 'simular_redsys',
       inscripcion_id: inscripcionId,
-      resultado
+      resultado,
+      codigo_descuento: codigoDescuento || undefined
     });
   }
 

@@ -26,8 +26,14 @@
         </h1>
         <p class="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
           Inscripción <strong class="text-brand-navy">#ENMI-{{ registeredId() }}</strong> a nombre de <strong
-            class="text-brand-navy">{{ registeredFullName() }}</strong> &bull; Cuota: <strong
-            class="text-brand-gold-dark text-lg">{{ pagoConfig()?.importe || '250.00' }} €</strong>
+            class="text-brand-navy">{{ registeredFullName() }}</strong> &bull; Cuota:
+          @if (descuentoInfo()) {
+            <span class="line-through text-slate-400 text-sm mr-1.5">{{ pagoConfig()?.importe || '250.00' }} €</span>
+            <strong class="text-emerald-700 text-lg">{{ importeFinalStr() }} €</strong>
+            <span class="ml-1.5 text-xs font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-2 py-0.5 rounded-full">(-{{ descuentoInfo()?.descuento_str }} €)</span>
+          } @else {
+            <strong class="text-brand-gold-dark text-lg">{{ pagoConfig()?.importe || '250.00' }} €</strong>
+          }
         </p>
         } @else {
         <div
@@ -90,9 +96,102 @@
           <div
             class="bg-white/10 border border-white/15 px-4 py-3 rounded-xl text-right shrink-0 w-full sm:w-auto flex sm:flex-col justify-between items-center sm:items-end">
             <span class="text-[11px] font-bold uppercase tracking-wider text-brand-gold">Total a abonar</span>
-            <span class="text-2xl sm:text-3xl font-black text-white font-mono">{{ pagoConfig()?.importe || '250.00' }}
-              €</span>
+            @if (descuentoInfo()) {
+              <div class="flex items-baseline gap-2">
+                <span class="text-xs sm:text-sm line-through text-slate-400 font-mono">{{ pagoConfig()?.importe || '250.00' }} €</span>
+                <span class="text-2xl sm:text-3xl font-black text-emerald-400 font-mono">{{ importeFinalStr() }} €</span>
+              </div>
+              <span class="text-[10px] font-semibold text-emerald-300">Descuento: -{{ descuentoInfo()?.descuento_str }} €</span>
+            } @else {
+              <span class="text-2xl sm:text-3xl font-black text-white font-mono">{{ pagoConfig()?.importe || '250.00' }} €</span>
+            }
           </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- SECCIÓN DE CÓDIGO DE DESCUENTO                                -->
+        <!-- ============================================================ -->
+        <div class="bg-white border-2 border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3">
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🎟️</span>
+              <label for="codigoDescuentoInput" class="text-xs sm:text-sm font-extrabold text-brand-navy tracking-tight">
+                ¿Tienes un código de descuento?
+              </label>
+            </div>
+            @if (descuentoInfo()) {
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                <span>✓</span> Cupón: {{ descuentoInfo()?.token }} (-{{ descuentoInfo()?.descuento_str }} €)
+              </span>
+            }
+          </div>
+
+          @if (!descuentoInfo()) {
+            <div class="flex flex-col sm:flex-row gap-2.5">
+              <div class="relative flex-1">
+                <input
+                  type="text"
+                  id="codigoDescuentoInput"
+                  name="codigoDescuento"
+                  [(ngModel)]="codigoDescuentoInput"
+                  (keyup.enter)="aplicarDescuento()"
+                  placeholder="Introduce tu código de descuento"
+                  [disabled]="isValidatingDescuento() || isProcessingPayment()"
+                  class="w-full px-4 py-2.5 text-xs sm:text-sm font-mono uppercase font-bold tracking-wider rounded-xl border-2 border-slate-200 focus:border-brand-gold focus:ring-2 focus:ring-brand-gold/20 outline-hidden transition-all placeholder:font-sans placeholder:normal-case placeholder:font-normal placeholder:text-slate-400 disabled:bg-slate-100 disabled:opacity-70"
+                />
+              </div>
+              <button
+                type="button"
+                id="aplicarDescuentoBtn"
+                (click)="aplicarDescuento()"
+                [disabled]="isValidatingDescuento() || isProcessingPayment() || !codigoDescuentoInput().trim()"
+                class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-brand-navy hover:bg-brand-navy-dark text-white text-xs sm:text-sm font-extrabold rounded-xl shadow-xs transition-all active:scale-98 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+              >
+                @if (isValidatingDescuento()) {
+                  <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  <span>Comprobando...</span>
+                } @else {
+                  <span>Aplicar descuento</span>
+                }
+              </button>
+            </div>
+          } @else {
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-emerald-50/80 border border-emerald-300 rounded-xl p-3.5">
+              <div class="space-y-0.5">
+                <div class="flex items-center gap-2">
+                  <strong class="text-xs sm:text-sm font-black text-emerald-950 font-mono tracking-wider">{{ descuentoInfo()?.token }}</strong>
+                  <span class="text-[11px] font-bold text-emerald-800 bg-emerald-200/70 px-2 py-0.5 rounded-md">
+                    -{{ descuentoInfo()?.descuento_str }} €
+                  </span>
+                </div>
+                <p class="text-xs text-emerald-900">
+                  {{ descuentoExito() || 'Código de descuento aplicado correctamente.' }}
+                </p>
+              </div>
+              <button
+                type="button"
+                id="quitarDescuentoBtn"
+                (click)="quitarDescuento()"
+                [disabled]="isProcessingPayment()"
+                class="text-xs font-bold text-red-600 hover:text-red-800 hover:underline cursor-pointer flex items-center gap-1 shrink-0"
+              >
+                <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+                <span>Quitar descuento</span>
+              </button>
+            </div>
+          }
+
+          <!-- Mensaje de aviso/error si el código no es válido o no está disponible -->
+          @if (descuentoError()) {
+            <div class="flex items-center gap-2 p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 text-xs font-semibold animate-in fade-in duration-200" role="alert">
+              <svg class="w-4 h-4 text-amber-600 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+              </svg>
+              <span>{{ descuentoError() }}</span>
+            </div>
+          }
         </div>
 
         <!-- Selector de Modalidades: Grid de 4 opciones -->
@@ -245,8 +344,14 @@
               </div>
               <div class="flex justify-between items-center py-1">
                 <span class="text-slate-500 font-medium">Importe a pagar:</span>
-                <span class="font-extrabold text-brand-navy text-sm font-mono">{{ pagoConfig()?.importe || '250.00' }}
-                  €</span>
+                <div class="text-right font-mono">
+                  @if (descuentoInfo()) {
+                    <span class="line-through text-slate-400 text-xs mr-1.5">{{ pagoConfig()?.importe || '250.00' }} €</span>
+                    <span class="font-extrabold text-emerald-700 text-sm">{{ importeFinalStr() }} €</span>
+                  } @else {
+                    <span class="font-extrabold text-brand-navy text-sm">{{ pagoConfig()?.importe || '250.00' }} €</span>
+                  }
+                </div>
               </div>
             </div>
 
@@ -336,8 +441,14 @@
               <!-- Importe -->
               <div class="bg-white p-4 rounded-xl border border-slate-200 flex flex-col justify-between gap-2">
                 <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Importe Exacto</span>
-                <span class="text-lg font-black text-brand-gold-dark font-mono">{{ pagoConfig()?.importe || '250.00' }}
-                  €</span>
+                <div class="font-mono">
+                  @if (descuentoInfo()) {
+                    <span class="line-through text-slate-400 text-xs mr-2">{{ pagoConfig()?.importe || '250.00' }} €</span>
+                    <span class="text-lg font-black text-emerald-700">{{ importeFinalStr() }} €</span>
+                  } @else {
+                    <span class="text-lg font-black text-brand-gold-dark">{{ pagoConfig()?.importe || '250.00' }} €</span>
+                  }
+                </div>
               </div>
 
               <!-- Concepto Obligatorio -->
@@ -419,8 +530,14 @@
               <!-- Importe -->
               <div class="bg-white p-4 rounded-xl border border-slate-200 flex flex-col justify-between gap-2">
                 <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Importe a Transferir</span>
-                <span class="text-lg font-black text-brand-gold-dark font-mono">{{ pagoConfig()?.importe || '250.00' }}
-                  €</span>
+                <div class="font-mono">
+                  @if (descuentoInfo()) {
+                    <span class="line-through text-slate-400 text-xs mr-2">{{ pagoConfig()?.importe || '250.00' }} €</span>
+                    <span class="text-lg font-black text-emerald-700">{{ importeFinalStr() }} €</span>
+                  } @else {
+                    <span class="text-lg font-black text-brand-gold-dark">{{ pagoConfig()?.importe || '250.00' }} €</span>
+                  }
+                </div>
               </div>
 
               <!-- Concepto Obligatorio -->

@@ -15,6 +15,7 @@ describe('PagoComponent', () => {
   beforeEach(async () => {
     mockPagoService = jasmine.createSpyObj('PagoService', [
       'getPagoConfig',
+      'validarDescuento',
       'iniciarRedsys',
       'confirmarModalidad',
       'simularRedsys',
@@ -97,6 +98,35 @@ describe('PagoComponent', () => {
     expect(component.selectedModalidad()).toBe('transferencia');
   });
 
+  it('should apply and remove discount code', () => {
+    mockPagoService.validarDescuento.and.returnValue(of({
+      success: true,
+      descuento: {
+        valido: true,
+        token_id: 5,
+        token: 'MAGIA50',
+        descuento: 50,
+        descuento_str: '50.00',
+        precio_original: 250,
+        nuevo_total: 200,
+        nuevo_total_str: '200.00',
+        usos_restantes: 4
+      }
+    }));
+
+    component.codigoDescuentoInput.set('MAGIA50');
+    component.aplicarDescuento();
+
+    expect(mockPagoService.validarDescuento).toHaveBeenCalledWith('MAGIA50');
+    expect(component.descuentoInfo()?.token).toBe('MAGIA50');
+    expect(component.importeFinal()).toBe(200);
+    expect(component.importeFinalStr()).toBe('200.00');
+
+    component.quitarDescuento();
+    expect(component.descuentoInfo()).toBeNull();
+    expect(component.importeFinal()).toBe(250);
+  });
+
   it('should confirm manual modality (bizum) and mark completed', () => {
     mockPagoService.confirmarModalidad.and.returnValue(of({
       success: true,
@@ -106,7 +136,7 @@ describe('PagoComponent', () => {
 
     component.confirmarMetodoManual('bizum');
 
-    expect(mockPagoService.confirmarModalidad).toHaveBeenCalledWith(42, 'bizum');
+    expect(mockPagoService.confirmarModalidad).toHaveBeenCalledWith(42, 'bizum', undefined);
     expect(mockSessionService.updateStatus).toHaveBeenCalledWith('pendiente', 'bizum');
     expect(component.isCompleted()).toBeTrue();
   });

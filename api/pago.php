@@ -207,6 +207,185 @@ function getAuthenticatedPagoUser(PDO $pdo, ?array $postData = null): ?array {
     }
 }
 
+/**
+ * Valida un código de descuento en la tabla enmi_tokens sin descontar usos.
+ * Comprueba:
+ *  - Que exista con tipo adecuado ('descuento', 'codigo_descuento', 'código de descuento', 'codigo de descuento')
+ *  - Que fecha_caducidad >= NOW()
+ *  - Que utilizado > 0 (la columna utilizado almacena los usos restantes)
+ * Calcula el descuento a partir de la columna 'valor' (en euros o porcentaje)
+ */
+function validarTokenDescuento(PDO $pdo, string $codigo, float $precioBase): array {
+    $codigo = trim($codigo);
+    if (empty($codigo)) {
+        return ['valido' => false, 'mensaje' => 'Debes introducir un código de descuento.'];
+    }
+
+    try {
+        $stmt = $pdo->prepare("
+            SELECT id, token, tipo, valor, descripcion, fecha_caducidad, utilizado
+            FROM `enmi_tokens`
+            WHERE UPPER(TRIM(token)) = UPPER(:token)
+              AND tipo IN ('descuento', 'codigo_descuento', 'código de descuento', 'codigo de descuento')
+            LIMIT 1
+        ");
+        $stmt->execute([':token' => $codigo]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            return ['valido' => false, 'mensaje' => 'El código de descuento no está disponible o no existe.'];
+        }
+
+        // Comprobar fecha de caducidad
+        $now = new DateTime();
+        $caducidad = new DateTime($row['fecha_caducidad']);
+        if ($caducidad < $now) {
+            return ['valido' => false, 'mensaje' => 'El código de descuento no está disponible (ha caducado).'];
+        }
+
+        // Comprobar usos disponibles (utilizado = número de usos restantes)
+        $usosRestantes = (int)$row['utilizado'];
+        if ($usosRestantes <= 0) {
+            return ['valido' => false, 'mensaje' => 'El código de descuento no está disponible (usos agotados).'];
+        }
+
+        // Calcular el descuento a partir de la columna valor
+        $valorRaw = trim((string)$row['valor']);
+        $descuento = 0.0;
+
+        if (strpos($valorRaw, '%') !== false) {
+            $porcentaje = floatval(preg_replace('/[^0-9\.]/', '', str_replace(',', '.', $valorRaw)));
+            $descuento = round(($precioBase * $porcentaje) / 100, 2);
+        } else {
+            $descuento = floatval(preg_replace('/[^0-9\.]/', '', str_replace(',', '.', $valorRaw)));
+        }
+
+        if ($descuento <= 0) {
+            return ['valido' => false, 'mensaje' => 'El código no tiene un valor de descuento aplicable.'];
+        }
+
+        if ($descuento > $precioBase) {
+            $descuento = $precioBase;
+        }
+
+        $nuevoTotal = round($precioBase - $descuento, 2);
+        if ($nuevoTotal < 0) {
+            $nuevoTotal = 0.0;
+        }
+
+        return [
+            'valido'          => true,
+            'token_id'        => (int)$row['id'],
+            'token'           => (string)$row['token'],
+            'descuento'       => $descuento,
+            'descuento_str'   => number_format($descuento, 2, '.', ''),
+            'precio_original' => $precioBase,
+            'nuevo_total'     => $nuevoTotal,
+            'nuevo_total_str' => number_format($nuevoTotal, 2, '.', ''),
+            'usos_restantes'  => $usosRestantes,
+            'descripcion'     => (string)($row['descripcion'] ?? ''),
+            'mensaje'         => '¡Código de descuento aplicado correctamente!'
+        ];
+    } catch (Throwable $e) {
+        return ['valido' => false, 'mensaje' => 'Error al validar el código: ' . $e->getMessage()];
+    }
+}
+
+/**
+ * Valida y descuenta 1 uso en la columna 'utilizado' de enmi_tokens.
+ * Se ejecuta al pulsar el botón de confirmación de pago.
+ */
+function consumirTokenDescuento(PDO $pdo, string $codigo, float $precioBase): array {
+    $codigo = trim($codigo);
+    if (empty($codigo)) {
+        return ['exito' => false, 'mensaje' => 'Código no proporcionado.'];
+    }
+
+    try {
+        $stmt = $pdo->prepare("
+            SELECT id, token, tipo, valor, descripcion, fecha_caducidad, utilizado
+            FROM `enmi_tokens`
+            WHERE UPPER(TRIM(token)) = UPPER(:token)
+              AND tipo IN ('descuento', 'codigo_descuento', 'código de descuento', 'codigo de descuento')
+            FOR UPDATE
+        ");
+        $stmt->execute([':token' => $codigo]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            return ['exito' => false, 'mensaje' => 'El código de descuento no está disponible o no existe.'];
+        }
+
+        $now = new DateTime();
+        $caducidad = new DateTime($row['fecha_caducidad']);
+        if ($caducidad < $now) {
+            return ['exito' => false, 'mensaje' => 'El código de descuento no está disponible (ha caducado).'];
+        }
+
+        $usosRestantes = (int)$row['utilizado'];
+        if ($usosRestantes <= 0) {
+            return ['exito' => false, 'mensaje' => 'El código de descuento ya no está disponible (usos agotados).'];
+        }
+
+        // Decrementar en 1 la columna utilizado
+        $tokenId = (int)$row['id'];
+        $stmtUp = $pdo->prepare("
+            UPDATE `enmi_tokens`
+            SET `utilizado` = `utilizado` - 1,
+                `fecha_uso` = NOW()
+            WHERE `id` = :id AND `utilizado` > 0
+        ");
+        $stmtUp->execute([':id' => $tokenId]);
+
+        if ($stmtUp->rowCount() === 0) {
+            return ['exito' => false, 'mensaje' => 'El código de descuento ya no está disponible (usos agotados).'];
+        }
+
+        // Calcular el descuento final
+        $valorRaw = trim((string)$row['valor']);
+        $descuento = 0.0;
+
+        if (strpos($valorRaw, '%') !== false) {
+            $porcentaje = floatval(preg_replace('/[^0-9\.]/', '', str_replace(',', '.', $valorRaw)));
+            $descuento = round(($precioBase * $porcentaje) / 100, 2);
+        } else {
+            $descuento = floatval(preg_replace('/[^0-9\.]/', '', str_replace(',', '.', $valorRaw)));
+        }
+
+        if ($descuento > $precioBase) {
+            $descuento = $precioBase;
+        }
+
+        $nuevoTotal = round($precioBase - $descuento, 2);
+        if ($nuevoTotal < 0) {
+            $nuevoTotal = 0.0;
+        }
+
+        logInfo('tokens', 'descuento_aplicado', "Código '{$row['token']}' aplicado (-{$descuento} €). Usos restantes: " . ($usosRestantes - 1), [
+            'token_id'        => $tokenId,
+            'codigo'          => $row['token'],
+            'descuento'       => $descuento,
+            'usos_anteriores' => $usosRestantes,
+            'usos_restantes'  => $usosRestantes - 1
+        ]);
+
+        return [
+            'exito'           => true,
+            'token_id'        => $tokenId,
+            'token'           => (string)$row['token'],
+            'descuento'       => $descuento,
+            'descuento_str'   => number_format($descuento, 2, '.', ''),
+            'precio_original' => $precioBase,
+            'nuevo_total'     => $nuevoTotal,
+            'nuevo_total_str' => number_format($nuevoTotal, 2, '.', ''),
+            'usos_restantes'  => $usosRestantes - 1,
+            'descripcion'     => (string)($row['descripcion'] ?? '')
+        ];
+    } catch (Throwable $e) {
+        return ['exito' => false, 'mensaje' => 'Error al procesar el código de descuento: ' . $e->getMessage()];
+    }
+}
+
 // =====================================================================
 // 1. GET: Consulta de información pública de pago o retorno Redsys
 // =====================================================================
@@ -259,6 +438,24 @@ if ($method === 'GET') {
                 'success' => false,
                 'message' => 'Error al obtener la configuración de pago: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    // Validar código de descuento (GET)
+    if ($accion === 'validar_descuento') {
+        $codigo = isset($_GET['codigo']) ? trim((string)$_GET['codigo']) : '';
+        $precioBase = getPagoImporteConfig($pdo);
+        $res = validarTokenDescuento($pdo, $codigo, $precioBase);
+        if ($res['valido']) {
+            sendJsonResponse([
+                'success'   => true,
+                'descuento' => $res
+            ], 200);
+        } else {
+            sendJsonResponse([
+                'success' => false,
+                'message' => $res['mensaje']
+            ], 400);
         }
     }
 
@@ -359,6 +556,24 @@ if ($method === 'POST') {
 
     $accion = isset($data['accion']) ? trim((string)$data['accion']) : '';
 
+    // Validar código de descuento (POST)
+    if ($accion === 'validar_descuento') {
+        $codigo = isset($data['codigo']) ? trim((string)$data['codigo']) : '';
+        $precioBase = getPagoImporteConfig($pdo);
+        $res = validarTokenDescuento($pdo, $codigo, $precioBase);
+        if ($res['valido']) {
+            sendJsonResponse([
+                'success'   => true,
+                'descuento' => $res
+            ], 200);
+        } else {
+            sendJsonResponse([
+                'success' => false,
+                'message' => $res['mensaje']
+            ], 400);
+        }
+    }
+
     // A) INICIAR REDSYS (Generar firma y formulario)
     if ($accion === 'iniciar_redsys') {
         $inscripcionId = isset($data['inscripcion_id']) ? (int)$data['inscripcion_id'] : 0;
@@ -376,6 +591,17 @@ if ($method === 'POST') {
             }
 
             $importeNum = getPagoImporteConfig($pdo);
+            $codigoDescuento = isset($data['codigo_descuento']) ? trim((string)$data['codigo_descuento']) : '';
+            $descuentoInfo = null;
+
+            if (!empty($codigoDescuento)) {
+                $descuentoInfo = consumirTokenDescuento($pdo, $codigoDescuento, $importeNum);
+                if (!$descuentoInfo['exito']) {
+                    sendJsonResponse(['success' => false, 'message' => $descuentoInfo['mensaje']], 400);
+                }
+                $importeNum = $descuentoInfo['nuevo_total'];
+            }
+
             $amountInCents = (int)round($importeNum * 100);
 
             $fuc             = (string)getConfigValue('pago_redsys_fuc', '999008881', $pdo);
@@ -419,13 +645,17 @@ if ($method === 'POST') {
             logInfo('pagos', 'redsys_iniciado', "Sesión de pago Redsys iniciada para inscripción #{$inscripcionId}", [
                 'order'   => $order,
                 'importe' => $importeNum,
-                'entorno' => $entorno
+                'entorno' => $entorno,
+                'descuento' => $descuentoInfo ? $descuentoInfo['token'] : null
             ]);
 
             // Registrar orden previa en la tabla enmi_pagos (marcado como no-pagado)
             $nombreParticipante = trim($inscripcion['nombre'] . ' ' . $inscripcion['apellidos']);
             $conceptoCompra = 'Inscripción ENMI 2027 #' . $inscripcionId . ' - ' . $nombreParticipante;
             $notasInicio = "Sesión de pago Redsys ({$entorno}) iniciada para pedido #{$order}";
+            if ($descuentoInfo) {
+                $notasInicio .= " | Descuento aplicado: {$descuentoInfo['token']} (-{$descuentoInfo['descuento_str']} €)";
+            }
 
             $pagoId = registrarPago(
                 $pdo,
@@ -437,12 +667,15 @@ if ($method === 'POST') {
                 $conceptoCompra,
                 $notasInicio,
                 [
-                    'order'       => $order,
-                    'fuc'         => $fuc,
-                    'terminal'    => $terminal,
-                    'entorno'     => $entorno,
-                    'ip'          => $_SERVER['REMOTE_ADDR'] ?? null,
-                    'user_agent'  => $_SERVER['HTTP_USER_AGENT'] ?? null
+                    'order'             => $order,
+                    'fuc'               => $fuc,
+                    'terminal'          => $terminal,
+                    'entorno'           => $entorno,
+                    'ip'                => $_SERVER['REMOTE_ADDR'] ?? null,
+                    'user_agent'        => $_SERVER['HTTP_USER_AGENT'] ?? null,
+                    'codigo_descuento'  => $descuentoInfo ? $descuentoInfo['token'] : null,
+                    'descuento_importe' => $descuentoInfo ? $descuentoInfo['descuento'] : null,
+                    'importe_original'  => $descuentoInfo ? $descuentoInfo['precio_original'] : null
                 ]
             );
 
@@ -457,7 +690,8 @@ if ($method === 'POST') {
                 'Ds_Signature'           => $signature,
                 'order'                  => $order,
                 'importe'                => number_format($importeNum, 2, '.', ''),
-                'sandbox'                => ($entorno !== 'produccion')
+                'sandbox'                => ($entorno !== 'produccion'),
+                'descuento_aplicado'     => $descuentoInfo
             ], 200);
 
         } catch (Throwable $e) {
@@ -491,9 +725,23 @@ if ($method === 'POST') {
 
             // Registrar en la tabla enmi_pagos como 'no-pagado'
             $importeNum = getPagoImporteConfig($pdo);
+            $codigoDescuento = isset($data['codigo_descuento']) ? trim((string)$data['codigo_descuento']) : '';
+            $descuentoInfo = null;
+
+            if (!empty($codigoDescuento)) {
+                $descuentoInfo = consumirTokenDescuento($pdo, $codigoDescuento, $importeNum);
+                if (!$descuentoInfo['exito']) {
+                    sendJsonResponse(['success' => false, 'message' => $descuentoInfo['mensaje']], 400);
+                }
+                $importeNum = $descuentoInfo['nuevo_total'];
+            }
+
             $nombreParticipante = trim($inscripcion['nombre'] . ' ' . $inscripcion['apellidos']);
             $conceptoCompra = 'Inscripción ENMI 2027 #' . $inscripcionId . ' - ' . $nombreParticipante;
             $notasModalidad = "Modalidad seleccionada: " . strtoupper($modalidad) . ". Pago en espera de recepción.";
+            if ($descuentoInfo) {
+                $notasModalidad .= " | Descuento aplicado: {$descuentoInfo['token']} (-{$descuentoInfo['descuento_str']} €)";
+            }
             if ($modalidad === 'bizum') {
                 $telBizum = (string)getConfigValue('pago_bizum_telefono', '+34 600 000 000', $pdo);
                 $notasModalidad .= " Destino Bizum: {$telBizum}.";
@@ -512,11 +760,14 @@ if ($method === 'POST') {
                 $conceptoCompra,
                 $notasModalidad,
                 [
-                    'modalidad'     => $modalidad,
-                    'inscripcion_id'=> $inscripcionId,
-                    'ip'            => $_SERVER['REMOTE_ADDR'] ?? null,
-                    'user_agent'    => $_SERVER['HTTP_USER_AGENT'] ?? null,
-                    'origen'        => 'confirmar_modalidad'
+                    'modalidad'         => $modalidad,
+                    'inscripcion_id'    => $inscripcionId,
+                    'ip'                => $_SERVER['REMOTE_ADDR'] ?? null,
+                    'user_agent'        => $_SERVER['HTTP_USER_AGENT'] ?? null,
+                    'origen'            => 'confirmar_modalidad',
+                    'codigo_descuento'  => $descuentoInfo ? $descuentoInfo['token'] : null,
+                    'descuento_importe' => $descuentoInfo ? $descuentoInfo['descuento'] : null,
+                    'importe_original'  => $descuentoInfo ? $descuentoInfo['precio_original'] : null
                 ]
             );
 
@@ -525,7 +776,8 @@ if ($method === 'POST') {
                 'inscripcion_id' => $inscripcionId,
                 'modalidad'      => $modalidad,
                 'nuevo_estado'   => $nuevoEstado,
-                'pago_id'        => $pagoId
+                'pago_id'        => $pagoId,
+                'descuento'      => $descuentoInfo ? $descuentoInfo['token'] : null
             ]);
 
             // Enviar correo de confirmación de inscripción al participante indicando modalidad
@@ -557,15 +809,17 @@ if ($method === 'POST') {
             );
 
             sendJsonResponse([
-                'success'        => true,
-                'inscripcion_id' => $inscripcionId,
-                'estado'         => $nuevoEstado,
-                'modalidad'      => $modalidad,
-                'estado_pago'    => 'no-pagado',
-                'estado_compra'  => 'no-pagado',
-                'pago_id'        => $pagoId,
-                'compra_id'      => $pagoId,
-                'message'        => 'Modalidad de pago registrada correctamente.'
+                'success'            => true,
+                'inscripcion_id'     => $inscripcionId,
+                'estado'             => $nuevoEstado,
+                'modalidad'          => $modalidad,
+                'estado_pago'        => 'no-pagado',
+                'estado_compra'      => 'no-pagado',
+                'importe'            => number_format($importeNum, 2, '.', ''),
+                'pago_id'            => $pagoId,
+                'compra_id'          => $pagoId,
+                'descuento_aplicado' => $descuentoInfo,
+                'message'            => 'Modalidad de pago registrada correctamente.'
             ], 200);
 
         } catch (Throwable $e) {
@@ -603,6 +857,17 @@ if ($method === 'POST') {
             $nuevoEstado = ($resultado === 'ok') ? 'pagada' : 'pendiente';
             $estadoCompra = ($resultado === 'ok') ? 'pagado' : 'no-pagado';
             $importeNum = getPagoImporteConfig($pdo);
+            $codigoDescuento = isset($data['codigo_descuento']) ? trim((string)$data['codigo_descuento']) : '';
+            $descuentoInfo = null;
+
+            if (!empty($codigoDescuento) && $resultado === 'ok') {
+                $descuentoInfo = consumirTokenDescuento($pdo, $codigoDescuento, $importeNum);
+                if (!$descuentoInfo['exito']) {
+                    sendJsonResponse(['success' => false, 'message' => $descuentoInfo['mensaje']], 400);
+                }
+                $importeNum = $descuentoInfo['nuevo_total'];
+            }
+
             $nombreParticipante = trim($inscripcion['nombre'] . ' ' . $inscripcion['apellidos']);
             $conceptoCompra = 'Inscripción ENMI 2027 #' . $inscripcionId . ' - ' . $nombreParticipante;
             $orderSim = 'SIM-' . date('ymd') . sprintf('%06d', $inscripcionId % 1000000) . '-' . strtoupper(substr(uniqid(), -4));
@@ -610,6 +875,9 @@ if ($method === 'POST') {
             $notasSim = ($resultado === 'ok')
                 ? 'Simulador Redsys (Demo/Sandbox): Pago autorizado y verificado con éxito.'
                 : 'Simulador Redsys (Demo/Sandbox): Transacción denegada o cancelada por el usuario.';
+            if ($descuentoInfo) {
+                $notasSim .= " | Descuento aplicado: {$descuentoInfo['token']} (-{$descuentoInfo['descuento_str']} €)";
+            }
 
             $pagoId = registrarPago(
                 $pdo,
@@ -621,12 +889,15 @@ if ($method === 'POST') {
                 $conceptoCompra,
                 $notasSim,
                 [
-                    'modalidad'     => 'redsys',
-                    'resultado'     => $resultado,
-                    'inscripcion_id'=> $inscripcionId,
-                    'simulador'     => true,
-                    'ip'            => $_SERVER['REMOTE_ADDR'] ?? null,
-                    'user_agent'    => $_SERVER['HTTP_USER_AGENT'] ?? null
+                    'modalidad'         => 'redsys',
+                    'resultado'         => $resultado,
+                    'inscripcion_id'    => $inscripcionId,
+                    'simulador'         => true,
+                    'ip'                => $_SERVER['REMOTE_ADDR'] ?? null,
+                    'user_agent'        => $_SERVER['HTTP_USER_AGENT'] ?? null,
+                    'codigo_descuento'  => $descuentoInfo ? $descuentoInfo['token'] : null,
+                    'descuento_importe' => $descuentoInfo ? $descuentoInfo['descuento'] : null,
+                    'importe_original'  => $descuentoInfo ? $descuentoInfo['precio_original'] : null
                 ]
             );
 
@@ -641,7 +912,8 @@ if ($method === 'POST') {
                 'pago_id'        => $pagoId,
                 'compra_id'      => $pagoId,
                 'estado_pago'    => $estadoCompra,
-                'estado_compra'  => $estadoCompra
+                'estado_compra'  => $estadoCompra,
+                'descuento'      => $descuentoInfo ? $descuentoInfo['token'] : null
             ]);
 
             // Si ha sido pagada, enviamos correo con estado 'pagada'
@@ -674,15 +946,17 @@ if ($method === 'POST') {
             );
 
             sendJsonResponse([
-                'success'        => true,
-                'inscripcion_id' => $inscripcionId,
-                'estado'         => $nuevoEstado,
-                'estado_pago'    => $estadoCompra,
-                'estado_compra'  => $estadoCompra,
-                'pago_id'        => $pagoId,
-                'compra_id'      => $pagoId,
-                'resultado'      => $resultado,
-                'message'        => ($resultado === 'ok')
+                'success'            => true,
+                'inscripcion_id'     => $inscripcionId,
+                'estado'             => $nuevoEstado,
+                'estado_pago'        => $estadoCompra,
+                'estado_compra'      => $estadoCompra,
+                'pago_id'            => $pagoId,
+                'compra_id'          => $pagoId,
+                'resultado'          => $resultado,
+                'importe'            => number_format($importeNum, 2, '.', ''),
+                'descuento_aplicado' => $descuentoInfo,
+                'message'            => ($resultado === 'ok')
                     ? '¡Pago completado con éxito! Tu inscripción ha sido pagada y confirmada.'
                     : 'El pago ha sido denegado o cancelado. Tu inscripción queda en estado pendiente.'
             ], 200);
