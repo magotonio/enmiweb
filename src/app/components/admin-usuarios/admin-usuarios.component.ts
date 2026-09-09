@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { Usuario, UserRole, ROLE_LABELS, ROLE_BADGE_CLASSES } from '../../models/usuario.model';
 import { UsuarioService } from '../../services/usuario.service';
 import { AuthService } from '../../services/auth.service';
+import { ConfirmService } from '../../services/confirm.service';
 
 @Component({
   selector: 'app-admin-usuarios',
@@ -14,6 +15,7 @@ import { AuthService } from '../../services/auth.service';
   styleUrl: './admin-usuarios.component.css'
 })
 export class AdminUsuariosComponent implements OnInit {
+  private readonly confirmService = inject(ConfirmService);
   private readonly usuarioService = inject(UsuarioService);
   readonly authService = inject(AuthService);
 
@@ -196,12 +198,20 @@ export class AdminUsuariosComponent implements OnInit {
   /**
    * Alterna bloqueo de usuario.
    */
-  toggleBlock(user: Usuario): void {
+  async toggleBlock(user: Usuario): Promise<void> {
     if (!user.id) return;
     const nuevoEstado = !user.bloqueado;
     const accionTexto = nuevoEstado ? 'bloquear' : 'desbloquear';
 
-    if (!confirm(`¿Estás seguro de que deseas ${accionTexto} al usuario '${user.login}'?`)) {
+    const confirmado = await this.confirmService.confirm({
+      titulo: `${accionTexto.charAt(0).toUpperCase() + accionTexto.slice(1)} usuario`,
+      cuerpo: `¿Estás seguro de que deseas ${accionTexto} al usuario '${user.login}'?`,
+      textoAceptar: 'Aceptar',
+      textoCancelar: 'Cancelar',
+      tipo: 'success'
+    });
+
+    if (!confirmado) {
       return;
     }
 

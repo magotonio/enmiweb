@@ -853,6 +853,7 @@ if ($method === 'POST') {
         $cantidad = isset($data['cantidad']) ? (float)$data['cantidad'] : 0.0;
         $notasSupervisor = isset($data['notas']) ? trim((string)$data['notas']) : '';
         $enviarEmail = !empty($data['enviar_email']);
+        $marcarComoPagado = !empty($data['marcar_como_pagado']);
 
         if ($inscripcionId <= 0) {
             sendJsonResponse(['success' => false, 'message' => 'Identificador de inscripción inválido.'], 400);
@@ -900,6 +901,13 @@ if ($method === 'POST') {
                 'notas_admin'     => $notasSupervisor
             ];
 
+            $nuevoEstado = $inscripcion['estado'];
+            if ($marcarComoPagado) {
+                $nuevoEstado = 'pagada';
+                $stmtUpIns = $pdo->prepare("UPDATE `enmi_inscripciones` SET `estado` = 'pagada', `fecha_actualizacion` = NOW() WHERE id = :id");
+                $stmtUpIns->execute([':id' => $inscripcionId]);
+            }
+
             // 1. Registrar el nuevo pago en 'enmi_pagos' con estado 'pagado'
             $pagoId = registrarPago(
                 $pdo,
@@ -919,7 +927,8 @@ if ($method === 'POST') {
                 'referencia'     => $referencia,
                 'cantidad'       => $cantidad,
                 'modalidad'      => $modalidad,
-                'admin'          => $adminInfo
+                'admin'          => $adminInfo,
+                'marcar_pagado'  => $marcarComoPagado
             ]);
 
             // 3. Envío opcional de email de confirmación de pago al participante
@@ -939,7 +948,7 @@ if ($method === 'POST') {
                     'quiero_participar'     => (bool)$inscripcion['quiero_participar'],
                     'consentimiento_imagen' => (bool)$inscripcion['consentimiento_imagen'],
                     'comentarios'           => $inscripcion['comentarios'] ?? null,
-                    'estado'                => $inscripcion['estado'],
+                    'estado'                => $nuevoEstado,
                     'modalidad_pago'        => $modalidad,
                     'pago_confirmado'       => true,
                     'ip_registro'           => $inscripcion['ip_registro'] ?? null,
@@ -967,7 +976,7 @@ if ($method === 'POST') {
                 'success'        => true,
                 'message'        => 'Pago registrado con éxito.',
                 'inscripcion_id' => $inscripcionId,
-                'nuevo_estado'   => $inscripcion['estado'],
+                'nuevo_estado'   => $nuevoEstado,
                 'pago_id'        => $pagoId,
                 'pago'           => [
                     'id'                  => (int)$pagoId,
@@ -990,6 +999,63 @@ if ($method === 'POST') {
         } catch (Throwable $e) {
             logError('pagos', 'error_registrar_pago_manual', $e->getMessage());
             sendJsonResponse(['success' => false, 'message' => 'Error al registrar el pago manual: ' . $e->getMessage()], 500);
+        }
+    }
+
+    // G) CAMBIAR ESTADO DE INSCRIPCIÓN DIRECTAMENTE (Solo Supervisor y Superadministrador)
+    if ($accion === 'cambiar_estado' || $accion === 'marcar_pagada') {
+        $authUser = getAuthenticatedPagoUser($pdo, $data);
+        $userRole = $authUser['rol'] ?? null;
+
+        if (!$authUser || !in_array($userRole, ['superadministrador', 'supervisor'], true)) {
+            sendJsonResponse([
+                'success' => false,
+                'message' => 'Acceso denegado. Se requieren permisos de supervisor o superadministrador.'
+            ], 403);
+        }
+
+        $inscripcionId = isset($data['inscripcion_id']) ? (int)$data['inscripcion_id'] : (isset($data['id']) ? (int)$data['id'] : 0);
+        $nuevoEstado = isset($data['estado']) ? strtolower(trim((string)$data['estado'])) : 'pagada';
+
+        $estadosValidos = ['iniciada', 'pendiente', 'pagada', 'cancelada', 'activo'];
+        if ($inscripcionId <= 0 || !in_array($nuevoEstado, $estadosValidos, true)) {
+            sendJsonResponse([
+                'success' => false,
+                'message' => 'Identificador de inscripción o estado inválido.'
+            ], 400);
+        }
+
+        try {
+            $stmt = $pdo->prepare("SELECT * FROM `enmi_inscripciones` WHERE id = :id LIMIT 1");
+            $stmt->execute([':id' => $inscripcionId]);
+            $inscripcion = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$inscripcion) {
+                sendJsonResponse(['success' => false, 'message' => 'Inscripción no encontrada.'], 404);
+            }
+
+            $stmtUp = $pdo->prepare("UPDATE `enmi_inscripciones` SET `estado` = :estado, `fecha_actualizacion` = NOW() WHERE id = :id");
+            $stmtUp->execute([':estado' => $nuevoEstado, ':id' => $inscripcionId]);
+
+            $adminInfo = ($authUser['login'] ?? 'admin') . ' (' . ($authUser['rol'] ?? 'supervisor') . ')';
+            logInfo('pagos', 'cambio_estado_inscripcion', "Estado de inscripción #{$inscripcionId} cambiado a '{$nuevoEstado}' por {$adminInfo}.", [
+                'inscripcion_id'  => $inscripcionId,
+                'estado_anterior' => $inscripcion['estado'],
+                'nuevo_estado'    => $nuevoEstado,
+                'admin'           => $adminInfo
+            ]);
+
+            sendJsonResponse([
+                'success'        => true,
+                'message'        => "Estado de la inscripción actualizado a '{$nuevoEstado}' con éxito.",
+                'inscripcion_id' => $inscripcionId,
+                'nuevo_estado'   => $nuevoEstado,
+                'estado'         => $nuevoEstado
+            ], 200);
+
+        } catch (Throwable $e) {
+            logError('pagos', 'error_cambio_estado', $e->getMessage());
+            sendJsonResponse(['success' => false, 'message' => 'Error al actualizar el estado: ' . $e->getMessage()], 500);
         }
     }
 }

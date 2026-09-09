@@ -14,7 +14,9 @@ import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Inscripcion, PagoManualRequest, PagoRegistro } from '../../../models/inscripcion.model';
 import { PagoService } from '../../../services/pago.service';
+import { InscripcionService } from '../../../services/inscripcion.service';
 import { AuthService } from '../../../services/auth.service';
+import { ConfirmService } from '../../../services/confirm.service';
 import { TARIFA_DEFECTO } from '../../../constants/app.constants';
 
 @Component({
@@ -30,6 +32,8 @@ export class InscripcionDetalleModalComponent implements OnInit, OnChanges {
   @Output() inscripcionActualizada = new EventEmitter<Inscripcion>();
 
   private readonly pagoService = inject(PagoService);
+  private readonly inscripcionService = inject(InscripcionService);
+  private readonly confirmService = inject(ConfirmService);
   readonly authService = inject(AuthService);
 
   readonly isSupervisor = this.authService.isSupervisor;
@@ -41,6 +45,10 @@ export class InscripcionDetalleModalComponent implements OnInit, OnChanges {
 
   // Tarifa oficial de inscripción obtenida de BD (fallback a constante 250)
   readonly tarifaInscripcion = signal<number>(TARIFA_DEFECTO);
+
+  // Estados reactivos para marcar como pagada directamente
+  readonly guardandoEstado = signal<boolean>(false);
+  readonly errorEstado = signal<string | null>(null);
 
   // Estados reactivos para el formulario de Registro Manual de Pago
   readonly mostrarFormPagoManual = signal<boolean>(false);
@@ -77,28 +85,33 @@ export class InscripcionDetalleModalComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['inscripcion']) {
-      this.mostrarFormPagoManual.set(false);
+    if (changes['inscripcion'] && this.inscripcion?.id) {
+      this.cargarPagos(this.inscripcion.id);
+      this.errorEstado.set(null);
       this.errorPagoManual.set(null);
       this.mensajeExitoPagoManual.set(null);
-      if (this.inscripcion?.id) {
-        this.cargarPagos(this.inscripcion.id);
-      } else {
-        this.pagos.set([]);
-        this.errorPagos.set(null);
-        this.detallePagoExpandido.set(null);
-      }
+      this.mostrarFormPagoManual.set(false);
     }
   }
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
+    if (this.confirmService.state().isOpen) {
+      return;
+    }
+    if (this.mostrarFormPagoManual()) {
+      this.cancelarFormPagoManual();
+      return;
+    }
     if (this.inscripcion) {
       this.closeModal();
     }
   }
 
   closeModal(): void {
+    if (this.confirmService.state().isOpen) {
+      return;
+    }
     this.close.emit();
   }
 
@@ -220,8 +233,51 @@ export class InscripcionDetalleModalComponent implements OnInit, OnChanges {
     this.errorPagoManual.set(null);
   }
 
-  marcarInscripcionComoPagada(): void {
+  async marcarInscripcionComoPagada(): Promise<void> {
+    if (!this.inscripcion?.id || this.guardandoEstado()) {
+      return;
+    }
 
+    const participante = `${this.inscripcion.nombre} ${this.inscripcion.apellidos}`.trim();
+    const confirmado = await this.confirmService.confirm({
+      titulo: 'Confirmar pago',
+      cuerpo: `¿Confirmas que deseas marcar la inscripción #${this.inscripcion.id} (${participante}) como PAGADA?`,
+      textoAceptar: 'Aceptar',
+      textoCancelar: 'Cancelar',
+      tipo: 'success'
+    });
+
+    if (!confirmado) {
+      return;
+    }
+
+    this.guardandoEstado.set(true);
+    this.errorEstado.set(null);
+    this.errorPagoManual.set(null);
+    this.mensajeExitoPagoManual.set(null);
+
+    this.inscripcionService.actualizarEstado(this.inscripcion.id, 'pagada').subscribe({
+      next: (res) => {
+        this.guardandoEstado.set(false);
+        if (res.success) {
+          if (this.inscripcion) {
+            this.inscripcion = {
+              ...this.inscripcion,
+              estado: 'pagada'
+            };
+            this.inscripcionActualizada.emit(this.inscripcion);
+          }
+          this.mensajeExitoPagoManual.set(res.message || 'Inscripción marcada como pagada con éxito.');
+          this.cargarPagos(this.inscripcion!.id);
+        } else {
+          this.errorEstado.set(res.message || 'No se pudo marcar la inscripción como pagada.');
+        }
+      },
+      error: (err) => {
+        this.guardandoEstado.set(false);
+        this.errorEstado.set(err?.error?.message || 'Error en el servidor al marcar la inscripción como pagada.');
+      }
+    });
   }
 
   confirmarPagoManual(): void {
@@ -249,6 +305,7 @@ export class InscripcionDetalleModalComponent implements OnInit, OnChanges {
       cantidad,
       notas,
       enviar_email: enviarEmail,
+      marcar_como_pagado: this.marcarComoPagado()
     };
 
     this.pagoService.registrarPagoManual(request).subscribe({

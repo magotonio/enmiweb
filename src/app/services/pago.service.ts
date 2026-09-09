@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 import {
+  EstadoInscripcion,
   ModalidadPago,
   PagoAccionResponse,
   PagoConfigInfo,
@@ -109,12 +110,28 @@ export class PagoService {
       cantidad: request.cantidad,
       notas: request.notas || '',
       enviar_email: !!request.enviar_email,
+      marcar_como_pagado: !!request.marcar_como_pagado,
       user_id: currentUser?.id,
       user_login: currentUser?.login,
       user_email: currentUser?.email
     };
 
     return this.http.post<PagoManualResponse>(this.pagoApiUrl, payload);
+  }
+
+  /**
+   * Cambia directamente el estado de una inscripción (por ejemplo, a 'pagada').
+   */
+  cambiarEstadoInscripcion(inscripcionId: number, estado: EstadoInscripcion): Observable<PagoAccionResponse> {
+    const currentUser = this.authService.currentUser();
+    return this.http.post<PagoAccionResponse>(this.pagoApiUrl, {
+      accion: 'cambiar_estado',
+      inscripcion_id: inscripcionId,
+      estado,
+      user_id: currentUser?.id,
+      user_login: currentUser?.login,
+      user_email: currentUser?.email
+    });
   }
 
   /**

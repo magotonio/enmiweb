@@ -2,6 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
+  ActualizarEstadoInscripcionResponse,
+  EstadoInscripcion,
   Inscripcion,
   InscripcionApiResponse,
   InscripcionFormData,
@@ -90,6 +92,32 @@ export class InscripcionService {
     }
 
     return this.http.get<InscripcionesListResponse>(this.inscripcionesApiUrl, { params });
+  }
+
+  /**
+   * Actualiza el estado de una inscripción (por ejemplo, a 'pagada').
+   * Requiere rol de supervisor o superadministrador.
+   * 
+   * @param inscripcionId ID numérico de la inscripción
+   * @param estado Nuevo estado ('iniciada', 'pendiente', 'pagada', 'cancelada', 'activo')
+   * @returns Observable con la respuesta del servidor
+   */
+  actualizarEstado(
+    inscripcionId: number,
+    estado: EstadoInscripcion
+  ): Observable<ActualizarEstadoInscripcionResponse> {
+    const currentUser = this.authService.currentUser();
+    const payload = {
+      accion: 'actualizar_estado',
+      id: inscripcionId,
+      inscripcion_id: inscripcionId,
+      estado,
+      user_id: currentUser?.id,
+      user_login: currentUser?.login,
+      user_email: currentUser?.email
+    };
+
+    return this.http.post<ActualizarEstadoInscripcionResponse>(this.inscripcionesApiUrl, payload);
   }
 
   /**

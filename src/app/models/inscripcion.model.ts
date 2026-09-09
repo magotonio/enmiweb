@@ -174,6 +174,7 @@ export interface PagoManualRequest {
   cantidad: number;
   notas?: string;
   enviar_email?: boolean;
+  marcar_como_pagado?: boolean;
 }
 
 export interface PagoManualResponse {
@@ -193,4 +194,12 @@ export interface PagosInscripcionResponse {
   total?: number;
   pagos: PagoRegistro[];
   message?: string;
+}
+
+export interface ActualizarEstadoInscripcionResponse {
+  success: boolean;
+  message?: string;
+  inscripcion_id?: number;
+  nuevo_estado?: EstadoInscripcion;
+  estado?: EstadoInscripcion;
 }

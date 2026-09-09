@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { SystemLog } from '../../models/usuario.model';
 import { LogsService } from '../../services/logs.service';
 import { AuthService } from '../../services/auth.service';
+import { ConfirmService } from '../../services/confirm.service';
 
 @Component({
   selector: 'app-admin-logs',
@@ -14,6 +15,7 @@ import { AuthService } from '../../services/auth.service';
   styleUrl: './admin-logs.component.css'
 })
 export class AdminLogsComponent implements OnInit {
+  private readonly confirmService = inject(ConfirmService);
   private readonly logsService = inject(LogsService);
   readonly authService = inject(AuthService);
 
@@ -120,8 +122,16 @@ export class AdminLogsComponent implements OnInit {
   /**
    * Limpia logs antiguos (solo para superadmin).
    */
-  clearOldLogs(): void {
-    if (!confirm('¿Deseas purgar los logs con más de 60 días de antigüedad? Esta acción no se puede deshacer.')) {
+  async clearOldLogs(): Promise<void> {
+    const confirmado = await this.confirmService.confirm({
+      titulo: 'Purgar logs',
+      cuerpo: `¿Deseas purgar los logs con más de 60 días de antigüedad? Esta acción no se puede deshacer.`,
+      textoAceptar: 'Aceptar',
+      textoCancelar: 'Cancelar',
+      tipo: 'success'
+    });
+
+    if (!confirmado) {
       return;
     }
 

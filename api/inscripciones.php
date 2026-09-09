@@ -16,23 +16,15 @@
 
 require_once __DIR__ . '/config.php';
 
-// Verificar que el método sea GET
-if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-    sendJsonResponse([
-        'success' => false,
-        'message' => 'Método no permitido. Utilice GET.'
-    ], 405);
-}
-
 $pdo = getDbConnection();
 
 /**
  * Obtiene el usuario autenticado para aplicar las restricciones de seguridad por rol.
  */
-function getAuthenticatedUser(PDO $pdo): ?array {
-    $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : null;
-    $userLogin = isset($_GET['user_login']) ? trim((string)$_GET['user_login']) : null;
-    $userEmail = isset($_GET['user_email']) ? trim((string)$_GET['user_email']) : null;
+function getAuthenticatedUser(PDO $pdo, ?array $postData = null): ?array {
+    $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : ($postData['user_id'] ?? null);
+    $userLogin = isset($_GET['user_login']) ? trim((string)$_GET['user_login']) : ($postData['user_login'] ?? null);
+    $userEmail = isset($_GET['user_email']) ? trim((string)$_GET['user_email']) : ($postData['user_email'] ?? null);
 
     if (!$userId && isset($_SERVER['HTTP_X_USER_ID'])) {
         $userId = (int)$_SERVER['HTTP_X_USER_ID'];
@@ -65,6 +57,83 @@ function getAuthenticatedUser(PDO $pdo): ?array {
     } catch (PDOException $e) {
         return null;
     }
+}
+
+$requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+
+// ---------------------------------------------------------------------
+// 1. ACTUALIZAR ESTADO DE INSCRIPCIÓN (POST / PATCH / PUT)
+// ---------------------------------------------------------------------
+if ($requestMethod === 'POST' || $requestMethod === 'PATCH' || $requestMethod === 'PUT') {
+    $inputRaw = file_get_contents('php://input');
+    $data = json_decode($inputRaw, true);
+    if (!is_array($data)) {
+        $data = $_POST;
+    }
+
+    $authUser = getAuthenticatedUser($pdo, $data);
+    $userRole = $authUser['rol'] ?? null;
+
+    if (!$authUser || !in_array($userRole, ['superadministrador', 'supervisor'], true)) {
+        sendJsonResponse([
+            'success' => false,
+            'message' => 'Acceso denegado. Se requieren permisos de supervisor o superadministrador.'
+        ], 403);
+    }
+
+    $inscripcionId = isset($data['id']) ? (int)$data['id'] : (isset($data['inscripcion_id']) ? (int)$data['inscripcion_id'] : 0);
+    $nuevoEstado = isset($data['estado']) ? strtolower(trim((string)$data['estado'])) : '';
+
+    $estadosValidos = ['iniciada', 'pendiente', 'pagada', 'cancelada', 'activo'];
+    if ($inscripcionId <= 0 || !in_array($nuevoEstado, $estadosValidos, true)) {
+        sendJsonResponse([
+            'success' => false,
+            'message' => 'Identificador de inscripción o estado inválido.'
+        ], 400);
+    }
+
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM `enmi_inscripciones` WHERE id = :id LIMIT 1");
+        $stmt->execute([':id' => $inscripcionId]);
+        $inscripcion = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$inscripcion) {
+            sendJsonResponse(['success' => false, 'message' => 'Inscripción no encontrada.'], 404);
+        }
+
+        $stmtUp = $pdo->prepare("UPDATE `enmi_inscripciones` SET `estado` = :estado, `fecha_actualizacion` = NOW() WHERE id = :id");
+        $stmtUp->execute([':estado' => $nuevoEstado, ':id' => $inscripcionId]);
+
+        $adminInfo = ($authUser['login'] ?? 'admin') . ' (' . ($authUser['rol'] ?? 'supervisor') . ')';
+        logInfo('inscripciones', 'actualizar_estado', "Estado de inscripción #{$inscripcionId} actualizado a '{$nuevoEstado}' por {$adminInfo}.", [
+            'inscripcion_id'  => $inscripcionId,
+            'estado_anterior' => $inscripcion['estado'],
+            'nuevo_estado'    => $nuevoEstado,
+            'admin'           => $adminInfo
+        ]);
+
+        sendJsonResponse([
+            'success'        => true,
+            'message'        => "Estado de la inscripción actualizado a '{$nuevoEstado}' correctamente.",
+            'inscripcion_id' => $inscripcionId,
+            'nuevo_estado'   => $nuevoEstado
+        ], 200);
+
+    } catch (Throwable $e) {
+        logError('inscripciones', 'error_actualizar_estado', $e->getMessage());
+        sendJsonResponse([
+            'success' => false,
+            'message' => 'Error al actualizar el estado de la inscripción: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+// Verificar que el método para consultas sea GET
+if ($requestMethod !== 'GET') {
+    sendJsonResponse([
+        'success' => false,
+        'message' => 'Método no permitido. Utilice GET para consultas o POST/PATCH para actualizar.'
+    ], 405);
 }
 
 try {

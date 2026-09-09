@@ -120,4 +120,37 @@ describe('InscripcionService', () => {
       data: []
     });
   });
+
+  it('should update inscription status to pagada', () => {
+    currentUserSignal.set({
+      id: 2,
+      login: 'supervisor',
+      email: 'supervisor@enmi2027.es',
+      rol: 'supervisor'
+    });
+
+    service.actualizarEstado(42, 'pagada').subscribe(res => {
+      expect(res.success).toBeTrue();
+      expect(res.nuevo_estado).toBe('pagada');
+    });
+
+    const req = httpMock.expectOne(`${environment.apiUrl}/inscripciones.php`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({
+      accion: 'actualizar_estado',
+      id: 42,
+      inscripcion_id: 42,
+      estado: 'pagada',
+      user_id: 2,
+      user_login: 'supervisor',
+      user_email: 'supervisor@enmi2027.es'
+    });
+
+    req.flush({
+      success: true,
+      message: "Estado de la inscripción actualizado a 'pagada' con éxito.",
+      inscripcion_id: 42,
+      nuevo_estado: 'pagada'
+    });
+  });
 });
