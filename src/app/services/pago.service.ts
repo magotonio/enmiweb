@@ -98,7 +98,7 @@ export class PagoService {
 
   /**
    * Registra un pago manual autorizado por supervisor o superadministrador.
-   * Crea un nuevo registro auditado en enmi_pagos y actualiza el estado a 'pagada'.
+   * Crea un nuevo registro auditado en enmi_pagos.
    */
   registrarPagoManual(request: PagoManualRequest): Observable<PagoManualResponse> {
     const currentUser = this.authService.currentUser();

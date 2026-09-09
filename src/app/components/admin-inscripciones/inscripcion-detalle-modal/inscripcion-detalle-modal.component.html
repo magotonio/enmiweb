@@ -43,7 +43,7 @@
           Datos Personales e Identidad
         </h4>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-          
+
           <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
             <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Nombre Completo</span>
             <span class="text-slate-900 font-bold text-sm mt-0.5 block">
@@ -52,52 +52,61 @@
           </div>
 
           <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Nombre Artístico</span>
+            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Nombre
+              Artístico</span>
             <span class="text-brand-navy font-bold text-sm mt-0.5 block">
               {{ item.nombre_artistico || 'Sin nombre artístico' }}
             </span>
           </div>
 
           <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">NIF / CIF / Pasaporte</span>
+            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">NIF / CIF /
+              Pasaporte</span>
             <span class="font-mono text-slate-900 font-bold text-sm mt-0.5 block">
               {{ item.nif_pasaporte || 'No registrado' }}
             </span>
           </div>
 
           <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Estado de la Plaza</span>
+            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Estado de la
+              Plaza</span>
             @if (item.estado === 'pagada' || item.estado === 'pagado') {
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-300 mt-1">
+            <span
+              class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-300 mt-1">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
               Pagada
             </span>
             } @else if (item.estado === 'pendiente') {
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-300 mt-1">
+            <span
+              class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-300 mt-1">
               <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
               Pendiente de pago
             </span>
             } @else if (item.estado === 'iniciada') {
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-sky-50 text-sky-700 border border-sky-300 mt-1">
+            <span
+              class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-sky-50 text-sky-700 border border-sky-300 mt-1">
               <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
               Iniciada
             </span>
             } @else if (item.estado === 'cancelada' || item.estado === 'cancelado') {
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-red-50 text-red-700 border border-red-300 mt-1">
+            <span
+              class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-red-50 text-red-700 border border-red-300 mt-1">
               <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
               Cancelada
             </span>
             } @else {
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-300 mt-1">
+            <span
+              class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-300 mt-1">
               {{ item.estado || 'activo' }}
             </span>
             }
 
             @if (isSupervisor() && item.estado !== 'pagada' && item.estado !== 'pagado' && !mostrarFormPagoManual()) {
-            <button type="button" (click)="abrirFormPagoManual()"
+            <button type="button" (click)="marcarInscripcionComoPagada()"
               class="mt-2 w-full inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-emerald-800 bg-emerald-100/80 hover:bg-emerald-200/90 border border-emerald-300 transition-colors cursor-pointer"
               title="Registrar cobro manual y marcar inscripción como pagada">
-              <svg class="w-3.5 h-3.5 text-emerald-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <svg class="w-3.5 h-3.5 text-emerald-700" xmlns="http://www.w3.org/2000/svg" fill="none"
+                viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
               <span>Marcar como Pagada</span>
@@ -115,9 +124,10 @@
           Contacto y Residencia
         </h4>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-          
+
           <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Correo Electrónico</span>
+            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Correo
+              Electrónico</span>
             <a href="mailto:{{ item.email }}" class="text-sky-700 font-bold text-sm mt-0.5 block hover:underline">
               {{ item.email || 'No registrado' }}
             </a>
@@ -125,20 +135,23 @@
 
           <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
             <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Teléfono Móvil</span>
-            <a href="tel:{{ item.telefono }}" class="text-slate-900 font-bold text-sm mt-0.5 block hover:text-brand-navy">
+            <a href="tel:{{ item.telefono }}"
+              class="text-slate-900 font-bold text-sm mt-0.5 block hover:text-brand-navy">
               {{ item.telefono || 'No registrado' }}
             </a>
           </div>
 
           <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Lugar de Residencia</span>
+            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Lugar de
+              Residencia</span>
             <span class="text-slate-900 font-semibold text-xs mt-0.5 block">
               {{ item.origen || 'No especificado' }}
             </span>
           </div>
 
           <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Asociación / Círculo Mágico</span>
+            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Asociación / Círculo
+              Mágico</span>
             <span class="text-slate-900 font-semibold text-xs mt-0.5 block">
               {{ item.asociacion || 'Ninguna / Independiente' }}
             </span>
@@ -162,8 +175,9 @@
             @if (isSupervisor()) {
             <button type="button" (click)="abrirFormPagoManual()" [disabled]="guardandoPagoManual()"
               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 shadow-xs transition-all cursor-pointer disabled:opacity-50"
-              title="Registrar cobro manual y marcar inscripción como pagada">
-              <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor">
+              title="Registrar pago manual">
+              <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                stroke-width="2.2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
               <span>Registrar Pago Manual</span>
@@ -173,8 +187,10 @@
             <button type="button" (click)="cargarPagos(item.id)" [disabled]="cargandoPagos()"
               class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold text-brand-navy hover:text-brand-gold-dark hover:bg-slate-100 transition-colors disabled:opacity-50 cursor-pointer"
               title="Refrescar estado de pagos">
-              <svg class="w-3.5 h-3.5" [class.animate-spin]="cargandoPagos()" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+              <svg class="w-3.5 h-3.5" [class.animate-spin]="cargandoPagos()" xmlns="http://www.w3.org/2000/svg"
+                fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
               </svg>
               <span class="hidden sm:inline">Actualizar</span>
             </button>
@@ -183,9 +199,12 @@
 
         <!-- Alerta de éxito tras registrar pago -->
         @if (mensajeExitoPagoManual()) {
-        <div class="mb-4 p-3.5 rounded-2xl bg-emerald-50 border border-emerald-300 text-xs text-emerald-900 flex items-start gap-2.5 animate-in fade-in duration-200">
-          <svg class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        <div
+          class="mb-4 p-3.5 rounded-2xl bg-emerald-50 border border-emerald-300 text-xs text-emerald-900 flex items-start gap-2.5 animate-in fade-in duration-200">
+          <svg class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" fill="none"
+            viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
           </svg>
           <div class="flex-1 font-medium leading-relaxed">
             {{ mensajeExitoPagoManual() }}
@@ -199,10 +218,12 @@
 
         <!-- Panel Desplegable de Registro Manual de Pago (Solo Supervisores) -->
         @if (mostrarFormPagoManual()) {
-        <div class="mb-5 p-5 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100/70 border-2 border-emerald-500/40 shadow-md space-y-4 animate-in zoom-in-98 duration-150">
+        <div
+          class="mb-5 p-5 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100/70 border-2 border-emerald-500/40 shadow-md space-y-4 animate-in zoom-in-98 duration-150">
           <div class="flex items-center justify-between gap-2 border-b border-slate-200 pb-3">
             <div class="flex items-center gap-2">
-              <span class="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+              <span
+                class="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
                 €
               </span>
               <div>
@@ -210,14 +231,15 @@
                   Registrar Cobro Manual de Inscripción
                 </h5>
                 <p class="text-[11px] text-slate-500">
-                  Crea un registro auditado en pagos y marca la inscripción #{{ item.id }} como pagada.
+                  Crea un registro auditado en el historial de pagos para la inscripción #{{ item.id }}.
                 </p>
               </div>
             </div>
             <button type="button" (click)="cancelarFormPagoManual()"
               class="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer"
               title="Cerrar formulario">
-              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -287,12 +309,13 @@
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <!-- Cantidad (€) -->
             <div class="sm:col-span-1">
-              <label for="inputCantidadPago" class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+              <label for="inputCantidadPago"
+                class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
                 Cantidad Cobrada (€) *
               </label>
               <div class="relative">
-                <input id="inputCantidadPago" type="number" step="0.01" min="0.01"
-                  [ngModel]="cantidadPagoManual()" (ngModelChange)="cantidadPagoManual.set($event)"
+                <input id="inputCantidadPago" type="number" step="0.01" min="0.01" [ngModel]="cantidadPagoManual()"
+                  (ngModelChange)="cantidadPagoManual.set($event)"
                   class="w-full px-3 py-2 pr-8 text-sm font-mono font-bold bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 shadow-2xs"
                   [placeholder]="tarifaInscripcion().toFixed(2)" />
                 <span class="absolute right-3 top-2 text-slate-400 font-bold text-sm">€</span>
@@ -301,24 +324,59 @@
 
             <!-- Notas y detalles del cobro -->
             <div class="sm:col-span-2">
-              <label for="inputNotasPago" class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+              <label for="inputNotasPago"
+                class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
                 Notas y Justificante de Cobro
               </label>
-              <input id="inputNotasPago" type="text"
-                [ngModel]="notasPagoManual()" (ngModelChange)="notasPagoManual.set($event)"
+              <input id="inputNotasPago" type="text" [ngModel]="notasPagoManual()"
+                (ngModelChange)="notasPagoManual.set($event)"
                 class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 shadow-2xs placeholder:text-slate-400"
                 placeholder="Ej. Apunte bancario con concepto ENMI 2027 Juan, o tel. Bizum..." />
             </div>
           </div>
 
+          <!-- Checkbox Destacado: Marcar como pagado -->
+          <div class="pt-1">
+            <label
+              class="flex items-start sm:items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer select-none shadow-2xs"
+              [class.bg-emerald-50/90]="marcarComoPagado()" [class.border-emerald-400]="marcarComoPagado()"
+              [class.ring-2]="marcarComoPagado()" [class.ring-emerald-200]="marcarComoPagado()"
+              [class.bg-white]="!marcarComoPagado()" [class.border-slate-200]="!marcarComoPagado()"
+              [class.hover:border-slate-300]="!marcarComoPagado()">
+              <input type="checkbox" id="checkboxMarcarComoPagado" [ngModel]="marcarComoPagado()"
+                (ngModelChange)="marcarComoPagado.set($event)"
+                class="mt-0.5 sm:mt-0 w-5 h-5 rounded text-emerald-600 border-slate-300 focus:ring-emerald-500 cursor-pointer transition-colors shrink-0" />
+              <div class="flex-1 min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-xs font-bold transition-colors" [class.text-emerald-900]="marcarComoPagado()"
+                    [class.text-slate-800]="!marcarComoPagado()">
+                    Marcar como pagado
+                  </span>
+                  <span
+                    class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-full transition-colors"
+                    [class.bg-emerald-100]="marcarComoPagado()" [class.text-emerald-800]="marcarComoPagado()"
+                    [class.border]="marcarComoPagado()" [class.border-emerald-200]="marcarComoPagado()"
+                    [class.bg-slate-100]="!marcarComoPagado()" [class.text-slate-600]="!marcarComoPagado()">
+                    Confirmar plaza
+                  </span>
+                </div>
+                <p class="text-[11px] mt-0.5 transition-colors" [class.text-emerald-700]="marcarComoPagado()"
+                  [class.text-slate-500]="!marcarComoPagado()">
+                  Actualiza el estado de la inscripción a pagada y plaza asegurada
+                </p>
+              </div>
+            </label>
+          </div>
+
           <!-- Checkbox Envío de Email -->
           <div class="pt-1">
             <label class="inline-flex items-center gap-2.5 cursor-pointer select-none">
-              <input type="checkbox"
-                [ngModel]="enviarEmailPagoManual()" (ngModelChange)="enviarEmailPagoManual.set($event)"
+              <input type="checkbox" [ngModel]="enviarEmailPagoManual()"
+                (ngModelChange)="enviarEmailPagoManual.set($event)"
                 class="w-4 h-4 rounded text-emerald-600 border-slate-300 focus:ring-emerald-500 cursor-pointer" />
               <span class="text-xs text-slate-700 font-medium">
-                Enviar correo electrónico oficial de confirmación de plaza al participante (<strong>{{ item.email }}</strong>)
+                Enviar correo electrónico oficial de confirmación de plaza al participante (<strong>{{ item.email
+                  }}</strong>)
               </span>
             </label>
           </div>
@@ -326,8 +384,10 @@
           <!-- Alerta de error si falla -->
           @if (errorPagoManual()) {
           <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-center gap-2">
-            <svg class="w-4 h-4 text-rose-600 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+            <svg class="w-4 h-4 text-rose-600 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none"
+              viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
             </svg>
             <span>{{ errorPagoManual() }}</span>
           </div>
@@ -345,11 +405,14 @@
               @if (guardandoPagoManual()) {
               <svg class="w-3.5 h-3.5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <path class="opacity-75" fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                </path>
               </svg>
               <span>Guardando cobro...</span>
               } @else {
-              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor">
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2"
+                stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
               </svg>
               <span>Confirmar y Registrar Pago</span>
@@ -360,18 +423,25 @@
         }
 
         @if (cargandoPagos()) {
-        <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center gap-3 text-slate-500 text-xs">
-          <svg class="w-4 h-4 animate-spin text-brand-gold" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <div
+          class="p-6 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center gap-3 text-slate-500 text-xs">
+          <svg class="w-4 h-4 animate-spin text-brand-gold" xmlns="http://www.w3.org/2000/svg" fill="none"
+            viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            <path class="opacity-75" fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+            </path>
           </svg>
           <span>Consultando registros de pago vinculados...</span>
         </div>
         } @else if (errorPagos()) {
-        <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-center justify-between gap-3">
+        <div
+          class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-center justify-between gap-3">
           <div class="flex items-center gap-2">
-            <svg class="w-4 h-4 text-rose-600 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+            <svg class="w-4 h-4 text-rose-600 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none"
+              viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
             </svg>
             <span>{{ errorPagos() }}</span>
           </div>
@@ -383,17 +453,21 @@
         } @else if (pagos().length === 0) {
         <div class="p-5 rounded-2xl bg-slate-50 border border-dashed border-slate-300 text-center">
           <div class="w-9 h-9 mx-auto rounded-xl bg-slate-200/70 text-slate-400 flex items-center justify-center mb-2">
-            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
             </svg>
           </div>
           <p class="text-xs font-bold text-slate-700">Sin pagos registrados</p>
-          <p class="text-[11px] text-slate-500 mt-0.5">Esta inscripción aún no cuenta con intentos o transacciones de pago en el sistema.</p>
+          <p class="text-[11px] text-slate-500 mt-0.5">Esta inscripción aún no cuenta con intentos o transacciones de
+            pago en el sistema.</p>
         </div>
         } @else {
         <div class="space-y-3">
           <!-- Barra resumen -->
-          <div class="p-3 px-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between flex-wrap gap-2 text-xs">
+          <div
+            class="p-3 px-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between flex-wrap gap-2 text-xs">
             <div class="flex items-center gap-2">
               <span class="text-slate-500 font-semibold text-[11px] uppercase tracking-wider">Total abonado:</span>
               <span class="font-mono font-black text-sm text-emerald-700">
@@ -412,12 +486,14 @@
               <div class="flex items-center justify-between gap-2 flex-wrap">
                 <div class="flex items-center gap-2 flex-wrap">
                   <!-- Badge modalidad -->
-                  <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold border {{ getBadgeModalidad(pago.modalidad_pago).class }}">
+                  <span
+                    class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold border {{ getBadgeModalidad(pago.modalidad_pago).class }}">
                     {{ getBadgeModalidad(pago.modalidad_pago).label }}
                   </span>
 
                   <!-- Badge estado -->
-                  <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border {{ getBadgeEstadoPago(pago.estado).class }}">
+                  <span
+                    class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border {{ getBadgeEstadoPago(pago.estado).class }}">
                     <span class="w-1.5 h-1.5 rounded-full {{ getBadgeEstadoPago(pago.estado).dotClass }}"></span>
                     {{ getBadgeEstadoPago(pago.estado).label }}
                   </span>
@@ -432,8 +508,10 @@
               <!-- Referencia y Fecha -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-2 border-t border-slate-200/80">
                 <div>
-                  <span class="text-slate-400 block text-[10px] uppercase font-semibold tracking-wider">Referencia</span>
-                  <span class="font-mono font-bold text-slate-800 select-all">{{ pago.referencia || ('#' + pago.id) }}</span>
+                  <span
+                    class="text-slate-400 block text-[10px] uppercase font-semibold tracking-wider">Referencia</span>
+                  <span class="font-mono font-bold text-slate-800 select-all">{{ pago.referencia || ('#' + pago.id)
+                    }}</span>
                 </div>
                 <div>
                   <span class="text-slate-400 block text-[10px] uppercase font-semibold tracking-wider">Fecha</span>
@@ -459,14 +537,19 @@
               <div class="pt-1">
                 <button type="button" (click)="toggleDetallePago(pago.id)"
                   class="text-[10px] font-bold text-brand-navy hover:text-brand-gold-dark inline-flex items-center gap-1 cursor-pointer">
-                  <span>{{ detallePagoExpandido() === pago.id ? 'Ocultar datos técnicos' : 'Ver detalles técnicos' }}</span>
-                  <svg class="w-3 h-3 transition-transform" [class.rotate-180]="detallePagoExpandido() === pago.id" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                  <span>{{ detallePagoExpandido() === pago.id ? 'Ocultar datos técnicos' : 'Ver detalles técnicos'
+                    }}</span>
+                  <svg class="w-3 h-3 transition-transform" [class.rotate-180]="detallePagoExpandido() === pago.id"
+                    xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd"
+                      d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
+                      clip-rule="evenodd" />
                   </svg>
                 </button>
 
                 @if (detallePagoExpandido() === pago.id) {
-                <div class="mt-2 p-3 rounded-xl bg-slate-900 text-slate-200 font-mono text-[10px] overflow-x-auto max-h-48 whitespace-pre leading-normal border border-slate-800">
+                <div
+                  class="mt-2 p-3 rounded-xl bg-slate-900 text-slate-200 font-mono text-[10px] overflow-x-auto max-h-48 whitespace-pre leading-normal border border-slate-800">
                   {{ formatJson(pago.datos_transaccion) }}
                 </div>
                 }
@@ -487,16 +570,16 @@
           Participación y Consentimientos
         </h4>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-          
-          <div class="p-3.5 rounded-xl border"
-            [class.bg-amber-50]="item.quiero_participar"
-            [class.border-amber-300]="item.quiero_participar"
-            [class.bg-slate-50]="!item.quiero_participar"
+
+          <div class="p-3.5 rounded-xl border" [class.bg-amber-50]="item.quiero_participar"
+            [class.border-amber-300]="item.quiero_participar" [class.bg-slate-50]="!item.quiero_participar"
             [class.border-slate-200]="!item.quiero_participar">
-            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Deseo de Participación</span>
+            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Deseo de
+              Participación</span>
             <div class="mt-1">
               @if (item.quiero_participar) {
-              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold text-amber-900 bg-amber-200/60">
+              <span
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold text-amber-900 bg-amber-200/60">
                 ⭐ SÍ, quiere participar activamente
               </span>
               } @else {
@@ -506,7 +589,8 @@
           </div>
 
           <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Derechos de Imagen</span>
+            <span class="text-slate-500 font-semibold block uppercase tracking-wider text-[10px]">Derechos de
+              Imagen</span>
             <div class="mt-1">
               @if (item.consentimiento_imagen) {
               <span class="text-emerald-700 font-bold flex items-center gap-1">
@@ -528,14 +612,16 @@
           <span class="w-2 h-2 rounded-full bg-brand-gold"></span>
           Comentarios y Observaciones
         </h4>
-        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 leading-relaxed whitespace-pre-line">
+        <div
+          class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 leading-relaxed whitespace-pre-line">
           {{ item.comentarios }}
         </div>
       </div>
       }
 
       <!-- Bloque 5: Auditoría y Metadatos Técnicos -->
-      <div class="p-4 rounded-2xl bg-slate-100/70 border border-slate-200/80 text-[11px] text-slate-600 grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div
+        class="p-4 rounded-2xl bg-slate-100/70 border border-slate-200/80 text-[11px] text-slate-600 grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <strong class="text-slate-700 block">Fecha y Hora de Creación:</strong>
           <span>{{ item.fecha_creacion | date:"EEEE, d 'de' MMMM 'de' yyyy, HH:mm:ss":'':'es' }}</span>
@@ -552,8 +638,10 @@
     <div class="bg-slate-50 p-4 px-6 border-t border-brand-silver/30 flex items-center justify-between gap-3">
       <a href="mailto:{{ item.email }}"
         class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-brand-navy bg-brand-gold/20 hover:bg-brand-gold/30 rounded-xl transition-colors">
-        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+          stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
         </svg>
         <span>Contactar por email</span>
       </a>

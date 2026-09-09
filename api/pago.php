@@ -900,21 +900,7 @@ if ($method === 'POST') {
                 'notas_admin'     => $notasSupervisor
             ];
 
-            // 1. Actualizar estado de la inscripción a 'pagada'
-            $stmtUpIns = $pdo->prepare("UPDATE `enmi_inscripciones` SET `estado` = 'pagada' WHERE id = :id");
-            $stmtUpIns->execute([':id' => $inscripcionId]);
-
-            // 2. Si existían órdenes 'pendiente' previas, marcarlas como canceladas/resueltas con nota
-            $stmtPendientes = $pdo->prepare("
-                UPDATE `enmi_pagos` 
-                SET `estado` = 'cancelado',
-                    `notas` = CONCAT(IFNULL(notas, ''), ' [Saldado mediante pago manual #{$referencia}]'),
-                    `fecha_actualizacion` = NOW()
-                WHERE inscripcion_id = :inscripcion_id AND estado = 'pendiente'
-            ");
-            $stmtPendientes->execute([':inscripcion_id' => $inscripcionId]);
-
-            // 3. Registrar el nuevo pago en 'enmi_pagos' con estado 'pagado'
+            // 1. Registrar el nuevo pago en 'enmi_pagos' con estado 'pagado'
             $pagoId = registrarPago(
                 $pdo,
                 $inscripcionId,
@@ -936,7 +922,7 @@ if ($method === 'POST') {
                 'admin'          => $adminInfo
             ]);
 
-            // 4. Envío opcional de email de confirmación de pago al participante
+            // 3. Envío opcional de email de confirmación de pago al participante
             $emailEnviado = false;
             $emailMensaje = null;
             if ($enviarEmail && !empty($inscripcion['email'])) {
@@ -953,7 +939,7 @@ if ($method === 'POST') {
                     'quiero_participar'     => (bool)$inscripcion['quiero_participar'],
                     'consentimiento_imagen' => (bool)$inscripcion['consentimiento_imagen'],
                     'comentarios'           => $inscripcion['comentarios'] ?? null,
-                    'estado'                => 'pagada',
+                    'estado'                => $inscripcion['estado'],
                     'modalidad_pago'        => $modalidad,
                     'pago_confirmado'       => true,
                     'ip_registro'           => $inscripcion['ip_registro'] ?? null,
@@ -979,9 +965,9 @@ if ($method === 'POST') {
 
             sendJsonResponse([
                 'success'        => true,
-                'message'        => 'Pago registrado con éxito y la inscripción ha sido marcada como pagada.',
+                'message'        => 'Pago registrado con éxito.',
                 'inscripcion_id' => $inscripcionId,
-                'nuevo_estado'   => 'pagada',
+                'nuevo_estado'   => $inscripcion['estado'],
                 'pago_id'        => $pagoId,
                 'pago'           => [
                     'id'                  => (int)$pagoId,

@@ -48,6 +48,7 @@ export class InscripcionDetalleModalComponent implements OnInit, OnChanges {
   readonly cantidadPagoManual = signal<number>(TARIFA_DEFECTO);
   readonly notasPagoManual = signal<string>('');
   readonly enviarEmailPagoManual = signal<boolean>(true);
+  readonly marcarComoPagado = signal<boolean>(false);
   readonly guardandoPagoManual = signal<boolean>(false);
   readonly errorPagoManual = signal<string | null>(null);
   readonly mensajeExitoPagoManual = signal<string | null>(null);
@@ -184,9 +185,11 @@ export class InscripcionDetalleModalComponent implements OnInit, OnChanges {
       case 'pagada':
         return { label: 'Pagado', class: 'bg-emerald-50 text-emerald-700 border-emerald-300', dotClass: 'bg-emerald-500' };
       case 'no-pagado':
+        return { label: 'No pagado', class: 'bg-rose-50 text-rose-700 border-rose-300', dotClass: 'bg-rose-500' };
       case 'fallido':
+        return { label: 'Fallido', class: 'bg-rose-50 text-rose-700 border-rose-300', dotClass: 'bg-rose-500' };
       case 'denegado':
-        return { label: 'No pagado / Denegado', class: 'bg-rose-50 text-rose-700 border-rose-300', dotClass: 'bg-rose-500' };
+        return { label: 'Denegado', class: 'bg-rose-50 text-rose-700 border-rose-300', dotClass: 'bg-rose-500' };
       case 'pendiente':
         return { label: 'Pendiente', class: 'bg-amber-50 text-amber-800 border-amber-300', dotClass: 'bg-amber-500' };
       case 'iniciada':
@@ -217,6 +220,10 @@ export class InscripcionDetalleModalComponent implements OnInit, OnChanges {
     this.errorPagoManual.set(null);
   }
 
+  marcarInscripcionComoPagada(): void {
+
+  }
+
   confirmarPagoManual(): void {
     if (!this.inscripcion?.id || this.guardandoPagoManual()) {
       return;
@@ -241,18 +248,18 @@ export class InscripcionDetalleModalComponent implements OnInit, OnChanges {
       modalidad,
       cantidad,
       notas,
-      enviar_email: enviarEmail
+      enviar_email: enviarEmail,
     };
 
     this.pagoService.registrarPagoManual(request).subscribe({
       next: (res) => {
         this.guardandoPagoManual.set(false);
         if (res.success) {
-          // Actualizar el estado de la inscripción en el modal local
-          if (this.inscripcion) {
+          // Actualizar el estado de la inscripción en el modal local si cambia
+          if (this.inscripcion && res.nuevo_estado) {
             this.inscripcion = {
               ...this.inscripcion,
-              estado: 'pagada'
+              estado: res.nuevo_estado
             };
             this.inscripcionActualizada.emit(this.inscripcion);
           }
@@ -267,7 +274,7 @@ export class InscripcionDetalleModalComponent implements OnInit, OnChanges {
             this.cargarPagos(this.inscripcion!.id);
           }
 
-          let msg = res.message || 'Pago registrado y plaza marcada como pagada con éxito.';
+          let msg = res.message || 'Pago registrado con éxito.';
           if (res.email_enviado) {
             msg += ' Correo oficial de confirmación enviado al participante.';
           }
