@@ -26,8 +26,8 @@
         {{ serverError() }}
       </p>
       <div class="pt-1 text-xs text-amber-800/90 flex items-center gap-1.5 border-t border-amber-200/70 mt-2">
-        <svg class="w-4 h-4 shrink-0 text-amber-600" xmlns="http://www.w3.org/2000/svg" fill="none"
-          viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+        <svg class="w-4 h-4 shrink-0 text-amber-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+          stroke-width="2" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round"
             d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
         </svg>
@@ -40,8 +40,8 @@
   <div
     class="flex items-start gap-3.5 p-4 sm:p-5 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm shadow-sm transition-all"
     role="alert">
-    <svg class="w-5 h-5 text-red-500 shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <svg class="w-5 h-5 text-red-500 shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="10"></circle>
       <line x1="12" y1="8" x2="12" y2="12"></line>
       <line x1="12" y1="16" x2="12.01" y2="16"></line>
@@ -84,14 +84,12 @@
             [class.focus:ring-brand-gold/30]="!isFieldInvalid('nombre')"
             [class.border-red-400]="isFieldInvalid('nombre')" [class.bg-red-50/30]="isFieldInvalid('nombre')"
             [class.focus:border-red-500]="isFieldInvalid('nombre')"
-            [class.focus:ring-red-500/20]="isFieldInvalid('nombre')" placeholder="Ej. Félix"
-            autocomplete="given-name" [attr.aria-invalid]="isFieldInvalid('nombre')"
-            aria-describedby="nombreError">
+            [class.focus:ring-red-500/20]="isFieldInvalid('nombre')" placeholder="Ej. Félix" autocomplete="given-name"
+            [attr.aria-invalid]="isFieldInvalid('nombre')" aria-describedby="nombreError">
         </div>
         <div class="min-h-[1.25rem]">
           @if (isFieldInvalid('nombre')) {
-          <span class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600" id="nombreError"
-            role="alert">
+          <span class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600" id="nombreError" role="alert">
             <svg class="w-3.5 h-3.5 shrink-0 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
               fill="currentColor">
               <path fill-rule="evenodd"
@@ -116,8 +114,7 @@
             [class.hover:border-brand-silver-muted]="!isFieldInvalid('apellidos')"
             [class.focus:border-brand-navy]="!isFieldInvalid('apellidos')"
             [class.focus:ring-brand-gold/30]="!isFieldInvalid('apellidos')"
-            [class.border-red-400]="isFieldInvalid('apellidos')"
-            [class.bg-red-50/30]="isFieldInvalid('apellidos')"
+            [class.border-red-400]="isFieldInvalid('apellidos')" [class.bg-red-50/30]="isFieldInvalid('apellidos')"
             [class.focus:border-red-500]="isFieldInvalid('apellidos')"
             [class.focus:ring-red-500/20]="isFieldInvalid('apellidos')" placeholder="Ej. García Lucas"
             autocomplete="family-name" [attr.aria-invalid]="isFieldInvalid('apellidos')"
@@ -169,14 +166,12 @@
             [class.border-red-400]="isFieldInvalid('nif_pasaporte')"
             [class.bg-red-50/30]="isFieldInvalid('nif_pasaporte')"
             [class.focus:border-red-500]="isFieldInvalid('nif_pasaporte')"
-            [class.focus:ring-red-500/20]="isFieldInvalid('nif_pasaporte')"
-            placeholder="Ej. 12345678Z o Pasaporte" autocomplete="off"
-            [attr.aria-invalid]="isFieldInvalid('nif_pasaporte')" aria-describedby="nifError">
+            [class.focus:ring-red-500/20]="isFieldInvalid('nif_pasaporte')" placeholder="Ej. 12345678Z o Pasaporte"
+            autocomplete="off" [attr.aria-invalid]="isFieldInvalid('nif_pasaporte')" aria-describedby="nifError">
         </div>
         <div class="min-h-[1.25rem]">
           @if (isFieldInvalid('nif_pasaporte')) {
-          <span class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600" id="nifError"
-            role="alert">
+          <span class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600" id="nifError" role="alert">
             <svg class="w-3.5 h-3.5 shrink-0 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
               fill="currentColor">
               <path fill-rule="evenodd"
@@ -219,16 +214,14 @@
             [class.border-brand-silver]="!isFieldInvalid('email')"
             [class.hover:border-brand-silver-muted]="!isFieldInvalid('email')"
             [class.focus:border-brand-navy]="!isFieldInvalid('email')"
-            [class.focus:ring-brand-gold/30]="!isFieldInvalid('email')"
-            [class.border-red-400]="isFieldInvalid('email')" [class.bg-red-50/30]="isFieldInvalid('email')"
-            [class.focus:border-red-500]="isFieldInvalid('email')"
-            [class.focus:ring-red-500/20]="isFieldInvalid('email')" placeholder="ejemplo@mago.es"
-            autocomplete="email" [attr.aria-invalid]="isFieldInvalid('email')" aria-describedby="emailError">
+            [class.focus:ring-brand-gold/30]="!isFieldInvalid('email')" [class.border-red-400]="isFieldInvalid('email')"
+            [class.bg-red-50/30]="isFieldInvalid('email')" [class.focus:border-red-500]="isFieldInvalid('email')"
+            [class.focus:ring-red-500/20]="isFieldInvalid('email')" placeholder="ejemplo@mago.es" autocomplete="email"
+            [attr.aria-invalid]="isFieldInvalid('email')" aria-describedby="emailError">
         </div>
         <div class="min-h-[1.25rem]">
           @if (isFieldInvalid('email')) {
-          <span class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600" id="emailError"
-            role="alert">
+          <span class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600" id="emailError" role="alert">
             <svg class="w-3.5 h-3.5 shrink-0 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
               fill="currentColor">
               <path fill-rule="evenodd"
@@ -277,8 +270,7 @@
       <!-- Campo Localidad / Provincia / País de residencia -->
       <div class="flex flex-col gap-1.5">
         <label for="origen" class="text-sm font-semibold text-brand-navy inline-flex items-center gap-1">
-          Localidad / Provincia / País de residencia <span class="text-red-500 font-bold"
-            aria-hidden="true">*</span>
+          Localidad / Provincia / País de residencia <span class="text-red-500 font-bold" aria-hidden="true">*</span>
         </label>
         <div class="relative">
           <input #origenInput type="text" id="origen" formControlName="origen"
@@ -294,8 +286,7 @@
         </div>
         <div class="min-h-[1.25rem]">
           @if (isFieldInvalid('origen')) {
-          <span class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600" id="origenError"
-            role="alert">
+          <span class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600" id="origenError" role="alert">
             <svg class="w-3.5 h-3.5 shrink-0 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
               fill="currentColor">
               <path fill-rule="evenodd"
@@ -310,8 +301,7 @@
 
       <!-- Campo Asociación o círculo mágico -->
       <div class="flex flex-col gap-1.5">
-        <label for="asociacion"
-          class="text-sm font-semibold text-brand-navy inline-flex items-center justify-between">
+        <label for="asociacion" class="text-sm font-semibold text-brand-navy inline-flex items-center justify-between">
           <span>Asociación o círculo mágico</span>
           <span class="text-xs font-normal text-slate-500 italic">Opcional</span>
         </label>
@@ -359,8 +349,8 @@
       <button type="button" (click)="openParticipacionModal()"
         class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-brand-navy bg-brand-gold/20 hover:bg-brand-gold/30 border border-brand-gold/50 rounded-xl transition-colors shrink-0 cursor-pointer shadow-2xs self-start sm:self-center"
         title="Ver opciones de participación (orientativo)">
-        <svg class="w-4 h-4 text-brand-gold-dark" xmlns="http://www.w3.org/2000/svg" fill="none"
-          viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+        <svg class="w-4 h-4 text-brand-gold-dark" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+          stroke-width="2" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round"
             d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
         </svg>
@@ -389,8 +379,7 @@
     </legend>
 
     <div class="flex flex-col gap-1.5 mt-3">
-      <label for="comentarios"
-        class="text-sm font-semibold text-brand-navy inline-flex items-center justify-between">
+      <label for="comentarios" class="text-sm font-semibold text-brand-navy inline-flex items-center justify-between">
         <span>Observaciones, necesidades especiales o mensaje</span>
         <span class="text-xs font-normal text-slate-500 italic">Opcional</span>
       </label>
@@ -482,8 +471,8 @@
       } @else {
       <span>Inscribirme y ver opciones de pago</span>
       <svg class="w-5 h-5 text-brand-gold transition-transform duration-200 group-hover:translate-x-1"
-        xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round">
         <rect width="20" height="14" x="2" y="5" rx="2" />
         <line x1="2" x2="22" y1="10" y2="10" />
       </svg>
@@ -533,14 +522,6 @@
 
     <!-- Contenido con Scroll -->
     <div class="p-6 overflow-y-auto space-y-4 text-slate-700 text-sm">
-      <div
-        class="p-3.5 rounded-2xl bg-brand-navy-soft/60 border border-brand-navy/10 text-xs text-slate-700 leading-relaxed">
-        <strong class="text-brand-navy font-bold block mb-1">Información de carácter orientativo:</strong>
-        El ENMI es un espacio abierto a la colaboración de la comunidad mágica. Si marcas la casilla <strong>«Quiero
-          participar activamente»</strong>, esta guía te muestra las áreas en las que puedes involucrarte. Más adelante,
-        la organización se pondrá en contacto contigo para explicarte todo detenidamente y coordinar los detalles.
-      </div>
-
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
 
         <!-- Opción 1: Concurso -->
@@ -552,7 +533,8 @@
               <span>Concurso</span>
             </div>
             <p class="text-xs text-slate-600 leading-relaxed">
-              Certamen participativo y lúdico de magia infantil. Un espacio formativo y cercano para compartir.
+              Atrévete a subirte al escenario, comparte tu mejor rutina infantil y crece con el cariño y consejo de tus
+              compañeros.
             </p>
           </div>
         </div>

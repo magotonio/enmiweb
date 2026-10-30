@@ -23,7 +23,7 @@ VALUES
   ('pago_transferencia_titular', 'Asociación ENMI 2027 / Eutikea', 'Titular de la cuenta bancaria para transferencias', NOW()),
   ('pago_transferencia_banco', 'Banco Santander', 'Nombre de la entidad bancaria para transferencias', NOW()),
   ('pago_transferencia_concepto', 'ENMI-2027-{ID}-{APELLIDOS}', 'Plantilla del concepto bancario ({ID} y {APELLIDOS} se sustituyen dinámicamente)', NOW()),
-  ('pago_otras_modalidades_texto', 'Si necesitas otra forma de pago (efectivo durante la acreditación, pago fraccionado, etc.), nos pondremos en contacto contigo personalmente a través de tu teléfono o email para acordarlo.', 'Texto informativo para la opción de otras modalidades de pago', NOW()),
+  ('pago_otras_modalidades_texto', 'Para otra forma de pago, nos pondremos en contacto contigo personalmente a través de tu teléfono o email.', 'Texto informativo para la opción de otras modalidades de pago', NOW()),
   ('pago_redsys_entorno', 'sandbox', 'Entorno de la pasarela Redsys: sandbox (pruebas) o produccion', NOW()),
   ('pago_redsys_fuc', '999008881', 'Código de comercio FUC proporcionado por Redsys / Banco', NOW()),
   ('pago_redsys_terminal', '1', 'Número de terminal asignado por Redsys', NOW()),

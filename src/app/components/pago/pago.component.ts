@@ -136,7 +136,7 @@ export class PagoComponent implements OnInit {
             concepto_template: 'ENMI-2027-{ID}-{APELLIDOS}'
           },
           otras: {
-            texto: 'Si necesitas otra forma de pago, nos pondremos en contacto contigo por teléfono o email para coordinarlo.'
+            texto: 'Para otra forma de pago, nos pondremos en contacto contigo personalmente a través de tu teléfono o email.'
           },
           redsys: {
             entorno: 'sandbox',

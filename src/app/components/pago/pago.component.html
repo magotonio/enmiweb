@@ -28,11 +28,13 @@
           Inscripción <strong class="text-brand-navy">#ENMI-{{ registeredId() }}</strong> a nombre de <strong
             class="text-brand-navy">{{ registeredFullName() }}</strong> &bull; Cuota:
           @if (descuentoInfo()) {
-            <span class="line-through text-slate-400 text-sm mr-1.5">{{ pagoConfig()?.importe || '250.00' }} €</span>
-            <strong class="text-emerald-700 text-lg">{{ importeFinalStr() }} €</strong>
-            <span class="ml-1.5 text-xs font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-2 py-0.5 rounded-full">(-{{ descuentoInfo()?.descuento_str }} €)</span>
+          <span class="line-through text-slate-400 text-sm mr-1.5">{{ pagoConfig()?.importe || '250.00' }} €</span>
+          <strong class="text-emerald-700 text-lg">{{ importeFinalStr() }} €</strong>
+          <span
+            class="ml-1.5 text-xs font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-2 py-0.5 rounded-full">(-{{
+            descuentoInfo()?.descuento_str }} €)</span>
           } @else {
-            <strong class="text-brand-gold-dark text-lg">{{ pagoConfig()?.importe || '250.00' }} €</strong>
+          <strong class="text-brand-gold-dark text-lg">{{ pagoConfig()?.importe || '250.00' }} €</strong>
           }
         </p>
         } @else {
@@ -97,13 +99,16 @@
             class="bg-white/10 border border-white/15 px-4 py-3 rounded-xl text-right shrink-0 w-full sm:w-auto flex sm:flex-col justify-between items-center sm:items-end">
             <span class="text-[11px] font-bold uppercase tracking-wider text-brand-gold">Total a abonar</span>
             @if (descuentoInfo()) {
-              <div class="flex items-baseline gap-2">
-                <span class="text-xs sm:text-sm line-through text-slate-400 font-mono">{{ pagoConfig()?.importe || '250.00' }} €</span>
-                <span class="text-2xl sm:text-3xl font-black text-emerald-400 font-mono">{{ importeFinalStr() }} €</span>
-              </div>
-              <span class="text-[10px] font-semibold text-emerald-300">Descuento: -{{ descuentoInfo()?.descuento_str }} €</span>
+            <div class="flex items-baseline gap-2">
+              <span class="text-xs sm:text-sm line-through text-slate-400 font-mono">{{ pagoConfig()?.importe ||
+                '250.00' }} €</span>
+              <span class="text-2xl sm:text-3xl font-black text-emerald-400 font-mono">{{ importeFinalStr() }} €</span>
+            </div>
+            <span class="text-[10px] font-semibold text-emerald-300">Descuento: -{{ descuentoInfo()?.descuento_str }}
+              €</span>
             } @else {
-              <span class="text-2xl sm:text-3xl font-black text-white font-mono">{{ pagoConfig()?.importe || '250.00' }} €</span>
+            <span class="text-2xl sm:text-3xl font-black text-white font-mono">{{ pagoConfig()?.importe || '250.00' }}
+              €</span>
             }
           </div>
         </div>
@@ -115,82 +120,77 @@
           <div class="flex items-center justify-between gap-2 flex-wrap">
             <div class="flex items-center gap-2">
               <span class="text-xl">🎟️</span>
-              <label for="codigoDescuentoInput" class="text-xs sm:text-sm font-extrabold text-brand-navy tracking-tight">
+              <label for="codigoDescuentoInput"
+                class="text-xs sm:text-sm font-extrabold text-brand-navy tracking-tight">
                 ¿Tienes un código de descuento?
               </label>
             </div>
             @if (descuentoInfo()) {
-              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
-                <span>✓</span> Cupón: {{ descuentoInfo()?.token }} (-{{ descuentoInfo()?.descuento_str }} €)
-              </span>
+            <span
+              class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+              <span>✓</span> Cupón: {{ descuentoInfo()?.token }} (-{{ descuentoInfo()?.descuento_str }} €)
+            </span>
             }
           </div>
 
           @if (!descuentoInfo()) {
-            <div class="flex flex-col sm:flex-row gap-2.5">
-              <div class="relative flex-1">
-                <input
-                  type="text"
-                  id="codigoDescuentoInput"
-                  name="codigoDescuento"
-                  [(ngModel)]="codigoDescuentoInput"
-                  (keyup.enter)="aplicarDescuento()"
-                  placeholder="Introduce tu código de descuento"
-                  [disabled]="isValidatingDescuento() || isProcessingPayment()"
-                  class="w-full px-4 py-2.5 text-xs sm:text-sm font-mono uppercase font-bold tracking-wider rounded-xl border-2 border-slate-200 focus:border-brand-gold focus:ring-2 focus:ring-brand-gold/20 outline-hidden transition-all placeholder:font-sans placeholder:normal-case placeholder:font-normal placeholder:text-slate-400 disabled:bg-slate-100 disabled:opacity-70"
-                />
-              </div>
-              <button
-                type="button"
-                id="aplicarDescuentoBtn"
-                (click)="aplicarDescuento()"
-                [disabled]="isValidatingDescuento() || isProcessingPayment() || !codigoDescuentoInput().trim()"
-                class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-brand-navy hover:bg-brand-navy-dark text-white text-xs sm:text-sm font-extrabold rounded-xl shadow-xs transition-all active:scale-98 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-              >
-                @if (isValidatingDescuento()) {
-                  <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                  <span>Comprobando...</span>
-                } @else {
-                  <span>Aplicar descuento</span>
-                }
-              </button>
+          <div class="flex flex-col sm:flex-row gap-2.5">
+            <div class="relative flex-1">
+              <input type="text" id="codigoDescuentoInput" name="codigoDescuento" [(ngModel)]="codigoDescuentoInput"
+                (keyup.enter)="aplicarDescuento()" placeholder="Introduce tu código de descuento"
+                [disabled]="isValidatingDescuento() || isProcessingPayment()"
+                class="w-full px-4 py-2.5 text-xs sm:text-sm font-mono uppercase font-bold tracking-wider rounded-xl border-2 border-slate-200 focus:border-brand-gold focus:ring-2 focus:ring-brand-gold/20 outline-hidden transition-all placeholder:font-sans placeholder:normal-case placeholder:font-normal placeholder:text-slate-400 disabled:bg-slate-100 disabled:opacity-70" />
             </div>
+            <button type="button" id="aplicarDescuentoBtn" (click)="aplicarDescuento()"
+              [disabled]="isValidatingDescuento() || isProcessingPayment() || !codigoDescuentoInput().trim()"
+              class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-brand-navy hover:bg-brand-navy-dark text-white text-xs sm:text-sm font-extrabold rounded-xl shadow-xs transition-all active:scale-98 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0">
+              @if (isValidatingDescuento()) {
+              <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              <span>Comprobando...</span>
+              } @else {
+              <span>Aplicar descuento</span>
+              }
+            </button>
+          </div>
           } @else {
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-emerald-50/80 border border-emerald-300 rounded-xl p-3.5">
-              <div class="space-y-0.5">
-                <div class="flex items-center gap-2">
-                  <strong class="text-xs sm:text-sm font-black text-emerald-950 font-mono tracking-wider">{{ descuentoInfo()?.token }}</strong>
-                  <span class="text-[11px] font-bold text-emerald-800 bg-emerald-200/70 px-2 py-0.5 rounded-md">
-                    -{{ descuentoInfo()?.descuento_str }} €
-                  </span>
-                </div>
-                <p class="text-xs text-emerald-900">
-                  {{ descuentoExito() || 'Código de descuento aplicado correctamente.' }}
-                </p>
+          <div
+            class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-emerald-50/80 border border-emerald-300 rounded-xl p-3.5">
+            <div class="space-y-0.5">
+              <div class="flex items-center gap-2">
+                <strong class="text-xs sm:text-sm font-black text-emerald-950 font-mono tracking-wider">{{
+                  descuentoInfo()?.token }}</strong>
+                <span class="text-[11px] font-bold text-emerald-800 bg-emerald-200/70 px-2 py-0.5 rounded-md">
+                  -{{ descuentoInfo()?.descuento_str }} €
+                </span>
               </div>
-              <button
-                type="button"
-                id="quitarDescuentoBtn"
-                (click)="quitarDescuento()"
-                [disabled]="isProcessingPayment()"
-                class="text-xs font-bold text-red-600 hover:text-red-800 hover:underline cursor-pointer flex items-center gap-1 shrink-0"
-              >
-                <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                </svg>
-                <span>Quitar descuento</span>
-              </button>
+              <p class="text-xs text-emerald-900">
+                {{ descuentoExito() || 'Código de descuento aplicado correctamente.' }}
+              </p>
             </div>
+            <button type="button" id="quitarDescuentoBtn" (click)="quitarDescuento()" [disabled]="isProcessingPayment()"
+              class="text-xs font-bold text-red-600 hover:text-red-800 hover:underline cursor-pointer flex items-center gap-1 shrink-0">
+              <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+              <span>Quitar descuento</span>
+            </button>
+          </div>
           }
 
           <!-- Mensaje de aviso/error si el código no es válido o no está disponible -->
           @if (descuentoError()) {
-            <div class="flex items-center gap-2 p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 text-xs font-semibold animate-in fade-in duration-200" role="alert">
-              <svg class="w-4 h-4 text-amber-600 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
-              </svg>
-              <span>{{ descuentoError() }}</span>
-            </div>
+          <div
+            class="flex items-center gap-2 p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 text-xs font-semibold animate-in fade-in duration-200"
+            role="alert">
+            <svg class="w-4 h-4 text-amber-600 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+              fill="currentColor">
+              <path fill-rule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
+                clip-rule="evenodd" />
+            </svg>
+            <span>{{ descuentoError() }}</span>
+          </div>
           }
         </div>
 
@@ -309,7 +309,7 @@
                 class="mt-1 w-4 h-4 text-brand-gold focus:ring-brand-gold cursor-pointer">
             </div>
             <p class="text-xs text-slate-600 leading-relaxed">
-              ¿Efectivo en acreditación, pago en plazos u otra situación? Nos pondremos en contacto contigo.
+              Para otra modalidad de pago, nos pondremos en contacto contigo.
             </p>
           </div>
 
@@ -346,10 +346,11 @@
                 <span class="text-slate-500 font-medium">Importe a pagar:</span>
                 <div class="text-right font-mono">
                   @if (descuentoInfo()) {
-                    <span class="line-through text-slate-400 text-xs mr-1.5">{{ pagoConfig()?.importe || '250.00' }} €</span>
-                    <span class="font-extrabold text-emerald-700 text-sm">{{ importeFinalStr() }} €</span>
+                  <span class="line-through text-slate-400 text-xs mr-1.5">{{ pagoConfig()?.importe || '250.00' }}
+                    €</span>
+                  <span class="font-extrabold text-emerald-700 text-sm">{{ importeFinalStr() }} €</span>
                   } @else {
-                    <span class="font-extrabold text-brand-navy text-sm">{{ pagoConfig()?.importe || '250.00' }} €</span>
+                  <span class="font-extrabold text-brand-navy text-sm">{{ pagoConfig()?.importe || '250.00' }} €</span>
                   }
                 </div>
               </div>
@@ -423,7 +424,8 @@
                 <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Número de Teléfono
                   Bizum</span>
                 <div class="flex items-center justify-between gap-2">
-                  <span class="text-base font-black text-brand-navy font-mono">{{ pagoConfig()?.bizum?.telefono || '+34 600 000 000' }}</span>
+                  <span class="text-base font-black text-brand-navy font-mono">{{ pagoConfig()?.bizum?.telefono || '+34
+                    600 000 000' }}</span>
                   <button type="button"
                     (click)="copyToClipboard(pagoConfig()?.bizum?.telefono || '+34 600 000 000', 'bizumTel')"
                     class="px-2.5 py-1 text-xs font-semibold rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer">
@@ -435,7 +437,8 @@
               <!-- Beneficiario -->
               <div class="bg-white p-4 rounded-xl border border-slate-200 flex flex-col justify-between gap-2">
                 <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Beneficiario</span>
-                <span class="font-bold text-slate-800">{{ pagoConfig()?.bizum?.beneficiario || 'Encuentro Nacional de Magos Infantiles' }}</span>
+                <span class="font-bold text-slate-800">{{ pagoConfig()?.bizum?.beneficiario || 'Encuentro Nacional de
+                  Magos Infantiles' }}</span>
               </div>
 
               <!-- Importe -->
@@ -443,10 +446,11 @@
                 <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Importe Exacto</span>
                 <div class="font-mono">
                   @if (descuentoInfo()) {
-                    <span class="line-through text-slate-400 text-xs mr-2">{{ pagoConfig()?.importe || '250.00' }} €</span>
-                    <span class="text-lg font-black text-emerald-700">{{ importeFinalStr() }} €</span>
+                  <span class="line-through text-slate-400 text-xs mr-2">{{ pagoConfig()?.importe || '250.00' }}
+                    €</span>
+                  <span class="text-lg font-black text-emerald-700">{{ importeFinalStr() }} €</span>
                   } @else {
-                    <span class="text-lg font-black text-brand-gold-dark">{{ pagoConfig()?.importe || '250.00' }} €</span>
+                  <span class="text-lg font-black text-brand-gold-dark">{{ pagoConfig()?.importe || '250.00' }} €</span>
                   }
                 </div>
               </div>
@@ -457,7 +461,8 @@
                 <span class="text-amber-900 font-bold uppercase tracking-wider text-[10px]">Concepto Obligatorio del
                   Bizum</span>
                 <div class="flex items-center justify-between gap-2">
-                  <span class="text-sm font-black text-amber-950 font-mono tracking-wide">{{ getConceptoPersonalizado() }}</span>
+                  <span class="text-sm font-black text-amber-950 font-mono tracking-wide">{{ getConceptoPersonalizado()
+                    }}</span>
                   <button type="button" (click)="copyToClipboard(getConceptoPersonalizado(), 'bizumConcepto')"
                     class="px-3 py-1.5 text-xs font-bold rounded-lg border border-amber-300 bg-amber-100 text-amber-950 hover:bg-amber-200 transition-colors cursor-pointer">
                     {{ copiedField() === 'bizumConcepto' ? '✓ ¡Copiado!' : 'Copiar Concepto' }}
@@ -490,7 +495,8 @@
             <div class="flex items-center gap-3">
               <span class="text-2xl">🏦</span>
               <div>
-                <h4 class="text-base sm:text-lg font-extrabold text-brand-navy">Datos para la Transferencia Bancaria</h4>
+                <h4 class="text-base sm:text-lg font-extrabold text-brand-navy">Datos para la Transferencia Bancaria
+                </h4>
                 <p class="text-xs text-slate-500">Puedes realizar una transferencia ordinaria o inmediata desde tu
                   entidad.</p>
               </div>
@@ -518,13 +524,15 @@
               <div class="bg-white p-4 rounded-xl border border-slate-200 flex flex-col justify-between gap-2">
                 <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Titular /
                   Beneficiario</span>
-                <span class="font-bold text-slate-800">{{ pagoConfig()?.transferencia?.titular || 'Asociación ENMI 2027' }}</span>
+                <span class="font-bold text-slate-800">{{ pagoConfig()?.transferencia?.titular || 'Asociación ENMI 2027'
+                  }}</span>
               </div>
 
               <!-- Entidad Bancaria -->
               <div class="bg-white p-4 rounded-xl border border-slate-200 flex flex-col justify-between gap-2">
                 <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Entidad Bancaria</span>
-                <span class="font-bold text-slate-800">{{ pagoConfig()?.transferencia?.banco || 'Banco Santander' }}</span>
+                <span class="font-bold text-slate-800">{{ pagoConfig()?.transferencia?.banco || 'Banco Santander'
+                  }}</span>
               </div>
 
               <!-- Importe -->
@@ -532,10 +540,11 @@
                 <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Importe a Transferir</span>
                 <div class="font-mono">
                   @if (descuentoInfo()) {
-                    <span class="line-through text-slate-400 text-xs mr-2">{{ pagoConfig()?.importe || '250.00' }} €</span>
-                    <span class="text-lg font-black text-emerald-700">{{ importeFinalStr() }} €</span>
+                  <span class="line-through text-slate-400 text-xs mr-2">{{ pagoConfig()?.importe || '250.00' }}
+                    €</span>
+                  <span class="text-lg font-black text-emerald-700">{{ importeFinalStr() }} €</span>
                   } @else {
-                    <span class="text-lg font-black text-brand-gold-dark">{{ pagoConfig()?.importe || '250.00' }} €</span>
+                  <span class="text-lg font-black text-brand-gold-dark">{{ pagoConfig()?.importe || '250.00' }} €</span>
                   }
                 </div>
               </div>
@@ -546,7 +555,8 @@
                 <span class="text-amber-900 font-bold uppercase tracking-wider text-[10px]">Concepto a Indicar en la
                   Transferencia</span>
                 <div class="flex items-center justify-between gap-2">
-                  <span class="text-sm font-black text-amber-950 font-mono tracking-wide">{{ getConceptoPersonalizado() }}</span>
+                  <span class="text-sm font-black text-amber-950 font-mono tracking-wide">{{ getConceptoPersonalizado()
+                    }}</span>
                   <button type="button" (click)="copyToClipboard(getConceptoPersonalizado(), 'transfConcepto')"
                     class="px-3 py-1.5 text-xs font-bold rounded-lg border border-amber-300 bg-amber-100 text-amber-950 hover:bg-amber-200 transition-colors cursor-pointer">
                     {{ copiedField() === 'transfConcepto' ? '✓ ¡Copiado!' : 'Copiar Concepto' }}
@@ -587,12 +597,15 @@
             <div
               class="bg-purple-50/70 border border-purple-200 rounded-xl p-5 text-xs sm:text-sm text-purple-950 space-y-3 leading-relaxed">
               <p>
-                {{ pagoConfig()?.otras?.texto || 'Si necesitas otra forma de pago (efectivo durante la acreditación, pago fraccionado, etc.), nos pondremos en contacto contigo personalmente a través de tu teléfono o email para acordarlo.' }}
+                {{ pagoConfig()?.otras?.texto || 'Para otra forma de pago, nos pondremos en contacto contigo
+                personalmente a través de tu teléfono o email.' }}
               </p>
               <div class="bg-white/80 p-3.5 rounded-lg border border-purple-200/80 text-xs space-y-1">
                 <div class="font-bold text-purple-900">Datos de contacto registrados para coordinar el pago:</div>
-                <div class="text-slate-700 font-medium">📧 Correo: <strong class="text-brand-navy">{{ registeredEmail() }}</strong></div>
-                <div class="text-slate-700 font-medium">📞 Teléfono: <strong class="text-brand-navy">{{ registeredPhone() }}</strong></div>
+                <div class="text-slate-700 font-medium">📧 Correo: <strong class="text-brand-navy">{{ registeredEmail()
+                    }}</strong></div>
+                <div class="text-slate-700 font-medium">📞 Teléfono: <strong class="text-brand-navy">{{
+                    registeredPhone() }}</strong></div>
               </div>
             </div>
 

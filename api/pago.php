@@ -401,7 +401,7 @@ if ($method === 'GET') {
             $transfTitular     = (string)getConfigValue('pago_transferencia_titular', 'Asociación ENMI 2027 / Eutikea', $pdo);
             $transfBanco       = (string)getConfigValue('pago_transferencia_banco', 'Banco Santander', $pdo);
             $transfConcepto    = (string)getConfigValue('pago_transferencia_concepto', 'ENMI-2027-{ID}-{APELLIDOS}', $pdo);
-            $otrasTexto        = (string)getConfigValue('pago_otras_modalidades_texto', 'Si necesitas otra forma de pago, nos pondremos en contacto contigo por teléfono o email para coordinarlo.', $pdo);
+            $otrasTexto        = (string)getConfigValue('pago_otras_modalidades_texto', 'Para otra forma de pago, nos pondremos en contacto contigo personalmente a través de tu teléfono o email.', $pdo);
             $redsysEntorno     = (string)getConfigValue('pago_redsys_entorno', 'sandbox', $pdo);
             $redsysUrlSandbox  = (string)getConfigValue('pago_redsys_url_sandbox', 'https://sis-t.redsys.es:25443/sis/realizarPago', $pdo);
             $redsysUrlProd     = (string)getConfigValue('pago_redsys_url_produccion', 'https://sis.redsys.es/sis/realizarPago', $pdo);
