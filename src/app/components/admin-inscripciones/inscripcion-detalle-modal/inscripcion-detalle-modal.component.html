@@ -101,7 +101,7 @@
             </span>
             }
 
-            @if (isSupervisor() && item.estado !== 'pagada' && item.estado !== 'pagado' && !mostrarFormPagoManual()) {
+            @if (isSuperAdmin() && item.estado !== 'pagada' && item.estado !== 'pagado' && !mostrarFormPagoManual()) {
             <button type="button" (click)="marcarInscripcionComoPagada()" [disabled]="guardandoEstado()"
               class="mt-2 w-full inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-emerald-800 bg-emerald-100/80 hover:bg-emerald-200/90 border border-emerald-300 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-2xs"
               title="Marcar inscripción directamente como pagada">
@@ -268,7 +268,7 @@
             </label>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <!-- Transferencia -->
-              <button type="button" (click)="modalidadPagoManual.set('transferencia')"
+              <button type="button" (click)="seleccionarModalidadPagoManual('transferencia')"
                 class="p-2.5 rounded-xl border text-left flex flex-col items-center justify-center gap-1 transition-all cursor-pointer"
                 [class.bg-amber-50]="modalidadPagoManual() === 'transferencia'"
                 [class.border-amber-400]="modalidadPagoManual() === 'transferencia'"
@@ -281,7 +281,7 @@
               </button>
 
               <!-- Bizum -->
-              <button type="button" (click)="modalidadPagoManual.set('bizum')"
+              <button type="button" (click)="seleccionarModalidadPagoManual('bizum')"
                 class="p-2.5 rounded-xl border text-left flex flex-col items-center justify-center gap-1 transition-all cursor-pointer"
                 [class.bg-teal-50]="modalidadPagoManual() === 'bizum'"
                 [class.border-teal-400]="modalidadPagoManual() === 'bizum'"
@@ -294,7 +294,7 @@
               </button>
 
               <!-- En mano / Efectivo -->
-              <button type="button" (click)="modalidadPagoManual.set('efectivo')"
+              <button type="button" (click)="seleccionarModalidadPagoManual('efectivo')"
                 class="p-2.5 rounded-xl border text-left flex flex-col items-center justify-center gap-1 transition-all cursor-pointer"
                 [class.bg-emerald-50]="modalidadPagoManual() === 'efectivo'"
                 [class.border-emerald-400]="modalidadPagoManual() === 'efectivo'"
@@ -307,7 +307,7 @@
               </button>
 
               <!-- Otras / Tarjeta manual -->
-              <button type="button" (click)="modalidadPagoManual.set('otras')"
+              <button type="button" (click)="seleccionarModalidadPagoManual('otras')"
                 class="p-2.5 rounded-xl border text-left flex flex-col items-center justify-center gap-1 transition-all cursor-pointer"
                 [class.bg-purple-50]="modalidadPagoManual() === 'otras'"
                 [class.border-purple-400]="modalidadPagoManual() === 'otras'"
@@ -342,11 +342,13 @@
             <div class="sm:col-span-2">
               <label for="inputNotasPago"
                 class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Notas y Justificante de Cobro
+                Notas y Justificante de Cobro *
               </label>
               <input id="inputNotasPago" type="text" [ngModel]="notasPagoManual()"
-                (ngModelChange)="notasPagoManual.set($event)"
-                class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 shadow-2xs placeholder:text-slate-400"
+                (ngModelChange)="actualizarNotasPagoManual($event)" required
+                class="w-full px-3 py-2 text-xs bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 shadow-2xs placeholder:text-slate-400"
+                [class.border-rose-400]="!notasPagoManual().trim() && !!errorPagoManual()"
+                [class.border-slate-300]="!!notasPagoManual().trim() || !errorPagoManual()"
                 placeholder="Ej. Apunte bancario con concepto ENMI 2027 Juan, o tel. Bizum..." />
             </div>
           </div>

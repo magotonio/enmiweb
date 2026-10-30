@@ -1137,6 +1137,13 @@ if ($method === 'POST') {
         $modalidadesPermitidas = ['bizum', 'transferencia', 'efectivo', 'otras', 'redsys'];
         $modalidad = in_array($modalidadRaw, $modalidadesPermitidas, true) ? $modalidadRaw : 'otras';
 
+        if ($notasSupervisor === '') {
+            sendJsonResponse([
+                'success' => false,
+                'message' => 'El campo "Notas y Justificante de Cobro" es obligatorio.'
+            ], 400);
+        }
+
         if ($cantidad <= 0) {
             $cantidad = getPagoImporteConfig($pdo);
         }

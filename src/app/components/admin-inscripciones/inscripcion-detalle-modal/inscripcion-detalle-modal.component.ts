@@ -37,6 +37,7 @@ export class InscripcionDetalleModalComponent implements OnInit, OnChanges {
   readonly authService = inject(AuthService);
 
   readonly isSupervisor = this.authService.isSupervisor;
+  readonly isSuperAdmin = this.authService.isSuperAdmin;
 
   readonly pagos = signal<PagoRegistro[]>([]);
   readonly cargandoPagos = signal<boolean>(false);
@@ -280,6 +281,20 @@ export class InscripcionDetalleModalComponent implements OnInit, OnChanges {
     });
   }
 
+  seleccionarModalidadPagoManual(modalidad: string): void {
+    this.modalidadPagoManual.set(modalidad);
+    if (this.errorPagoManual()) {
+      this.errorPagoManual.set(null);
+    }
+  }
+
+  actualizarNotasPagoManual(valor: string): void {
+    this.notasPagoManual.set(valor);
+    if (this.errorPagoManual()) {
+      this.errorPagoManual.set(null);
+    }
+  }
+
   confirmarPagoManual(): void {
     if (!this.inscripcion?.id || this.guardandoPagoManual()) {
       return;
@@ -293,6 +308,10 @@ export class InscripcionDetalleModalComponent implements OnInit, OnChanges {
 
     const modalidad = this.modalidadPagoManual();
     const notas = this.notasPagoManual().trim();
+    if (!notas) {
+      this.errorPagoManual.set('El campo "Notas y Justificante de Cobro" es obligatorio.');
+      return;
+    }
     const enviarEmail = this.enviarEmailPagoManual();
 
     this.guardandoPagoManual.set(true);
