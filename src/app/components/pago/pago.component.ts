@@ -74,43 +74,51 @@ export class PagoComponent implements OnInit {
       }
     }
 
-    // 3. Comprobar retorno de pasarela Redsys mediante query parameters
+    // 3. Treat the browser return as a hint and verify payment status with the API.
     this.route.queryParams.subscribe(params => {
       const pagoStatus = params['pago'];
       const idParam = params['id'];
 
-      if (idParam && !isNaN(Number(idParam))) {
+      if (pagoStatus && idParam && !Number.isNaN(Number(idParam))) {
         const id = Number(idParam);
+        this.selectedModalidad.set('redsys');
+        this.paymentNotice.set('Verificando el resultado del pago...');
 
-        // Si por alguna razón la sesión local no tenía el ID, lo sincronizamos
-        if (!this.sessionService.hasSession()) {
-          this.sessionService.saveSession({
-            id,
-            fullName: 'Participante #' + id,
-            apellidos: 'PARTICIPANTE',
-            email: '',
-            telefono: '',
-            status: pagoStatus === 'ok' ? 'pagada' : 'pendiente',
-            modalidad: 'redsys'
-          });
-        }
+        this.pagoService.getPagosByInscripcion(id).subscribe({
+          next: response => {
+            const paid = response.pagos?.some(pago => pago.modalidad_pago === 'redsys' && pago.estado === 'pagado') ?? false;
+            if (!this.sessionService.hasSession()) {
+              this.sessionService.saveSession({
+                id,
+                fullName: 'Participante #' + id,
+                apellidos: 'PARTICIPANTE',
+                email: '',
+                telefono: '',
+                status: paid ? 'pagada' : 'pendiente',
+                modalidad: 'redsys'
+              });
+            }
 
-        if (pagoStatus === 'ok') {
-          // El pago en Redsys fue exitoso
-          this.sessionService.updateStatus('pagada', 'redsys');
-          this.isCompleted.set(true);
-          this.paymentNotice.set('¡Tu pago ha sido procesado y verificado correctamente por la pasarela de Redsys!');
-          this.pagoService.sincronizarRetornoRedsys(id, 'ok').subscribe();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        } else if (pagoStatus === 'ko') {
-          // El pago en Redsys fue cancelado o rechazado
-          this.sessionService.updateStatus('pendiente', 'redsys');
-          this.selectedModalidad.set('redsys');
-          this.isCompleted.set(false);
-          this.paymentError.set('La pasarela de pago no completó la transacción o fue cancelada. Tu inscripción se encuentra en estado pendiente. Puedes reintentar el pago o elegir otra modalidad.');
-          this.pagoService.sincronizarRetornoRedsys(id, 'ko').subscribe();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+            if (paid) {
+              this.sessionService.updateStatus('pagada', 'redsys');
+              this.isCompleted.set(true);
+              this.paymentError.set(null);
+              this.paymentNotice.set('El pago ha sido verificado correctamente por la pasarela de Redsys.');
+            } else {
+              this.sessionService.updateStatus('pendiente', 'redsys');
+              this.isCompleted.set(false);
+              this.paymentNotice.set(null);
+              this.paymentError.set(pagoStatus === 'ko'
+                ? 'El pago no se completó. La inscripción permanece pendiente; puedes reintentarlo o elegir otra modalidad.'
+                : 'Redsys todavía no confirma el pago. La inscripción permanece pendiente.');
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          },
+          error: () => {
+            this.paymentNotice.set(null);
+            this.paymentError.set('No se pudo verificar el resultado del pago. La inscripción no se marcará como pagada.');
+          }
+        });
       }
     });
   }

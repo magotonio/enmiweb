@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PagoComponent } from './pago.component';
 import { PagoService } from '../../services/pago.service';
@@ -11,6 +11,7 @@ describe('PagoComponent', () => {
   let mockPagoService: jasmine.SpyObj<PagoService>;
   let mockSessionService: jasmine.SpyObj<InscripcionSessionService>;
   let mockRouter: jasmine.SpyObj<Router>;
+  let queryParams$: BehaviorSubject<Record<string, string>>;
 
   beforeEach(async () => {
     mockPagoService = jasmine.createSpyObj('PagoService', [
@@ -19,10 +20,10 @@ describe('PagoComponent', () => {
       'iniciarRedsys',
       'confirmarModalidad',
       'simularRedsys',
-      'sincronizarRetornoRedsys',
+      'getPagosByInscripcion',
       'submitToRedsysGateway'
     ]);
-    mockPagoService.sincronizarRetornoRedsys.and.returnValue(of({ success: true }));
+    queryParams$ = new BehaviorSubject<Record<string, string>>({});
     mockSessionService = jasmine.createSpyObj('InscripcionSessionService', [
       'saveSession',
       'getSession',
@@ -71,7 +72,7 @@ describe('PagoComponent', () => {
         { provide: PagoService, useValue: mockPagoService },
         { provide: InscripcionSessionService, useValue: mockSessionService },
         { provide: Router, useValue: mockRouter },
-        { provide: ActivatedRoute, useValue: { queryParams: of({}) } }
+        { provide: ActivatedRoute, useValue: { queryParams: queryParams$.asObservable() } }
       ]
     }).compileComponents();
 
@@ -96,6 +97,37 @@ describe('PagoComponent', () => {
 
     component.chooseModalidad('transferencia');
     expect(component.selectedModalidad()).toBe('transferencia');
+  });
+
+  it('should not trust Redsys return query parameters as payment confirmation', () => {
+    mockSessionService.hasSession.and.returnValue(true);
+    mockPagoService.getPagosByInscripcion.and.returnValue(of({
+      success: true,
+      inscripcion_id: 42,
+      total: 0,
+      pagos: []
+    }));
+
+    queryParams$.next({ pago: 'ok', id: '42' });
+
+    expect(mockPagoService.getPagosByInscripcion).toHaveBeenCalledWith(42);
+    expect(mockSessionService.updateStatus).not.toHaveBeenCalledWith('pagada', 'redsys');
+    expect(component.isCompleted()).toBeFalse();
+  });
+
+  it('should mark payment complete only when the API reports a paid Redsys payment', () => {
+    mockSessionService.hasSession.and.returnValue(true);
+    mockPagoService.getPagosByInscripcion.and.returnValue(of({
+      success: true,
+      inscripcion_id: 42,
+      total: 1,
+      pagos: [{ modalidad_pago: 'redsys', estado: 'pagado' }]
+    } as any));
+
+    queryParams$.next({ pago: 'ko', id: '42' });
+
+    expect(mockSessionService.updateStatus).toHaveBeenCalledWith('pagada', 'redsys');
+    expect(component.isCompleted()).toBeTrue();
   });
 
   it('should apply and remove discount code', () => {

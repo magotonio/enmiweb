@@ -27,36 +27,9 @@ if (!is_array($data)) {
     ], 400);
 }
 
-// Comprobar si la petición proviene de un operador/usuario autenticado
-$operatorId    = isset($data['operator_id']) ? (int)$data['operator_id'] : null;
-$operatorLogin = isset($data['operator_login']) ? trim((string)$data['operator_login']) : null;
-$operatorEmail = isset($data['operator_email']) ? trim((string)$data['operator_email']) : null;
-$isAuthorizedOperator = false;
-$op = null;
-
-if ($operatorId || !empty($operatorLogin) || !empty($operatorEmail)) {
-    try {
-        $pdoCheck = getDbConnection();
-        $stmtOp = $pdoCheck->prepare("
-            SELECT id, login, email, rol, bloqueado 
-            FROM `enmi_usuarios` 
-            WHERE (id = :id OR login = :login OR email = :email) 
-              AND bloqueado = 0 
-            LIMIT 1
-        ");
-        $stmtOp->execute([
-            ':id'    => $operatorId,
-            ':login' => $operatorLogin,
-            ':email' => $operatorEmail ?: $operatorLogin
-        ]);
-        $op = $stmtOp->fetch(PDO::FETCH_ASSOC);
-        if ($op && (int)$op['bloqueado'] === 0) {
-            $isAuthorizedOperator = true;
-        }
-    } catch (Throwable $e) {
-        $isAuthorizedOperator = false;
-    }
-}
+$pdo = getDbConnection();
+$op = getApiSessionUser($pdo);
+$isAuthorizedOperator = $op && in_array((string)$op['rol'], ['superadministrador', 'supervisor'], true);
 
 // Comprobar si la web se encuentra en modo mantenimiento
 if (isMaintenanceMode()) {
@@ -155,9 +128,6 @@ if (!empty($errors)) {
 
 // Obtener IP del cliente
 $ipRegistro = getClientIp();
-
-// Conexión a MariaDB
-$pdo = getDbConnection();
 
 // =====================================================================
 // VERIFICACIÓN DE DUPLICADOS EN BASE DE DATOS (NIF, CORREO, TELÉFONO)
@@ -300,6 +270,9 @@ try {
     ]);
 
     $insertedId = (int)$pdo->lastInsertId();
+    if (!$op || !in_array((string)$op['rol'], ['superadministrador', 'supervisor'], true)) {
+        bindApiSessionEnrollment($insertedId);
+    }
 
     $logMsg = "Nueva inscripción ID #{$insertedId} registrada para {$nombre} {$apellidos} [Estado: iniciada]";
     if ($nombreArtistico) {

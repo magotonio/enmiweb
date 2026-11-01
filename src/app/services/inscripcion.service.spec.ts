@@ -1,22 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { signal } from '@angular/core';
 import { InscripcionService } from './inscripcion.service';
-import { AuthService } from './auth.service';
 import { InscripcionFormData } from '../models/inscripcion.model';
-import { AuthUser } from '../models/usuario.model';
 import { environment } from '../../environments/environment';
 
 describe('InscripcionService', () => {
   let service: InscripcionService;
   let httpMock: HttpTestingController;
-  let currentUserSignal = signal<AuthUser | null>(null);
-
-  const mockAuthService = {
-    currentUser: currentUserSignal
-  };
-
   const sampleFormData: InscripcionFormData = {
     nombre: 'Elena',
     apellidos: 'Navarro Sánchez',
@@ -33,14 +24,11 @@ describe('InscripcionService', () => {
   };
 
   beforeEach(() => {
-    currentUserSignal.set(null);
-
     TestBed.configureTestingModule({
       providers: [
         InscripcionService,
         provideHttpClient(),
-        provideHttpClientTesting(),
-        { provide: AuthService, useValue: mockAuthService }
+        provideHttpClientTesting()
       ]
     });
 
@@ -56,7 +44,7 @@ describe('InscripcionService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should send registration data without operator credentials when no user is logged in', () => {
+  it('should send registration data without client-supplied operator credentials', () => {
     service.inscribir(sampleFormData).subscribe(res => {
       expect(res.success).toBeTrue();
     });
@@ -70,14 +58,7 @@ describe('InscripcionService', () => {
     req.flush({ success: true, message: 'Inscripción guardada correctamente.' });
   });
 
-  it('should attach operator credentials when an authenticated user registers a participant (allowing registration in maintenance mode)', () => {
-    currentUserSignal.set({
-      id: 1,
-      login: 'admin',
-      email: 'admin@eutikea.com',
-      rol: 'superadministrador'
-    });
-
+  it('should not attach operator identity when registering from an authenticated browser', () => {
     service.inscribir(sampleFormData).subscribe(res => {
       expect(res.success).toBeTrue();
     });
@@ -85,21 +66,14 @@ describe('InscripcionService', () => {
     const req = httpMock.expectOne(`${environment.apiUrl}/inscribir.php`);
     expect(req.request.method).toBe('POST');
     expect(req.request.body.nombre).toBe('Elena');
-    expect(req.request.body.operator_id).toBe(1);
-    expect(req.request.body.operator_login).toBe('admin');
-    expect(req.request.body.operator_email).toBe('admin@eutikea.com');
+    expect(req.request.body.operator_id).toBeUndefined();
+    expect(req.request.body.operator_login).toBeUndefined();
+    expect(req.request.body.operator_email).toBeUndefined();
 
     req.flush({ success: true, message: 'Inscripción guardada correctamente.' });
   });
 
-  it('should retrieve list of participants with filters and operator params', () => {
-    currentUserSignal.set({
-      id: 2,
-      login: 'supervisor',
-      email: 'supervisor@enmi2027.es',
-      rol: 'supervisor'
-    });
-
+  it('should retrieve participants with filters and no identity claims', () => {
     service.getInscripciones({ q: 'Elena', estado: 'activo' }).subscribe(res => {
       expect(res.success).toBeTrue();
       expect(res.count).toBe(1);
@@ -109,8 +83,9 @@ describe('InscripcionService', () => {
       request.url === `${environment.apiUrl}/inscripciones.php` &&
       request.params.get('q') === 'Elena' &&
       request.params.get('estado') === 'activo' &&
-      request.params.get('user_id') === '2' &&
-      request.params.get('user_login') === 'supervisor'
+      !request.params.has('user_id') &&
+      !request.params.has('user_login') &&
+      !request.params.has('user_email')
     );
     expect(req.request.method).toBe('GET');
 
@@ -122,13 +97,6 @@ describe('InscripcionService', () => {
   });
 
   it('should update inscription status to pagada', () => {
-    currentUserSignal.set({
-      id: 2,
-      login: 'supervisor',
-      email: 'supervisor@enmi2027.es',
-      rol: 'supervisor'
-    });
-
     service.actualizarEstado(42, 'pagada').subscribe(res => {
       expect(res.success).toBeTrue();
       expect(res.nuevo_estado).toBe('pagada');
@@ -140,10 +108,7 @@ describe('InscripcionService', () => {
       accion: 'actualizar_estado',
       id: 42,
       inscripcion_id: 42,
-      estado: 'pagada',
-      user_id: 2,
-      user_login: 'supervisor',
-      user_email: 'supervisor@enmi2027.es'
+      estado: 'pagada'
     });
 
     req.flush({

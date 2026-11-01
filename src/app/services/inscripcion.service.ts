@@ -10,7 +10,6 @@ import {
   InscripcionesFilterParams,
   InscripcionesListResponse
 } from '../models/inscripcion.model';
-import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -18,37 +17,16 @@ import { environment } from '../../environments/environment';
 })
 export class InscripcionService {
   private readonly http = inject(HttpClient);
-  private readonly authService = inject(AuthService);
   private readonly inscribirApiUrl = `${environment.apiUrl}/inscribir.php`;
   private readonly inscripcionesApiUrl = `${environment.apiUrl}/inscripciones.php`;
 
   /**
    * Envía los datos del formulario a la API PHP para su registro en MariaDB.
-   * Si el usuario actual está autenticado (personal de la organización), se adjuntan sus credenciales
-   * de operador para permitir el registro incluso cuando la web se encuentre en Modo Mantenimiento.
-   * 
    * @param data Datos del formulario de inscripción
    * @returns Observable con la respuesta estandarizada de la API
    */
   inscribir(data: InscripcionFormData): Observable<InscripcionApiResponse> {
-    const currentUser = this.authService.currentUser();
-    const payload: InscripcionFormData & { operator_id?: number; operator_login?: string; operator_email?: string } = {
-      ...data
-    };
-
-    if (currentUser) {
-      if (currentUser.id) {
-        payload.operator_id = currentUser.id;
-      }
-      if (currentUser.login) {
-        payload.operator_login = currentUser.login;
-      }
-      if (currentUser.email) {
-        payload.operator_email = currentUser.email;
-      }
-    }
-
-    return this.http.post<InscripcionApiResponse>(this.inscribirApiUrl, payload);
+    return this.http.post<InscripcionApiResponse>(this.inscribirApiUrl, data);
   }
 
   /**
@@ -61,20 +39,6 @@ export class InscripcionService {
    */
   getInscripciones(filterParams?: InscripcionesFilterParams): Observable<InscripcionesListResponse> {
     let params = new HttpParams();
-
-    // Adjuntar identificación del usuario actual para el control de acceso y privacidad
-    const currentUser = this.authService.currentUser();
-    if (currentUser) {
-      if (currentUser.id) {
-        params = params.set('user_id', currentUser.id.toString());
-      }
-      if (currentUser.login) {
-        params = params.set('user_login', currentUser.login);
-      }
-      if (currentUser.email) {
-        params = params.set('user_email', currentUser.email);
-      }
-    }
 
     if (filterParams) {
       if (filterParams.q) {
@@ -106,15 +70,11 @@ export class InscripcionService {
     inscripcionId: number,
     estado: EstadoInscripcion
   ): Observable<ActualizarEstadoInscripcionResponse> {
-    const currentUser = this.authService.currentUser();
     const payload = {
       accion: 'actualizar_estado',
       id: inscripcionId,
       inscripcion_id: inscripcionId,
-      estado,
-      user_id: currentUser?.id,
-      user_login: currentUser?.login,
-      user_email: currentUser?.email
+      estado
     };
 
     return this.http.post<ActualizarEstadoInscripcionResponse>(this.inscripcionesApiUrl, payload);

@@ -8,13 +8,30 @@ require_once __DIR__ . '/constants.php';
 
 // Configuración de cabeceras CORS y JSON
 header('Content-Type: application/json; charset=UTF-8');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+$requestOrigin = trim((string)($_SERVER['HTTP_ORIGIN'] ?? ''));
+$allowedOrigins = [];
+$appOrigin = parse_url(getAppUrl());
+if (is_array($appOrigin) && isset($appOrigin['scheme'], $appOrigin['host'])) {
+    $allowedOrigins[] = strtolower($appOrigin['scheme'] . '://' . $appOrigin['host']
+        . (isset($appOrigin['port']) ? ':' . $appOrigin['port'] : ''));
+}
+$configuredOrigins = getAppConfig()['CORS_ALLOWED_ORIGINS'] ?? getenv('CORS_ALLOWED_ORIGINS') ?: '';
+if (is_string($configuredOrigins) && trim($configuredOrigins) !== '') {
+    $allowedOrigins = array_merge($allowedOrigins, array_map('trim', explode(',', $configuredOrigins)));
+}
+$allowedOrigins = array_map('strtolower', array_filter($allowedOrigins));
+
+if ($requestOrigin !== '' && in_array(strtolower($requestOrigin), $allowedOrigins, true)) {
+    header('Access-Control-Allow-Origin: ' . $requestOrigin);
+    header('Access-Control-Allow-Credentials: true');
+    header('Vary: Origin');
+}
+header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, X-CSRF-Token');
 
 // Responder inmediatamente a peticiones preflight OPTIONS
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
-    http_response_code(204);
+    http_response_code($requestOrigin === '' || in_array(strtolower($requestOrigin), $allowedOrigins, true) ? 204 : 403);
     exit();
 }
 
@@ -492,5 +509,7 @@ function generateSecureTokenBase62(int $length = 24): string {
 set_exception_handler('globalExceptionHandler');
 set_error_handler('globalErrorHandler');
 register_shutdown_function('globalShutdownHandler');
+
+require_once __DIR__ . '/auth.php';
 
 

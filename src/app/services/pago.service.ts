@@ -2,7 +2,6 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { AuthService } from './auth.service';
 import {
   DescuentoValidarResponse,
   EstadoInscripcion,
@@ -20,7 +19,6 @@ import {
 })
 export class PagoService {
   private readonly http = inject(HttpClient);
-  private readonly authService = inject(AuthService);
   private readonly pagoApiUrl = `${environment.apiUrl}/pago.php`;
 
   /**
@@ -41,22 +39,9 @@ export class PagoService {
    * Obtiene la lista completa de pagos registrados para una inscripción específica
    */
   getPagosByInscripcion(inscripcionId: number): Observable<PagosInscripcionResponse> {
-    let params = new HttpParams()
+    const params = new HttpParams()
       .set('accion', 'por_inscripcion')
       .set('inscripcion_id', inscripcionId.toString());
-
-    const currentUser = this.authService.currentUser();
-    if (currentUser) {
-      if (currentUser.id) {
-        params = params.set('user_id', currentUser.id.toString());
-      }
-      if (currentUser.login) {
-        params = params.set('user_login', currentUser.login);
-      }
-      if (currentUser.email) {
-        params = params.set('user_email', currentUser.email);
-      }
-    }
 
     return this.http.get<PagosInscripcionResponse>(this.pagoApiUrl, { params });
   }
@@ -98,22 +83,10 @@ export class PagoService {
   }
 
   /**
-   * Sincroniza el retorno de pasarela Redsys (ok / ko) para registrar el resultado en la tabla de compras/pagos
-   */
-  sincronizarRetornoRedsys(inscripcionId: number, pagoStatus: 'ok' | 'ko'): Observable<PagoAccionResponse> {
-    return this.http.post<PagoAccionResponse>(this.pagoApiUrl, {
-      accion: 'sincronizar_retorno_redsys',
-      inscripcion_id: inscripcionId,
-      pago_status: pagoStatus
-    });
-  }
-
-  /**
    * Registra un pago manual autorizado por supervisor o superadministrador.
    * Crea un nuevo registro auditado en enmi_pagos.
    */
   registrarPagoManual(request: PagoManualRequest): Observable<PagoManualResponse> {
-    const currentUser = this.authService.currentUser();
     const payload = {
       accion: 'registrar_pago_manual',
       inscripcion_id: request.inscripcion_id,
@@ -121,10 +94,7 @@ export class PagoService {
       cantidad: request.cantidad,
       notas: request.notas || '',
       enviar_email: !!request.enviar_email,
-      marcar_como_pagado: !!request.marcar_como_pagado,
-      user_id: currentUser?.id,
-      user_login: currentUser?.login,
-      user_email: currentUser?.email
+      marcar_como_pagado: !!request.marcar_como_pagado
     };
 
     return this.http.post<PagoManualResponse>(this.pagoApiUrl, payload);
@@ -134,14 +104,10 @@ export class PagoService {
    * Cambia directamente el estado de una inscripción (por ejemplo, a 'pagada').
    */
   cambiarEstadoInscripcion(inscripcionId: number, estado: EstadoInscripcion): Observable<PagoAccionResponse> {
-    const currentUser = this.authService.currentUser();
     return this.http.post<PagoAccionResponse>(this.pagoApiUrl, {
       accion: 'cambiar_estado',
       inscripcion_id: inscripcionId,
-      estado,
-      user_id: currentUser?.id,
-      user_login: currentUser?.login,
-      user_email: currentUser?.email
+      estado
     });
   }
 

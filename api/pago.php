@@ -167,47 +167,6 @@ function registrarCompraPago(
 }
 
 /**
- * Obtiene el usuario autenticado para aplicar las restricciones de seguridad por rol en pagos.
- */
-function getAuthenticatedPagoUser(PDO $pdo, ?array $postData = null): ?array {
-    $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : (isset($postData['user_id']) ? (int)$postData['user_id'] : null);
-    $userLogin = isset($_GET['user_login']) ? trim((string)$_GET['user_login']) : (isset($postData['user_login']) ? trim((string)$postData['user_login']) : null);
-    $userEmail = isset($_GET['user_email']) ? trim((string)$_GET['user_email']) : (isset($postData['user_email']) ? trim((string)$postData['user_email']) : null);
-
-    if (!$userId && isset($_SERVER['HTTP_X_USER_ID'])) {
-        $userId = (int)$_SERVER['HTTP_X_USER_ID'];
-    }
-    if (!$userLogin && isset($_SERVER['HTTP_X_USER_LOGIN'])) {
-        $userLogin = trim((string)$_SERVER['HTTP_X_USER_LOGIN']);
-    }
-
-    if (!$userId && empty($userLogin) && empty($userEmail)) {
-        return null;
-    }
-
-    try {
-        if ($userId) {
-            $stmt = $pdo->prepare("SELECT id, login, email, rol, bloqueado FROM `enmi_usuarios` WHERE id = :id LIMIT 1");
-            $stmt->execute([':id' => $userId]);
-        } elseif (!empty($userLogin)) {
-            $stmt = $pdo->prepare("SELECT id, login, email, rol, bloqueado FROM `enmi_usuarios` WHERE login = :login LIMIT 1");
-            $stmt->execute([':login' => $userLogin]);
-        } else {
-            $stmt = $pdo->prepare("SELECT id, login, email, rol, bloqueado FROM `enmi_usuarios` WHERE email = :email LIMIT 1");
-            $stmt->execute([':email' => $userEmail]);
-        }
-
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$user || (int)$user['bloqueado'] === 1) {
-            return null;
-        }
-        return $user;
-    } catch (PDOException $e) {
-        return null;
-    }
-}
-
-/**
  * Valida un código de descuento en la tabla enmi_tokens sin descontar usos.
  * Comprueba:
  *  - Que exista con tipo adecuado ('descuento', 'codigo_descuento', 'código de descuento', 'codigo de descuento')
@@ -467,18 +426,7 @@ if ($method === 'GET') {
         }
 
         try {
-            $authUser = getAuthenticatedPagoUser($pdo);
-            $userRole = $authUser['rol'] ?? null;
-            $userEmail = $authUser['email'] ?? '';
-
-            // Si el rol es 'asistente', verificar que la inscripción pertenezca a su email
-            if ($userRole === 'asistente' && !empty($userEmail)) {
-                $stmtCheck = $pdo->prepare("SELECT id FROM `enmi_inscripciones` WHERE id = :id AND LOWER(TRIM(email)) = LOWER(TRIM(:email)) LIMIT 1");
-                $stmtCheck->execute([':id' => $inscripcionId, ':email' => $userEmail]);
-                if (!$stmtCheck->fetch()) {
-                    sendJsonResponse(['success' => false, 'message' => 'Acceso denegado a los pagos de esta inscripción.'], 403);
-                }
-            }
+            requireApiEnrollmentAccess($pdo, $inscripcionId);
 
             $stmt = $pdo->prepare("
                 SELECT 
@@ -580,6 +528,8 @@ if ($method === 'POST') {
         if ($inscripcionId <= 0) {
             sendJsonResponse(['success' => false, 'message' => 'Identificador de inscripción inválido.'], 400);
         }
+        requireApiCsrfToken();
+        requireApiEnrollmentAccess($pdo, $inscripcionId);
 
         try {
             $stmt = $pdo->prepare("SELECT * FROM `enmi_inscripciones` WHERE id = :id LIMIT 1");
@@ -614,7 +564,7 @@ if ($method === 'POST') {
             $tpvUrl          = ($entorno === 'produccion') ? $urlProd : $urlSandbox;
 
             // Formato de orden Redsys: 12 caracteres (primeros 4 numéricos, ej. fecha + ID)
-            $order = date('ymd') . sprintf('%06d', $inscripcionId % 1000000);
+            $order = date('ymd') . sprintf('%06d', random_int(0, 999999));
 
             // URLs de retorno: Redirigen de vuelta al frontend Angular
             $appUrl = rtrim(getAppUrl(), '/');
@@ -708,6 +658,8 @@ if ($method === 'POST') {
         if ($inscripcionId <= 0 || !in_array($modalidad, ['bizum', 'transferencia', 'otras', 'redsys'], true)) {
             sendJsonResponse(['success' => false, 'message' => 'Datos de modalidad o inscripción inválidos.'], 400);
         }
+        requireApiCsrfToken();
+        requireApiEnrollmentAccess($pdo, $inscripcionId);
 
         try {
             $stmt = $pdo->prepare("SELECT * FROM `enmi_inscripciones` WHERE id = :id LIMIT 1");
@@ -830,10 +782,10 @@ if ($method === 'POST') {
 
     // C) SIMULADOR DE REDSYS (Pruebas sandbox / locales)
     if ($accion === 'simular_redsys') {
-        if (!isPagoDemoMode($pdo)) {
+        if (!isLocalApiEnvironment() || !isPagoDemoMode($pdo)) {
             sendJsonResponse([
                 'success' => false,
-                'message' => 'El simulador de pruebas de pago se encuentra actualmente desactivado por configuración de administración.'
+                'message' => 'El simulador de pagos solo está disponible en desarrollo local.'
             ], 403);
         }
 
@@ -843,6 +795,8 @@ if ($method === 'POST') {
         if ($inscripcionId <= 0) {
             sendJsonResponse(['success' => false, 'message' => 'Identificador de inscripción inválido.'], 400);
         }
+        requireApiCsrfToken();
+        requireApiEnrollmentAccess($pdo, $inscripcionId);
 
         try {
             $stmt = $pdo->prepare("SELECT * FROM `enmi_inscripciones` WHERE id = :id LIMIT 1");
@@ -977,57 +931,94 @@ if ($method === 'POST') {
         }
 
         try {
-            $paramsJson = base64_decode(strtr($merchantParamsB64, '-_', '+/'));
+            $paramsJson = base64_decode(strtr($merchantParamsB64, '-_', '+/'), true);
             $params = json_decode($paramsJson, true);
+            if (!is_array($params)) {
+                sendJsonResponse(['success' => false, 'message' => 'Respuesta Redsys inválida.'], 400);
+            }
 
-            $order        = $params['Ds_Order'] ?? ($params['DS_ORDER'] ?? '');
+            $order = (string)($params['Ds_Order'] ?? ($params['DS_ORDER'] ?? ''));
             $responseCode = (int)($params['Ds_Response'] ?? ($params['DS_RESPONSE'] ?? 9999));
+            $amountCents = (int)($params['Ds_Amount'] ?? ($params['DS_AMOUNT'] ?? 0));
+            $merchantCode = (string)($params['Ds_MerchantCode'] ?? ($params['DS_MERCHANTCODE'] ?? ''));
+            $currency = (string)($params['Ds_Currency'] ?? ($params['DS_CURRENCY'] ?? ''));
             $secretKeyB64 = (string)getConfigValue('pago_redsys_clave_secreta', 'sq7HjrUOBfKmC576ILgskD5srU870gJ7', $pdo);
 
-            // Validar firma
+            if ($order === '') {
+                sendJsonResponse(['success' => false, 'message' => 'Pedido Redsys ausente.'], 400);
+            }
             $expectedSignature = redsysComputeSignature($merchantParamsB64, $order, $secretKeyB64);
             $signaturesMatch = hash_equals(
                 strtr($expectedSignature, '+/', '-_'),
                 strtr($signatureRecibida, '+/', '-_')
             );
+            if (!$signaturesMatch) {
+                sendJsonResponse(['success' => false, 'message' => 'Firma Redsys inválida.'], 403);
+            }
 
-            // Extraer ID de la orden (los últimos 6 dígitos corresponden al ID)
-            $inscripcionId = (int)substr($order, -6);
+            $stmtPago = $pdo->prepare(
+                "SELECT id, inscripcion_id, cantidad_pagada, estado FROM `enmi_pagos` WHERE referencia = :order AND modalidad_pago = 'redsys' LIMIT 1"
+            );
+            $stmtPago->execute([':order' => $order]);
+            $pago = $stmtPago->fetch(PDO::FETCH_ASSOC);
+            if (!$pago || (int)$pago['inscripcion_id'] <= 0) {
+                sendJsonResponse(['success' => false, 'message' => 'Pedido de pago no reconocido.'], 404);
+            }
 
-            $isPagoOk = $signaturesMatch && ($responseCode >= 0 && $responseCode <= 99);
+            $expectedMerchant = (string)getConfigValue('pago_redsys_fuc', '999008881', $pdo);
+            $expectedCurrency = (string)getConfigValue('pago_redsys_moneda', '978', $pdo);
+            $expectedAmount = (int)round((float)$pago['cantidad_pagada'] * 100);
+            if ($amountCents !== $expectedAmount || $merchantCode !== $expectedMerchant || $currency !== $expectedCurrency) {
+                sendJsonResponse(['success' => false, 'message' => 'Los datos del pago no coinciden con el pedido.'], 403);
+            }
+
+            $inscripcionId = (int)$pago['inscripcion_id'];
+            $isPagoOk = $responseCode >= 0 && $responseCode <= 99;
             $nuevoEstado = $isPagoOk ? 'pagada' : 'pendiente';
             $estadoCompra = $isPagoOk ? 'pagado' : 'no-pagado';
             $notasRetorno = $isPagoOk
                 ? "Retorno Redsys: Pago aprobado exitosamente (código {$responseCode})."
                 : "Retorno Redsys: Pago denegado o no autorizado (código {$responseCode}).";
 
-            $pagoId = null;
-            if ($inscripcionId > 0) {
-                $stmtUp = $pdo->prepare("UPDATE `enmi_inscripciones` SET `estado` = :estado WHERE id = :id");
-                $stmtUp->execute([':estado' => $nuevoEstado, ':id' => $inscripcionId]);
-
-                $pagoId = registrarPago(
-                    $pdo,
-                    $inscripcionId,
-                    'redsys',
-                    $estadoCompra,
-                    null,
-                    $order,
-                    null,
-                    $notasRetorno,
-                    $params
-                );
-
-                logInfo('pagos', 'redsys_callback', "Retorno Redsys recibido para inscripción #{$inscripcionId}. Código: {$responseCode}. Estado inscripción: {$nuevoEstado}. Estado pago: {$estadoCompra}", [
-                    'order'            => $order,
-                    'responseCode'     => $responseCode,
-                    'signaturesMatch'  => $signaturesMatch,
-                    'nuevo_estado'     => $nuevoEstado,
-                    'estado_pago'      => $estadoCompra,
-                    'pago_id'          => $pagoId,
-                    'compra_id'        => $pagoId
-                ]);
+            if ((string)$pago['estado'] === 'pagado') {
+                sendJsonResponse([
+                    'success' => true,
+                    'inscripcion_id' => $inscripcionId,
+                    'estado' => 'pagada',
+                    'estado_pago' => 'pagado',
+                    'pago_id' => (int)$pago['id'],
+                    'pago_ok' => true
+                ], 200);
             }
+
+            $pdo->beginTransaction();
+            $stmtPagoUp = $pdo->prepare(
+                "UPDATE `enmi_pagos` SET `estado` = :estado, `fecha_compra` = :fecha_compra, `notas` = :notas, `datos_transaccion` = :datos, `fecha_actualizacion` = NOW() WHERE `id` = :id AND `estado` <> 'pagado'"
+            );
+            $stmtPagoUp->execute([
+                ':estado' => $estadoCompra,
+                ':fecha_compra' => $isPagoOk ? date('Y-m-d H:i:s') : null,
+                ':notas' => $notasRetorno,
+                ':datos' => json_encode($params, JSON_UNESCAPED_UNICODE),
+                ':id' => (int)$pago['id']
+            ]);
+            if ($isPagoOk) {
+                $stmtUp = $pdo->prepare("UPDATE `enmi_inscripciones` SET `estado` = 'pagada', `fecha_actualizacion` = NOW() WHERE id = :id");
+                $stmtUp->execute([':id' => $inscripcionId]);
+            } else {
+                $stmtUp = $pdo->prepare("UPDATE `enmi_inscripciones` SET `estado` = 'pendiente', `fecha_actualizacion` = NOW() WHERE id = :id AND `estado` <> 'pagada'");
+                $stmtUp->execute([':id' => $inscripcionId]);
+            }
+            $pdo->commit();
+
+            $pagoId = (int)$pago['id'];
+            logInfo('pagos', 'redsys_callback', "Retorno Redsys recibido para inscripción #{$inscripcionId}. Código: {$responseCode}. Estado inscripción: {$nuevoEstado}. Estado pago: {$estadoCompra}", [
+                'order' => $order,
+                'responseCode' => $responseCode,
+                'nuevo_estado' => $nuevoEstado,
+                'estado_pago' => $estadoCompra,
+                'pago_id' => $pagoId
+            ]);
 
             sendJsonResponse([
                 'success'        => true,
@@ -1041,6 +1032,9 @@ if ($method === 'POST') {
             ], 200);
 
         } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             logError('pagos', 'error_redsys_retorno', $e->getMessage());
             sendJsonResponse(['success' => false, 'message' => 'Error al procesar retorno Redsys.'], 500);
         }
@@ -1048,79 +1042,15 @@ if ($method === 'POST') {
 
     // E) SINCRONIZAR RETORNO REDSYS (Llamado cuando el frontend detecta retorno con queryParam pago=ok o ko)
     if ($accion === 'sincronizar_retorno_redsys') {
-        $inscripcionId = isset($data['inscripcion_id']) ? (int)$data['inscripcion_id'] : 0;
-        $pagoStatus    = isset($data['pago_status']) ? strtolower(trim((string)$data['pago_status'])) : '';
-
-        if ($inscripcionId <= 0 || !in_array($pagoStatus, ['ok', 'ko'], true)) {
-            sendJsonResponse(['success' => false, 'message' => 'Parámetros inválidos.'], 400);
-        }
-
-        try {
-            $stmt = $pdo->prepare("SELECT * FROM `enmi_inscripciones` WHERE id = :id LIMIT 1");
-            $stmt->execute([':id' => $inscripcionId]);
-            $inscripcion = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$inscripcion) {
-                sendJsonResponse(['success' => false, 'message' => 'Inscripción no encontrada.'], 404);
-            }
-
-            $isPagoOk = ($pagoStatus === 'ok');
-            $nuevoEstado = $isPagoOk ? 'pagada' : 'pendiente';
-            $estadoCompra = $isPagoOk ? 'pagado' : 'no-pagado';
-
-            $stmtUp = $pdo->prepare("UPDATE `enmi_inscripciones` SET `estado` = :estado WHERE id = :id");
-            $stmtUp->execute([':estado' => $nuevoEstado, ':id' => $inscripcionId]);
-
-            $nombreParticipante = trim($inscripcion['nombre'] . ' ' . $inscripcion['apellidos']);
-            $conceptoCompra = 'Inscripción ENMI 2027 #' . $inscripcionId . ' - ' . $nombreParticipante;
-            $order = date('ymd') . sprintf('%06d', $inscripcionId % 1000000);
-            $notasSync = $isPagoOk
-                ? "Retorno Redsys verificado vía URL pública (éxito)."
-                : "Retorno Redsys vía URL pública (cancelado/fallido).";
-
-            $pagoId = registrarPago(
-                $pdo,
-                $inscripcionId,
-                'redsys',
-                $estadoCompra,
-                null,
-                $order,
-                $conceptoCompra,
-                $notasSync,
-                [
-                    'pago_status'    => $pagoStatus,
-                    'inscripcion_id' => $inscripcionId,
-                    'origen'         => 'sincronizar_retorno_redsys'
-                ]
-            );
-
-            sendJsonResponse([
-                'success'        => true,
-                'inscripcion_id' => $inscripcionId,
-                'estado'         => $nuevoEstado,
-                'estado_pago'    => $estadoCompra,
-                'estado_compra'  => $estadoCompra,
-                'pago_id'        => $pagoId,
-                'compra_id'      => $pagoId
-            ], 200);
-
-        } catch (Throwable $e) {
-            logError('pagos', 'error_sincronizar_retorno_redsys', $e->getMessage());
-            sendJsonResponse(['success' => false, 'message' => 'Error al sincronizar retorno: ' . $e->getMessage()], 500);
-        }
+        sendJsonResponse([
+            'success' => false,
+            'message' => 'El resultado del pago solo se confirma mediante la notificación firmada de Redsys.'
+        ], 410);
     }
 
     // F) REGISTRAR PAGO MANUAL (Solo Supervisor y Superadministrador)
     if ($accion === 'registrar_pago_manual') {
-        $authUser = getAuthenticatedPagoUser($pdo, $data);
-        $userRole = $authUser['rol'] ?? null;
-
-        if (!$authUser || !in_array($userRole, ['superadministrador', 'supervisor'], true)) {
-            sendJsonResponse([
-                'success' => false,
-                'message' => 'Acceso denegado. Se requieren permisos de supervisor o superadministrador.'
-            ], 403);
-        }
+        $authUser = requireApiUser($pdo, ['superadministrador', 'supervisor']);
 
         $inscripcionId = isset($data['inscripcion_id']) ? (int)$data['inscripcion_id'] : 0;
         $modalidadRaw = isset($data['modalidad']) ? strtolower(trim((string)$data['modalidad'])) : 'transferencia';
@@ -1285,15 +1215,7 @@ if ($method === 'POST') {
 
     // G) CAMBIAR ESTADO DE INSCRIPCIÓN DIRECTAMENTE (Solo Supervisor y Superadministrador)
     if ($accion === 'cambiar_estado' || $accion === 'marcar_pagada') {
-        $authUser = getAuthenticatedPagoUser($pdo, $data);
-        $userRole = $authUser['rol'] ?? null;
-
-        if (!$authUser || !in_array($userRole, ['superadministrador', 'supervisor'], true)) {
-            sendJsonResponse([
-                'success' => false,
-                'message' => 'Acceso denegado. Se requieren permisos de supervisor o superadministrador.'
-            ], 403);
-        }
+        $authUser = requireApiUser($pdo, ['superadministrador', 'supervisor']);
 
         $inscripcionId = isset($data['inscripcion_id']) ? (int)$data['inscripcion_id'] : (isset($data['id']) ? (int)$data['id'] : 0);
         $nuevoEstado = isset($data['estado']) ? strtolower(trim((string)$data['estado'])) : 'pagada';

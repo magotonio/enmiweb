@@ -73,11 +73,10 @@ export const roleGuard: CanActivateFn = (route, state) => {
       return true;
     }),
     catchError(() => {
-      // En caso de fallo transitorio de red, evaluar según el estado verificado en memoria
-      if (authService.canAccess(allowedRoles, minRole)) {
-        return of(true);
-      }
-      return of(router.createUrlTree(['/acceso-denegado']));
+      authService.clearSession();
+      return of(router.createUrlTree(['/login'], {
+        queryParams: { returnUrl: state.url }
+      }));
     })
   );
 };

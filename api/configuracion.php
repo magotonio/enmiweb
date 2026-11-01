@@ -11,37 +11,6 @@ require_once __DIR__ . '/config.php';
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $pdo = getDbConnection();
 
-/**
- * Verifica si el usuario operador posee permisos de superadministrador.
- */
-function verifyConfigOperatorPermission(PDO $pdo, ?int $operatorId, ?string $operatorLogin): ?array {
-    if (!$operatorId && empty($operatorLogin)) {
-        return null;
-    }
-
-    try {
-        if ($operatorId) {
-            $stmt = $pdo->prepare("SELECT id, login, email, rol, bloqueado FROM `enmi_usuarios` WHERE id = :id LIMIT 1");
-            $stmt->execute([':id' => $operatorId]);
-        } else {
-            $stmt = $pdo->prepare("SELECT id, login, email, rol, bloqueado FROM `enmi_usuarios` WHERE login = :login LIMIT 1");
-            $stmt->execute([':login' => $operatorLogin]);
-        }
-
-        $user = $stmt->fetch();
-        if (!$user) return null;
-        if ((int)$user['bloqueado'] === 1) return null;
-
-        $rol = $user['rol'] ?? 'asistente';
-        if ($rol === 'superadministrador') {
-            return $user;
-        }
-        return null;
-    } catch (PDOException $e) {
-        return null;
-    }
-}
-
 // ---------------------------------------------------------------------
 // 1. GET: Consulta de estado de mantenimiento / configuración
 // ---------------------------------------------------------------------
@@ -52,8 +21,6 @@ if ($method === 'GET') {
         $demoPagoActivo      = isPagoDemoMode($pdo);
         $demoPagoValor       = (string)getConfigValue('pago_modo_demo', '1', $pdo);
 
-        $operatorId    = isset($_GET['operator_id']) ? (int)$_GET['operator_id'] : null;
-        $operatorLogin = isset($_GET['operator_login']) ? trim((string)$_GET['operator_login']) : null;
         $includeAll    = !empty($_GET['include_all']);
 
         $response = [
@@ -66,21 +33,18 @@ if ($method === 'GET') {
 
         // Si se solicita el listado completo y es un operador autorizado
         if ($includeAll) {
-            $operator = verifyConfigOperatorPermission($pdo, $operatorId, $operatorLogin);
-            if ($operator) {
-                $stmt = $pdo->query("SELECT id, clave, valor, descripcion, fecha_actualizacion FROM `enmi_configuracion` ORDER BY clave ASC");
-                $configList = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            requireApiUser($pdo, ['superadministrador']);
+            $stmt = $pdo->query("SELECT id, clave, valor, descripcion, fecha_actualizacion FROM `enmi_configuracion` ORDER BY clave ASC");
+            $configList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-                // Ocultar contraseñas sensibles en la salida por seguridad
-                $safeList = array_map(function ($item) {
-                    if ($item['clave'] === 'smtp_pass' && !empty($item['valor'])) {
-                        $item['valor'] = '••••••••';
-                    }
-                    return $item;
-                }, $configList);
+            $safeList = array_map(function ($item) {
+                if (str_contains(strtolower((string)$item['clave']), 'pass') || str_contains(strtolower((string)$item['clave']), 'secret')) {
+                    $item['valor'] = '********';
+                }
+                return $item;
+            }, $configList);
 
-                $response['configuracion'] = $safeList;
-            }
+            $response['configuracion'] = $safeList;
         }
 
         sendJsonResponse($response, 200);
@@ -110,15 +74,11 @@ if ($method === 'POST') {
         ], 400);
     }
 
-    $operatorId    = isset($data['operator_id']) ? (int)$data['operator_id'] : null;
-    $operatorLogin = isset($data['operator_login']) ? trim((string)$data['operator_login']) : null;
-
-    $operator = verifyConfigOperatorPermission($pdo, $operatorId, $operatorLogin);
+    $operator = requireApiUser($pdo, ['superadministrador']);
     if (!$operator) {
         logAuth('config_acceso_denegado', 'Intento de modificar configuración sin permisos suficientes', [
-            'operator_id'    => $operatorId,
-            'operator_login' => $operatorLogin
-        ], false, $operatorId);
+            'operator_id' => null
+        ], false);
 
         sendJsonResponse([
             'success' => false,

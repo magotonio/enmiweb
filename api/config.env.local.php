@@ -11,6 +11,7 @@
 return [
     // URL Base de la Aplicación Web (Desarrollo)
     'APP_URL' => 'http://localhost:4200',
+    'APP_ENV' => 'local',
 
     // Base de Datos MariaDB / MySQL
     'DB_HOST' => 'db',              // Nombre del servicio MariaDB en Docker Compose

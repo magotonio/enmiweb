@@ -25,6 +25,7 @@ Sistema modular y accesible de captación y registro de inscripciones, desarroll
 ## 🚀 Características Principales
 
 - **Frontend Reactivo**: Formulario desarrollado con Standalone Components, Signals y Reactive Forms en Angular 21.
+- **Versión visible**: El pie de página muestra la versión de `package.json`, incorporada automáticamente al compilar la aplicación.
 - **Validaciones en Tiempo Real**: Validación inmediata en cliente con autofoco accesible al primer campo inválido.
 - **Backend Ligero**: API REST en PHP 8.2 estructurada para despliegue sin dependencias complejas (compatible con hosting compartido / Dinahosting).
 - **Persistencia Segura**: Consultas parametrizadas mediante PDO con MariaDB 10.11 (`utf8mb4`).

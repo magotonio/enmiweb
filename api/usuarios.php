@@ -11,30 +11,7 @@ require_once __DIR__ . '/mailer.php';
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 $pdo = getDbConnection();
-
-// Función auxiliar para verificar si el usuario que ejecuta la acción es superadministrador
-function verifySuperAdminPermission(PDO $pdo, ?int $operatorId, ?string $operatorLogin): bool {
-    if (!$operatorId && empty($operatorLogin)) {
-        return false;
-    }
-
-    try {
-        if ($operatorId) {
-            $stmt = $pdo->prepare("SELECT rol, bloqueado FROM `enmi_usuarios` WHERE id = :id LIMIT 1");
-            $stmt->execute([':id' => $operatorId]);
-        } else {
-            $stmt = $pdo->prepare("SELECT rol, bloqueado FROM `enmi_usuarios` WHERE login = :login LIMIT 1");
-            $stmt->execute([':login' => $operatorLogin]);
-        }
-
-        $user = $stmt->fetch();
-        if (!$user) return false;
-        if ((int)$user['bloqueado'] === 1) return false;
-        return ($user['rol'] === 'superadministrador');
-    } catch (PDOException $e) {
-        return false;
-    }
-}
+requireApiUser($pdo, ['superadministrador']);
 
 // ---------------------------------------------------------------------
 // 1. GET: Listar usuarios
@@ -101,9 +78,6 @@ if ($method === 'POST') {
     }
 
     $action = isset($data['action']) ? trim((string)$data['action']) : 'create';
-    $operatorId = isset($data['operator_id']) ? (int)$data['operator_id'] : null;
-    $operatorLogin = isset($data['operator_login']) ? trim((string)$data['operator_login']) : null;
-
     // A) CREAR NUEVO USUARIO
     if ($action === 'create') {
         $login    = isset($data['login']) ? trim((string)$data['login']) : '';

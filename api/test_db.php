@@ -6,9 +6,10 @@
 
 require_once __DIR__ . '/config.php';
 
-try {
-    $pdo = getDbConnection();
+$pdo = getDbConnection();
+requireApiUser($pdo, ['superadministrador']);
 
+try {
     // Obtener versión de MariaDB
     $versionStmt = $pdo->query("SELECT VERSION() as version");
     $version = $versionStmt->fetch()['version'] ?? 'Desconocida';

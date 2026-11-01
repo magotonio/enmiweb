@@ -11,55 +11,15 @@
  *  - estado: Filtrar por estado ('activo', etc.)
  *  - sort: Campo de ordenación ('fecha_creacion', 'nombre', 'apellidos', 'id')
  *  - order: Dirección de ordenación ('ASC' | 'DESC')
- *  - user_id / user_login / user_email: Identificación del usuario para control de acceso
  */
 
 require_once __DIR__ . '/config.php';
 
 $pdo = getDbConnection();
-
-/**
- * Obtiene el usuario autenticado para aplicar las restricciones de seguridad por rol.
- */
-function getAuthenticatedUser(PDO $pdo, ?array $postData = null): ?array {
-    $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : ($postData['user_id'] ?? null);
-    $userLogin = isset($_GET['user_login']) ? trim((string)$_GET['user_login']) : ($postData['user_login'] ?? null);
-    $userEmail = isset($_GET['user_email']) ? trim((string)$_GET['user_email']) : ($postData['user_email'] ?? null);
-
-    if (!$userId && isset($_SERVER['HTTP_X_USER_ID'])) {
-        $userId = (int)$_SERVER['HTTP_X_USER_ID'];
-    }
-    if (!$userLogin && isset($_SERVER['HTTP_X_USER_LOGIN'])) {
-        $userLogin = trim((string)$_SERVER['HTTP_X_USER_LOGIN']);
-    }
-
-    if (!$userId && empty($userLogin) && empty($userEmail)) {
-        return null;
-    }
-
-    try {
-        if ($userId) {
-            $stmt = $pdo->prepare("SELECT id, login, email, rol, bloqueado FROM `enmi_usuarios` WHERE id = :id LIMIT 1");
-            $stmt->execute([':id' => $userId]);
-        } elseif (!empty($userLogin)) {
-            $stmt = $pdo->prepare("SELECT id, login, email, rol, bloqueado FROM `enmi_usuarios` WHERE login = :login LIMIT 1");
-            $stmt->execute([':login' => $userLogin]);
-        } else {
-            $stmt = $pdo->prepare("SELECT id, login, email, rol, bloqueado FROM `enmi_usuarios` WHERE email = :email LIMIT 1");
-            $stmt->execute([':email' => $userEmail]);
-        }
-
-        $user = $stmt->fetch();
-        if (!$user || (int)$user['bloqueado'] === 1) {
-            return null;
-        }
-        return $user;
-    } catch (PDOException $e) {
-        return null;
-    }
-}
-
 $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+$authUser = $requestMethod === 'GET'
+    ? requireApiUser($pdo)
+    : requireApiUser($pdo, ['superadministrador', 'supervisor']);
 
 // ---------------------------------------------------------------------
 // 1. ACTUALIZAR ESTADO DE INSCRIPCIÓN (POST / PATCH / PUT)
@@ -71,7 +31,6 @@ if ($requestMethod === 'POST' || $requestMethod === 'PATCH' || $requestMethod ==
         $data = $_POST;
     }
 
-    $authUser = getAuthenticatedUser($pdo, $data);
     $userRole = $authUser['rol'] ?? null;
 
     if (!$authUser || !in_array($userRole, ['superadministrador', 'supervisor'], true)) {
@@ -137,9 +96,8 @@ if ($requestMethod !== 'GET') {
 }
 
 try {
-    $authUser = getAuthenticatedUser($pdo);
     $userRole = $authUser['rol'] ?? 'asistente';
-    $userEmail = $authUser['email'] ?? (isset($_GET['user_email']) ? trim((string)$_GET['user_email']) : '');
+    $userEmail = (string)($authUser['email'] ?? '');
 
     // Parámetros de consulta sanitizados
     $search = isset($_GET['q']) ? trim((string)$_GET['q']) : '';

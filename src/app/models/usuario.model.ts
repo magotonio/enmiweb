@@ -102,7 +102,7 @@ export interface LoginResponse {
   bloqueado?: boolean | number;
   intentos_fallidos?: number;
   user?: AuthUser;
-  token?: string;
+  csrf_token?: string;
   errors?: Record<string, string>;
 }
 

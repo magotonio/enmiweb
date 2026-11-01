@@ -7,6 +7,9 @@
 
 require_once __DIR__ . '/config.php';
 
+startApiSession();
+requireApiCsrfToken();
+
 // Verificar que el método sea POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     sendJsonResponse([
@@ -149,8 +152,14 @@ try {
     // Registrar log de acceso exitoso
     logAuth('login_exitoso', "Inicio de sesión exitoso para usuario: {$user['login']} (Rol: " . ($user['rol'] ?? 'asistente') . ")", ['login' => $user['login'], 'rol' => $user['rol'] ?? 'asistente'], true, (int)$user['id']);
 
-    // Generar token de sesión (32 bytes aleatorios en hexadecimal)
-    $sessionToken = bin2hex(random_bytes(32));
+    session_regenerate_id(true);
+    $_SESSION = [
+        'user_id' => (int)$user['id'],
+        'auth_version' => hash('sha256', (string)$user['password_hash']),
+        'created_at' => time(),
+        'last_activity' => time(),
+        'csrf_token' => bin2hex(random_bytes(32))
+    ];
 
     sendJsonResponse([
         'success' => true,
@@ -163,7 +172,7 @@ try {
             'bloqueado'         => 0,
             'intentos_fallidos' => 0
         ],
-        'token'   => $sessionToken
+        'csrf_token' => $_SESSION['csrf_token']
     ], 200);
 
 } catch (PDOException $e) {
