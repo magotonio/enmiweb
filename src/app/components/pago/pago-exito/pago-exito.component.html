@@ -103,6 +103,12 @@
             <span role="status">Cargando cuota...</span>
             }
           </div>
+          @if (descuentoAplicado(); as descuento) {
+          <div class="flex justify-between items-center py-1 border-b border-slate-100">
+            <span class="text-slate-500">Descuento aplicado:</span>
+            <span class="font-bold text-emerald-700 font-mono">-{{ descuento.descuento_str }} €</span>
+          </div>
+          }
           @if (configError()) {
           <div role="alert" class="text-amber-950">
             <p>{{ configError() }}</p>

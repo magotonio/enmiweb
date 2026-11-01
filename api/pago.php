@@ -741,7 +741,7 @@ if ($method === 'POST') {
 
             $nombreParticipante = trim($inscripcion['nombre'] . ' ' . $inscripcion['apellidos']);
             $conceptoCompra = 'Inscripción ENMI 2027 #' . $inscripcionId . ' - ' . $nombreParticipante;
-            $notasModalidad = "Intención de pago del participante: " . strtoupper($modalidad) . ". No acredita un cobro.";
+            $notasModalidad = "Intención de pago del participante: " . strtoupper($modalidad) . ".";
             if ($descuentoInfo) {
                 $notasModalidad .= " | Descuento aplicado: {$descuentoInfo['token']} (-{$descuentoInfo['descuento_str']} €)";
             }

@@ -21,6 +21,10 @@ export class PagoExitoComponent implements OnInit {
   readonly registeredEmail = computed(() => this.sessionData()?.email);
   readonly registeredStatus = computed(() => this.sessionData()?.status);
   readonly selectedModalidad = computed(() => this.sessionData()?.modalidad);
+  readonly descuentoAplicado = computed(() => {
+    const descuento = this.sessionData()?.descuento;
+    return descuento?.valido && descuento.descuento > 0 ? descuento : null;
+  });
   readonly pagoConfig = signal<PagoConfigInfo | null>(null);
   readonly configError = signal<string | null>(null);
 
