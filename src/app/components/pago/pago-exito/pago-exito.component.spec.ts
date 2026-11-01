@@ -75,11 +75,10 @@ describe('Payment success routing', () => {
 
   it('renders paid sessions without offering another payment', async () => {
     sessionService.saveSession({ ...session, status: 'pagada', modalidad: 'redsys' });
-    const component = await harness.navigateByUrl('/pago/exito', PagoExitoComponent);
+    await harness.navigateByUrl('/pago/exito', PagoExitoComponent);
 
     expect(harness.routeNativeElement?.textContent).toContain('Pago Confirmado');
     expect(harness.routeNativeElement?.querySelector('#changeModalityBtn')).toBeNull();
-    component.cambiarModalidad();
     expect(TestBed.inject(Router).url).toBe('/pago/exito');
   });
 
@@ -110,17 +109,12 @@ describe('Payment success routing', () => {
     });
   }
 
-  it('allows changing modality and returns to success after confirmation', async () => {
-    const component = await harness.navigateByUrl('/pago/exito', PagoExitoComponent);
+  it('allows changing modality from the selector and returns to success after confirmation', async () => {
     const discount = {
       valido: true, token_id: 1, token: 'MAGIA50', descuento: 50, descuento_str: '50.00',
       precio_original: 250, nuevo_total: 200, nuevo_total_str: '200.00', usos_restantes: 1
     };
     sessionService.updateDescuento(discount);
-    component.cambiarModalidad();
-    await harness.fixture.whenStable();
-
-    expect(TestBed.inject(Router).url).toBe('/pago?cambiar=1');
     const selector = await harness.navigateByUrl('/pago?cambiar=1', PagoComponent);
     expect(selector.descuentoInfo()).toEqual(discount);
     expect(selector.selectedModalidad()).toBe('bizum');
@@ -138,20 +132,28 @@ describe('Payment success routing', () => {
     sessionService.saveSession({ ...session, modalidad: 'redsys' });
     const component = await harness.navigateByUrl('/pago/exito', PagoExitoComponent);
     expect(component.selectedModalidad()).toBe('redsys');
-    component.cambiarModalidad();
-    await harness.fixture.whenStable();
     const selector = await harness.navigateByUrl('/pago?cambiar=1', PagoComponent);
     expect(selector.selectedModalidad()).toBe('bizum');
     expect(sessionService.getSession()?.modalidad).toBe('redsys');
   });
 
-  it('clears the session when registering another participant', async () => {
-    const component = await harness.navigateByUrl('/pago/exito', PagoExitoComponent);
-    component.registrarOtro();
-    await harness.fixture.whenStable();
-    expect(sessionService.hasSession()).toBeFalse();
-    expect(TestBed.inject(Router).url).toBe('/registro');
-  });
+  for (const status of ['pendiente', 'pagada'] as const) {
+    it(`preserves the ${status} session without offering reset or modality changes`, async () => {
+      sessionService.saveSession({ ...session, status });
+      const savedSession = sessionService.getSession();
+      const clearSession = spyOn(sessionService, 'clearSession').and.callThrough();
+      await harness.navigateByUrl('/pago/exito', PagoExitoComponent);
+      await harness.fixture.whenStable();
+
+      expect(harness.routeNativeElement?.querySelector('#resetBtn')).toBeNull();
+      expect(harness.routeNativeElement?.querySelector('#changeModalityBtn')).toBeNull();
+      expect(harness.routeNativeElement?.querySelector('button')).toBeNull();
+      expect(clearSession).not.toHaveBeenCalled();
+      expect(pagoService.confirmarModalidad).not.toHaveBeenCalled();
+      expect(sessionService.getSession()).toEqual(savedSession);
+      expect(TestBed.inject(Router).url).toBe('/pago/exito');
+    });
+  }
 
   it('retains maintenance protection on the success page', async () => {
     maintenance = true;

@@ -1,6 +1,5 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
 import { InscripcionSessionService } from '../../../services/inscripcion-session.service';
 import { PagoService } from '../../../services/pago.service';
 import { PagoConfigInfo } from '../../../models/inscripcion.model';
@@ -13,7 +12,6 @@ import { PagoConfigInfo } from '../../../models/inscripcion.model';
 export class PagoExitoComponent implements OnInit {
   private readonly sessionService = inject(InscripcionSessionService);
   private readonly pagoService = inject(PagoService);
-  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly sessionData = this.sessionService.currentSession;
@@ -43,16 +41,5 @@ export class PagoExitoComponent implements OnInit {
       },
       error: () => this.configError.set('No se pudo cargar la cuota de inscripción. Vuelve a intentarlo.')
     });
-  }
-
-  cambiarModalidad(): void {
-    if (this.registeredStatus() !== 'pagada') {
-      this.router.navigate(['/pago'], { queryParams: { cambiar: '1' } });
-    }
-  }
-
-  registrarOtro(): void {
-    this.sessionService.clearSession();
-    this.router.navigate(['/registro']);
   }
 }
