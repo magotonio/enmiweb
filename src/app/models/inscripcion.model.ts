@@ -218,6 +218,7 @@ export interface PagoManualResponse {
 export interface PagosInscripcionResponse {
   success: boolean;
   inscripcion_id?: number;
+  estado?: EstadoInscripcion;
   total?: number;
   pagos: PagoRegistro[];
   message?: string;

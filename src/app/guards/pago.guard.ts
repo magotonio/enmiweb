@@ -5,7 +5,7 @@ import { InscripcionSessionService } from '../services/inscripcion-session.servi
 /**
  * Guard para la ruta de pago (/pago).
  * Garantiza que el usuario únicamente pueda acceder si:
- * 1. Ha completado previamente su formulario de inscripción (estado persistido en sesión).
+ * 1. Ha completado previamente su formulario de inscripción y no está pagada.
  * 2. O bien vuelve redirigido desde la pasarela Redsys con los parámetros ?pago= e ?id=.
  * 
  * En cualquier otro caso, redirige a /registro.
@@ -16,6 +16,9 @@ export const pagoGuard: CanActivateFn = (route) => {
 
   // 1. Verificar si hay datos de registro en sessionStorage
   if (sessionService.hasSession()) {
+    if (sessionService.getSession()?.status === 'pagada') {
+      return router.createUrlTree(['/registro/completado']);
+    }
     return true;
   }
 

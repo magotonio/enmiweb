@@ -11,7 +11,11 @@
         Inscripción registrada previamente en esta sesión
       </strong>
       <p class="text-xs sm:text-sm text-amber-900/90 leading-relaxed">
+        @if (activeSession()?.status === 'pagada') {
+        Tu inscripción está pagada. No necesitas realizar ningún otro pago. Si deseas registrar a una persona diferente, puedes iniciar un nuevo registro en blanco.
+        } @else {
         Tus datos ya están guardados en el sistema. Puedes continuar al paso de pago para abonar tu plaza o, si deseas registrar a una persona diferente, puedes iniciar un nuevo registro en blanco.
+        }
       </p>
     </div>
   </div>
@@ -26,7 +30,7 @@
         <span class="font-mono text-xl font-black text-white">#ENMI-{{ activeSession()?.id }}</span>
       </div>
       <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-brand-gold/20 text-brand-gold border border-brand-gold/40">
-        {{ activeSession()?.status === 'pagada' ? 'Pago Confirmado' : 'Pendiente de Pago' }}
+        {{ activeSession()?.status === 'pagada' ? 'Pagada' : 'Pendiente de Pago' }}
       </span>
     </div>
 
@@ -58,6 +62,7 @@
 
   <!-- Botones de Acción -->
   <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
+    @if (activeSession()?.status !== 'pagada') {
     <button type="button" id="continuePayBtn" (click)="continuarAlPago()"
       class="flex-1 inline-flex items-center justify-center gap-2.5 px-6 py-4 text-base font-bold text-white bg-brand-navy hover:bg-brand-navy-dark border border-brand-gold/40 rounded-2xl shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer">
       <span>Continuar al Paso de Pago</span>
@@ -66,6 +71,7 @@
         <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
       </svg>
     </button>
+    }
 
     <button type="button" id="newRegistrationBtn" (click)="iniciarNuevoRegistro()"
       class="inline-flex items-center justify-center px-6 py-4 rounded-2xl border border-brand-silver text-sm font-semibold text-brand-navy bg-white hover:bg-slate-50 transition-colors shadow-sm cursor-pointer">

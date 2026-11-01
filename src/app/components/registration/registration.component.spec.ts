@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
-import { Router, ActivatedRoute } from '@angular/router';
+import { BehaviorSubject } from 'rxjs';
+import { Router, ActivatedRoute, Params } from '@angular/router';
 import { signal } from '@angular/core';
 import { RegistrationComponent } from './registration.component';
 import { InscripcionService } from '../../services/inscripcion.service';
@@ -14,8 +14,10 @@ describe('RegistrationComponent', () => {
   let mockSessionService: jasmine.SpyObj<InscripcionSessionService>;
   let mockRouter: jasmine.SpyObj<Router>;
   let currentSessionSignal = signal<InscripcionSessionData | null>(null);
+  let queryParams: BehaviorSubject<Params>;
 
   beforeEach(async () => {
+    queryParams = new BehaviorSubject<Params>({});
     mockInscripcionService = jasmine.createSpyObj('InscripcionService', ['inscribir']);
     mockSessionService = jasmine.createSpyObj('InscripcionSessionService', ['saveSession', 'getSession', 'hasSession', 'clearSession'], {
       currentSession: currentSessionSignal
@@ -30,7 +32,7 @@ describe('RegistrationComponent', () => {
         { provide: InscripcionService, useValue: mockInscripcionService },
         { provide: InscripcionSessionService, useValue: mockSessionService },
         { provide: Router, useValue: mockRouter },
-        { provide: ActivatedRoute, useValue: { queryParams: of({}) } }
+        { provide: ActivatedRoute, useValue: { queryParams } }
       ]
     }).compileComponents();
 
@@ -45,12 +47,14 @@ describe('RegistrationComponent', () => {
   });
 
   it('should show registration form component when there is no active session', () => {
-    expect(component.hasActiveSession()).toBeFalse();
     const formEl = fixture.nativeElement.querySelector('app-registration-form');
     expect(formEl).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('app-registration-active-session')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Ya has completado tu registro');
+    expect(mockRouter.navigate).not.toHaveBeenCalled();
   });
 
-  it('should show active session card when an active session exists', () => {
+  it('should redirect an active session to the separate completed page', () => {
     currentSessionSignal.set({
       id: 99,
       fullName: 'Mago Test',
@@ -63,20 +67,18 @@ describe('RegistrationComponent', () => {
       registeredAt: new Date().toISOString()
     });
 
-    fixture.detectChanges();
-
-    expect(component.hasActiveSession()).toBeTrue();
-    const activeCard = fixture.nativeElement.querySelector('#activeSessionCard');
-    expect(activeCard).toBeTruthy();
+    queryParams.next({});
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/registro/completado'], { replaceUrl: true });
+    expect(fixture.nativeElement.querySelector('app-registration-active-session')).toBeNull();
   });
 
-  it('should navigate to /pago when continuarAlPago() is called', () => {
-    component.continuarAlPago();
-    expect(mockRouter.navigate).toHaveBeenCalledWith(['/pago']);
-  });
-
-  it('should clear session when iniciarNuevoRegistro() is called', () => {
-    component.iniciarNuevoRegistro();
-    expect(mockSessionService.clearSession).toHaveBeenCalled();
-  });
+  for (const hasSession of [false, true]) {
+    for (const params of [{ pago: 'ok', id: '99' }, { id: '99' }, { pago: 'ko' }]) {
+      it(`should preserve payment parameters ${JSON.stringify(params)} with session=${hasSession}`, () => {
+        mockSessionService.hasSession.and.returnValue(hasSession);
+        queryParams.next(params);
+        expect(mockRouter.navigate).toHaveBeenCalledOnceWith(['/pago'], { queryParams: params });
+      });
+    }
+  }
 });

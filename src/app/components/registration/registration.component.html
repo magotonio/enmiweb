@@ -15,19 +15,6 @@
             class="h-44 sm:h-52 w-auto object-contain drop-shadow-sm transition-transform duration-300 hover:scale-105">
         </div>
 
-        @if (hasActiveSession()) {
-        <div
-          class="inline-flex items-center gap-2 px-4 py-1 text-xs font-extrabold tracking-wider text-brand-gold-dark bg-brand-gold/15 border border-brand-gold/40 rounded-full uppercase mb-3 shadow-2xs">
-          <span class="w-2 h-2 rounded-full bg-brand-gold animate-pulse"></span>
-          Inscripción en Curso Detectada
-        </div>
-        <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-brand-navy mb-2.5">
-          Ya has completado tu registro
-        </h1>
-        <p class="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
-          Existe una inscripción activa a nombre de <strong class="text-brand-navy">{{ activeSession()?.fullName }}</strong> (<span class="font-mono font-bold text-brand-gold-dark">#ENMI-{{ activeSession()?.id }}</span>).
-        </p>
-        } @else {
         <div
           class="inline-flex items-center gap-2 px-4 py-1 text-xs font-extrabold tracking-wider text-brand-navy bg-brand-gold/15 border border-brand-gold/40 rounded-full uppercase mb-3 shadow-2xs">
           <span class="w-2 h-2 rounded-full bg-brand-gold animate-pulse"></span>
@@ -41,17 +28,9 @@
           de
           Magos Infantiles (ENMI).
         </p>
-        }
       </header>
 
-      @if (hasActiveSession()) {
-        <app-registration-active-session
-          [session]="activeSession()"
-          (continuePayment)="continuarAlPago()"
-          (newRegistration)="iniciarNuevoRegistro()" />
-      } @else {
-        <app-registration-form />
-      }
+      <app-registration-form />
 
     </div>
   </section>

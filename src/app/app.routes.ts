@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { HomeComponent } from './components/home/home.component';
 import { RegistrationComponent } from './components/registration/registration.component';
+import { RegistrationCompletedComponent } from './components/registration/registration-completed/registration-completed.component';
 import { PagoComponent } from './components/pago/pago.component';
 import { LoginComponent } from './components/login/login.component';
 import { ResetPasswordComponent } from './components/reset-password/reset-password.component';
@@ -24,6 +25,12 @@ export const routes: Routes = [
     component: HomeComponent,
     canActivate: [maintenanceGuard],
     title: 'Inicio | ENMI 2027 Madrid'
+  },
+  {
+    path: 'registro/completado',
+    component: RegistrationCompletedComponent,
+    canActivate: [maintenanceGuard],
+    title: 'Registro completado | ENMI 2027 Madrid'
   },
   {
     path: 'registro',

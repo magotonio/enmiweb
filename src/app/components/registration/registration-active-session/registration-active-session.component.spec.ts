@@ -75,7 +75,9 @@ describe('RegistrationActiveSessionComponent', () => {
     const el: HTMLElement = fixture.nativeElement;
     expect(el.textContent).toContain('David Copperfield');
     expect(el.textContent).toContain('#ENMI-456');
-    expect(el.textContent).toContain('Pago Confirmado');
+    expect(el.textContent).toContain('Pagada');
+    expect(el.textContent).not.toContain('Pendiente de Pago');
+    expect(el.querySelector('#continuePayBtn')).toBeNull();
   });
 
   it('should navigate to /pago on continuarAlPago() when no event listener is attached', () => {
@@ -95,6 +97,28 @@ describe('RegistrationActiveSessionComponent', () => {
   it('should clear session on iniciarNuevoRegistro() when no event listener is attached', () => {
     component.iniciarNuevoRegistro();
     expect(mockSessionService.clearSession).toHaveBeenCalled();
+  });
+
+  it('should hide payment and keep new registration available when the session becomes paid', () => {
+    currentSessionSignal.set({ ...mockSessionData, status: 'pagada' });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Pagada');
+    expect(fixture.nativeElement.textContent).not.toContain('Pendiente de Pago');
+    expect(fixture.nativeElement.textContent).not.toContain('Puedes continuar al paso de pago');
+    expect(fixture.nativeElement.querySelector('#continuePayBtn')).toBeNull();
+    expect(fixture.nativeElement.querySelector('#newRegistrationBtn')).toBeTruthy();
+  });
+
+  it('should not navigate or emit payment events for a paid registration', () => {
+    component.session = { ...mockSessionData, status: 'pagada' };
+    component.continuarAlPago();
+    const listener = jasmine.createSpy('continuePayment');
+    component.continuePayment.subscribe(listener);
+    component.continuarAlPago();
+
+    expect(mockRouter.navigate).not.toHaveBeenCalled();
+    expect(listener).not.toHaveBeenCalled();
   });
 
   it('should emit newRegistration event when iniciarNuevoRegistro() is called and listener is attached', () => {

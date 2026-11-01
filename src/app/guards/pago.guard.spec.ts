@@ -8,7 +8,7 @@ describe('pagoGuard', () => {
   let mockRouter: jasmine.SpyObj<Router>;
 
   beforeEach(() => {
-    mockSessionService = jasmine.createSpyObj('InscripcionSessionService', ['hasSession']);
+    mockSessionService = jasmine.createSpyObj('InscripcionSessionService', ['hasSession', 'getSession']);
     mockRouter = jasmine.createSpyObj('Router', ['createUrlTree']);
 
     TestBed.configureTestingModule({
@@ -51,4 +51,20 @@ describe('pagoGuard', () => {
     expect(mockRouter.createUrlTree).toHaveBeenCalledWith(['/registro']);
     expect(result).toBe(mockUrlTree);
   });
+
+  const paidSessionParams: Record<string, string>[] = [{}, { pago: 'ok', id: '15' }];
+  for (const queryParams of paidSessionParams) {
+    it(`should redirect paid sessions to the summary with params ${JSON.stringify(queryParams)}`, () => {
+      mockSessionService.hasSession.and.returnValue(true);
+      mockSessionService.getSession.and.returnValue({
+        id: 15, fullName: 'Mago Test', apellidos: 'Test',
+        email: 'test@example.com', telefono: '600000000', status: 'pagada'
+      });
+      const urlTree = new UrlTree();
+      mockRouter.createUrlTree.and.returnValue(urlTree);
+
+      expect(executeGuard(queryParams)).toBe(urlTree);
+      expect(mockRouter.createUrlTree).toHaveBeenCalledWith(['/registro/completado']);
+    });
+  }
 });

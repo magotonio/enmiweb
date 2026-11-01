@@ -463,6 +463,13 @@ if ($method === 'GET') {
         try {
             requireApiEnrollmentAccess($pdo, $inscripcionId);
 
+            $stmtInscripcion = $pdo->prepare("SELECT estado FROM `enmi_inscripciones` WHERE id = :id");
+            $stmtInscripcion->execute([':id' => $inscripcionId]);
+            $inscripcion = $stmtInscripcion->fetch(PDO::FETCH_ASSOC);
+            if (!$inscripcion) {
+                sendJsonResponse(['success' => false, 'message' => 'Inscripción no encontrada.'], 404);
+            }
+
             $stmt = $pdo->prepare("
                 SELECT 
                     id, 
@@ -514,6 +521,7 @@ if ($method === 'GET') {
             sendJsonResponse([
                 'success'        => true,
                 'inscripcion_id' => $inscripcionId,
+                'estado'         => $inscripcion['estado'],
                 'total'          => count($pagos),
                 'pagos'          => $pagos
             ], 200);

@@ -31,6 +31,8 @@ export class RegistrationActiveSessionComponent {
   });
 
   continuarAlPago(): void {
+    if (this.activeSession()?.status === 'pagada') return;
+
     if (this.continuePayment.observed) {
       this.continuePayment.emit();
     } else {
