@@ -1,10 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { BehaviorSubject, of, throwError } from 'rxjs';
+import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PagoComponent } from './pago.component';
 import { PagoService } from '../../services/pago.service';
 import { InscripcionSessionService } from '../../services/inscripcion-session.service';
-import { DescuentoTokenInfo } from '../../models/inscripcion.model';
+import { DescuentoTokenInfo, PagoConfigInfo, PagosInscripcionResponse } from '../../models/inscripcion.model';
 
 describe('PagoComponent', () => {
   let component: PagoComponent;
@@ -53,7 +53,7 @@ describe('PagoComponent', () => {
       bizum: { telefono: '+34 600 000 000', beneficiario: 'ENMI' },
       transferencia: { iban: 'ES00 1234', titular: 'ENMI', banco: 'Santander', concepto_template: 'ENMI-{ID}-{APELLIDOS}' },
       otras: { texto: 'Coordinación directa' },
-      redsys: { entorno: 'sandbox', sandbox: true, tpv_url: 'https://sis-t.redsys.es' }
+      redsys: { activo: true, entorno: 'sandbox', sandbox: true, tpv_url: 'https://sis-t.redsys.es' }
     }));
 
     mockSessionService.getSession.and.returnValue({
@@ -275,7 +275,7 @@ describe('PagoComponent', () => {
       bizum: { telefono: '+34 600 000 000', beneficiario: 'ENMI' },
       transferencia: { iban: 'ES00 1234', titular: 'ENMI', banco: 'Santander', concepto_template: 'ENMI' },
       otras: { texto: 'Directo' },
-      redsys: { entorno: 'sandbox', sandbox: true, tpv_url: 'https://sis-t.redsys.es' },
+      redsys: { activo: true, entorno: 'sandbox', sandbox: true, tpv_url: 'https://sis-t.redsys.es' },
       demo_pago: true
     });
     fixture.detectChanges();
@@ -294,7 +294,7 @@ describe('PagoComponent', () => {
       bizum: { telefono: '+34 600 000 000', beneficiario: 'ENMI' },
       transferencia: { iban: 'ES00 1234', titular: 'ENMI', banco: 'Santander', concepto_template: 'ENMI' },
       otras: { texto: 'Directo' },
-      redsys: { entorno: 'sandbox', sandbox: true, tpv_url: 'https://sis-t.redsys.es' },
+      redsys: { activo: true, entorno: 'sandbox', sandbox: true, tpv_url: 'https://sis-t.redsys.es' },
       demo_pago: false
     });
     fixture.detectChanges();
@@ -304,5 +304,148 @@ describe('PagoComponent', () => {
     const koBtn = fixture.nativeElement.querySelector('#simulateKoBtn');
     expect(okBtn).toBeNull();
     expect(koBtn).toBeNull();
+  });
+
+  function configConRedsys(activo: boolean): PagoConfigInfo {
+    const config = component.pagoConfig();
+    if (!config) throw new Error('Expected payment configuration');
+    return { ...config, redsys: { ...config.redsys, activo }, demo_pago: true };
+  }
+
+  it('hides disabled Redsys and its simulator while preserving all manual options', () => {
+    mockPagoService.getPagoConfig.and.returnValue(of(configConRedsys(false)));
+    component.loadPagoConfig();
+    fixture.detectChanges();
+
+    expect(component.selectedModalidad()).toBe('bizum');
+    expect(component.isDemoPagoActive()).toBeFalse();
+    const root: HTMLElement = fixture.nativeElement;
+    expect(root.querySelector('#redsysOption')).toBeNull();
+    expect(root.querySelector('#redsysPayBtn')).toBeNull();
+    expect(root.querySelector('#simulateOkBtn')).toBeNull();
+    expect(root.querySelector('#simulateKoBtn')).toBeNull();
+    expect(root.querySelectorAll('input[name="modalidadPago"]').length).toBe(3);
+
+    component.chooseModalidad('redsys');
+    component.procederRedsysOficial();
+    component.ejecutarSimuladorRedsys('ok');
+    expect(component.selectedModalidad()).toBe('bizum');
+    expect(component.paymentError()).toBeTruthy();
+    expect(mockPagoService.iniciarRedsys).not.toHaveBeenCalled();
+    expect(mockPagoService.simularRedsys).not.toHaveBeenCalled();
+  });
+
+  it('restores Redsys when enabled again without changing a manual selection', () => {
+    const enabled = configConRedsys(true);
+    mockPagoService.getPagoConfig.and.returnValue(of(configConRedsys(false)));
+    component.loadPagoConfig();
+    component.chooseModalidad('transferencia');
+    mockPagoService.getPagoConfig.and.returnValue(of(enabled));
+    component.loadPagoConfig();
+    fixture.detectChanges();
+
+    expect(component.selectedModalidad()).toBe('transferencia');
+    expect(fixture.nativeElement.querySelector('#redsysOption')).not.toBeNull();
+    component.chooseModalidad('redsys');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#redsysPayBtn')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('#simulateOkBtn')).not.toBeNull();
+  });
+
+  it('preserves historical Redsys modality until the participant chooses to change it', () => {
+    component.isCompleted.set(true);
+    mockPagoService.getPagoConfig.and.returnValue(of(configConRedsys(false)));
+    component.loadPagoConfig();
+
+    expect(component.selectedModalidad()).toBe('redsys');
+    expect(component.isCompleted()).toBeTrue();
+    component.cambiarModalidad();
+    expect(component.selectedModalidad()).toBe('bizum');
+    expect(component.isCompleted()).toBeFalse();
+  });
+
+  it('selects an available option after a failed return when Redsys has been disabled', () => {
+    mockPagoService.getPagoConfig.and.returnValue(of(configConRedsys(false)));
+    component.loadPagoConfig();
+    mockSessionService.hasSession.and.returnValue(true);
+    mockPagoService.getPagosByInscripcion.and.returnValue(of({ success: true, pagos: [] }));
+
+    queryParams$.next({ pago: 'ko', id: '42' });
+
+    expect(component.selectedModalidad()).toBe('bizum');
+    expect(component.isCompleted()).toBeFalse();
+  });
+
+  it('still verifies successful returns after Redsys has been disabled', () => {
+    mockPagoService.getPagoConfig.and.returnValue(of(configConRedsys(false)));
+    component.loadPagoConfig();
+    mockSessionService.hasSession.and.returnValue(true);
+    const response = new Subject<PagosInscripcionResponse>();
+    mockPagoService.getPagosByInscripcion.and.returnValue(response);
+
+    queryParams$.next({ pago: 'ok', id: '42' });
+    component.loadPagoConfig();
+    response.next({
+      success: true,
+      pagos: [{
+        id: 1, inscripcion_id: 42, referencia: '123456789012', cantidad_pagada: 250,
+        modalidad_pago: 'redsys', estado: 'pagado', tipo_registro: 'redsys',
+        pago_confirmado: true, fecha_creacion: '2026-11-01 10:00:00'
+      }]
+    });
+    response.complete();
+
+    expect(component.isCompleted()).toBeTrue();
+    expect(component.selectedModalidad()).toBe('redsys');
+    expect(mockSessionService.updateStatus).toHaveBeenCalledWith('pagada', 'redsys');
+  });
+
+  it('does not expose payment actions while configuration is loading', () => {
+    const response = new Subject<PagoConfigInfo>();
+    const config = configConRedsys(false);
+    mockPagoService.getPagoConfig.and.returnValue(response);
+    component.loadPagoConfig();
+    fixture.detectChanges();
+
+    expect(component.isLoadingPagoConfig()).toBeTrue();
+    expect(fixture.nativeElement.querySelector('input[name="modalidadPago"]')).toBeNull();
+    component.procederRedsysOficial();
+    component.confirmarMetodoManual('bizum');
+    expect(mockPagoService.iniciarRedsys).not.toHaveBeenCalled();
+    expect(mockPagoService.confirmarModalidad).not.toHaveBeenCalled();
+
+    response.next(config);
+    response.complete();
+    expect(component.isLoadingPagoConfig()).toBeFalse();
+    expect(component.selectedModalidad()).toBe('bizum');
+  });
+
+  it('shows configuration errors without enabling a fallback gateway and supports retry', () => {
+    const config = configConRedsys(false);
+    mockPagoService.getPagoConfig.and.returnValue(throwError(() => new Error('Network error')));
+    component.loadPagoConfig();
+    fixture.detectChanges();
+
+    expect(component.pagoConfig()).toBeNull();
+    expect(component.isRedsysActivo()).toBeFalse();
+    expect(component.configError()).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('input[name="modalidadPago"]')).toBeNull();
+    const retry: HTMLButtonElement = fixture.nativeElement.querySelector('[role="alert"] button');
+    expect(retry.textContent).toContain('Reintentar');
+
+    mockPagoService.getPagoConfig.and.returnValue(of(config));
+    retry.click();
+    expect(component.configError()).toBeNull();
+    expect(component.pagoConfig()).toEqual(config);
+  });
+
+  it('rejects unsuccessful configuration responses', () => {
+    mockPagoService.getPagoConfig.and.returnValue(of({
+      ...configConRedsys(true), success: false, message: 'Configuración no disponible'
+    }));
+    component.loadPagoConfig();
+    expect(component.pagoConfig()).toBeNull();
+    expect(component.configError()).toBe('Configuración no disponible');
+    expect(component.isRedsysActivo()).toBeFalse();
   });
 });

@@ -41,6 +41,12 @@
 
         <!-- Botones de Acción de Cabecera -->
         <div class="flex flex-wrap items-center gap-2.5">
+          @if (isSuperAdmin()) {
+          <a routerLink="/admin/configuracion"
+            class="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-brand-navy bg-brand-gold hover:bg-brand-gold/80 rounded-xl shadow-xs transition-colors">
+            Configuración del Sistema
+          </a>
+          }
           <!-- Botón Actualizar Datos -->
           <button type="button" (click)="cargarDatos(true)" [disabled]="isLoading() || isRefreshing()"
             class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-brand-white border border-brand-silver/50 hover:border-brand-navy/30 hover:bg-slate-50 rounded-xl shadow-2xs transition-all duration-150 active:scale-95 cursor-pointer disabled:opacity-60"

@@ -218,6 +218,10 @@ function isPagoDemoMode(?PDO $pdo = null): bool {
     return in_array(strtolower(trim((string)$val)), ['1', 'true', 'yes', 'si', 'on'], true);
 }
 
+function isRedsysActivo(?PDO $pdo = null): bool {
+    return getConfigValue('pago_redsys_activo', '1', $pdo) === '1';
+}
+
 /**
  * Obtiene los parámetros de configuración para el envío de correos electrónicos vía SMTP.
  * Prioridad de configuración:
@@ -511,5 +515,4 @@ set_error_handler('globalErrorHandler');
 register_shutdown_function('globalShutdownHandler');
 
 require_once __DIR__ . '/auth.php';
-
 

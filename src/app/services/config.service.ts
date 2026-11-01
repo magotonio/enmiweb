@@ -98,10 +98,24 @@ export class ConfigService {
     const params = new HttpParams().set('include_all', '1');
 
     return this.http.get<ConfigResponse>(this.apiUrl, { params }).pipe(
-      map(res => res.configuracion || []),
-      catchError(err => {
-        console.error('Error al obtener la configuración completa:', err);
-        return of([]);
+      map(res => {
+        if (!res.success || !Array.isArray(res.configuracion)) {
+          throw new Error(res.message || 'No se pudo recuperar la configuración.');
+        }
+        return res.configuracion;
+      })
+    );
+  }
+
+  setConfig(clave: string, valor: string): Observable<ConfigResponse> {
+    return this.http.post<ConfigResponse>(this.apiUrl, { clave, valor }).pipe(
+      tap(response => {
+        if (response.success) {
+          this.isMaintenanceMode.set(response.mantenimiento);
+          if (response.demo_pago !== undefined) {
+            this.isDemoPago.set(response.demo_pago);
+          }
+        }
       })
     );
   }

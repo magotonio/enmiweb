@@ -95,6 +95,7 @@ export interface InscripcionesFilterParams {
 
 export interface PagoConfigInfo {
   success: boolean;
+  message?: string;
   importe: string;
   bizum: {
     telefono: string;
@@ -110,6 +111,7 @@ export interface PagoConfigInfo {
     texto: string;
   };
   redsys: {
+    activo: boolean;
     entorno: string;
     sandbox: boolean;
     tpv_url: string;

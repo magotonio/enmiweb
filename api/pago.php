@@ -418,6 +418,7 @@ if ($method === 'GET') {
                     'texto' => $otrasTexto
                 ],
                 'redsys'        => [
+                    'activo'  => isRedsysActivo($pdo),
                     'entorno' => $redsysEntorno,
                     'sandbox' => ($redsysEntorno !== 'produccion'),
                     'tpv_url' => $tpvUrl
@@ -537,6 +538,14 @@ if ($method === 'POST') {
     }
 
     $accion = isset($data['accion']) ? trim((string)$data['accion']) : '';
+
+    // Los retornos de operaciones ya iniciadas siguen aceptandose al desactivar la pasarela.
+    if (in_array($accion, ['iniciar_redsys', 'simular_redsys'], true) && !isRedsysActivo($pdo)) {
+        sendJsonResponse([
+            'success' => false,
+            'message' => 'El pago con Redsys está desactivado. Elige otra modalidad de pago.'
+        ], 403);
+    }
 
     // Validar código de descuento (POST)
     if ($accion === 'validar_descuento') {

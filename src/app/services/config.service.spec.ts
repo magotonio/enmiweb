@@ -79,4 +79,52 @@ describe('ConfigService', () => {
       demo_pago: false
     });
   });
+
+  it('requests the protected full list including secret metadata', () => {
+    const items = [{ clave: 'smtp_pass', valor: '********', secreto: true }];
+    service.getFullConfig().subscribe(result => expect(result).toEqual(items));
+    const req = httpMock.expectOne(request => request.params.get('include_all') === '1');
+    expect(req.request.method).toBe('GET');
+    req.flush({ success: true, mantenimiento: false, configuracion: items });
+  });
+
+  it('propagates full-list HTTP errors instead of returning an empty list', () => {
+    service.getFullConfig().subscribe({
+      next: () => fail('A failed load must not appear successful'),
+      error: error => expect(error.status).toBe(403)
+    });
+    httpMock.expectOne(request => request.params.has('include_all'))
+      .flush({ message: 'No autorizado' }, { status: 403, statusText: 'Forbidden' });
+  });
+
+  it('rejects unsuccessful or malformed full-list responses', () => {
+    for (const response of [
+      { success: false, message: 'Error al consultar' },
+      { success: true }
+    ]) {
+      service.getFullConfig().subscribe({
+        next: () => fail('An invalid response must not appear successful'),
+        error: error => expect(error instanceof Error).toBeTrue()
+      });
+      httpMock.expectOne(request => request.params.has('include_all')).flush(response);
+    }
+  });
+
+  it('saves arbitrary values exactly and synchronizes maintenance and demo state', () => {
+    service.setConfig('pago_otras_modalidades_texto', ' Texto\ncon saltos ').subscribe();
+    const req = httpMock.expectOne(request => request.url.includes('configuracion.php'));
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ clave: 'pago_otras_modalidades_texto', valor: ' Texto\ncon saltos ' });
+    req.flush({ success: true, mantenimiento: true, demo_pago: false });
+    expect(service.isMaintenanceMode()).toBeTrue();
+    expect(service.isDemoPago()).toBeFalse();
+  });
+
+  it('does not change global flags when saving fails', () => {
+    service.setConfig('mantenimiento', '1').subscribe();
+    httpMock.expectOne(request => request.url.includes('configuracion.php'))
+      .flush({ success: false, mantenimiento: true, demo_pago: false });
+    expect(service.isMaintenanceMode()).toBeFalse();
+    expect(service.isDemoPago()).toBeTrue();
+  });
 });

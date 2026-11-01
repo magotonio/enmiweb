@@ -8,6 +8,7 @@ export interface ConfigItem {
   valor: string | null;
   descripcion?: string | null;
   fecha_actualizacion?: string | null;
+  secreto?: boolean;
 }
 
 export interface ConfigResponse {

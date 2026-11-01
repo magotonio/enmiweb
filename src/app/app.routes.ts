@@ -8,6 +8,7 @@ import { AdminDashboardComponent } from './components/admin-dashboard/admin-dash
 import { AdminInscripcionesComponent } from './components/admin-inscripciones/admin-inscripciones.component';
 import { AdminUsuariosComponent } from './components/admin-usuarios/admin-usuarios.component';
 import { AdminLogsComponent } from './components/admin-logs/admin-logs.component';
+import { AdminConfiguracionComponent } from './components/admin-configuracion/admin-configuracion.component';
 import { PanelAsistenteComponent } from './components/panel-asistente/panel-asistente.component';
 import { AsistenteFichaComponent } from './components/asistente-ficha/asistente-ficha.component';
 import { AccesoDenegadoComponent } from './components/acceso-denegado/acceso-denegado.component';
@@ -122,6 +123,16 @@ export const routes: Routes = [
       roles: ['superadministrador']
     },
     title: 'Auditoría y Logs del Sistema | ENMI 2027 Madrid'
+  },
+
+  {
+    path: 'admin/configuracion',
+    component: AdminConfiguracionComponent,
+    canActivate: [maintenanceGuard, roleGuard],
+    data: {
+      roles: ['superadministrador']
+    },
+    title: 'Configuración del Sistema | ENMI 2027 Madrid'
   },
 
   // Alias y redirecciones amigables

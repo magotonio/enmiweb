@@ -11,6 +11,11 @@ require_once __DIR__ . '/config.php';
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $pdo = getDbConnection();
 
+function isSecretConfigKey(string $clave): bool {
+    $clave = strtolower($clave);
+    return str_contains($clave, 'pass') || str_contains($clave, 'secret');
+}
+
 // ---------------------------------------------------------------------
 // 1. GET: Consulta de estado de mantenimiento / configuración
 // ---------------------------------------------------------------------
@@ -38,7 +43,8 @@ if ($method === 'GET') {
             $configList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             $safeList = array_map(function ($item) {
-                if (str_contains(strtolower((string)$item['clave']), 'pass') || str_contains(strtolower((string)$item['clave']), 'secret')) {
+                $item['secreto'] = isSecretConfigKey((string)$item['clave']);
+                if ($item['secreto']) {
                     $item['valor'] = '********';
                 }
                 return $item;
@@ -61,7 +67,7 @@ if ($method === 'GET') {
 }
 
 // ---------------------------------------------------------------------
-// 2. POST: Actualizar configuración (Superadmin / Supervisor)
+// 2. POST: Actualizar configuración (Exclusivo Superadministrador)
 // ---------------------------------------------------------------------
 if ($method === 'POST') {
     $inputRaw = file_get_contents('php://input');
@@ -113,6 +119,13 @@ if ($method === 'POST') {
     }
 
     // Normalizar valor para mantenimiento y demo_pago
+    if ($clave === 'pago_redsys_activo' && !in_array($valor, ['0', '1'], true)) {
+        sendJsonResponse([
+            'success' => false,
+            'message' => 'pago_redsys_activo debe ser 1 (activado) o 0 (desactivado).'
+        ], 400);
+    }
+
     if ($clave === 'mantenimiento' || $clave === 'pago_modo_demo') {
         $valor = in_array(strtolower(trim($valor)), ['1', 'true', 'on', 'si'], true) ? '1' : '0';
     }
@@ -131,10 +144,11 @@ if ($method === 'POST') {
             ':valor' => $valor
         ]);
 
-        $logDesc = "Configuración actualizada: [{$clave}] = '{$valor}' por el usuario {$operator['login']} (Rol: {$operator['rol']})";
+        $safeValor = isSecretConfigKey($clave) ? '********' : $valor;
+        $logDesc = "Configuración actualizada: [{$clave}] = '{$safeValor}' por el usuario {$operator['login']} (Rol: {$operator['rol']})";
         logInfo('config', 'config_actualizada', $logDesc, [
             'clave'          => $clave,
-            'valor'          => ($clave === 'smtp_pass') ? '••••••••' : $valor,
+            'valor'          => $safeValor,
             'operator_id'    => $operator['id'],
             'operator_login' => $operator['login']
         ], (int)$operator['id']);
@@ -147,7 +161,7 @@ if ($method === 'POST') {
             'success'             => true,
             'message'             => "Parámetro '{$clave}' actualizado correctamente.",
             'clave'               => $clave,
-            'valor'               => $valor,
+            'valor'               => $safeValor,
             'mantenimiento'       => $mantenimientoActivo,
             'mantenimiento_valor' => ($clave === 'mantenimiento' ? $valor : (string)getConfigValue('mantenimiento', '0', $pdo)),
             'demo_pago'           => $demoPagoActivo,

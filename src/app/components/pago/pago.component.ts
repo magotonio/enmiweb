@@ -22,7 +22,10 @@ export class PagoComponent implements OnInit {
 
   // Configuración de pagos y pasarela
   pagoConfig = signal<PagoConfigInfo | null>(null);
-  isDemoPagoActive = computed(() => this.pagoConfig()?.demo_pago !== false);
+  isLoadingPagoConfig = signal(false);
+  configError = signal<string | null>(null);
+  isRedsysActivo = computed(() => this.pagoConfig()?.redsys.activo === true);
+  isDemoPagoActive = computed(() => this.isRedsysActivo() && this.pagoConfig()?.demo_pago !== false);
   selectedModalidad = signal<ModalidadPago>('redsys');
   isProcessingPayment = signal<boolean>(false);
   paymentError = signal<string | null>(null);
@@ -60,9 +63,6 @@ export class PagoComponent implements OnInit {
   registeredStatus = computed(() => this.sessionData()?.status || 'iniciada');
 
   ngOnInit(): void {
-    // 1. Cargar configuración pública de pago
-    this.loadPagoConfig();
-
     // 2. Si la sesión ya estaba en estado pagada o con modalidad confirmada, mostrar pantalla final
     const currentSession = this.sessionService.getSession();
     if (currentSession) {
@@ -105,6 +105,7 @@ export class PagoComponent implements OnInit {
             }
 
             if (paid) {
+              this.selectedModalidad.set('redsys');
               this.sessionService.updateStatus('pagada', 'redsys');
               this.isCompleted.set(true);
               this.paymentError.set(null);
@@ -112,6 +113,7 @@ export class PagoComponent implements OnInit {
             } else {
               this.sessionService.updateStatus('pendiente', 'redsys');
               this.isCompleted.set(false);
+              this.normalizarModalidadDisponible();
               this.paymentNotice.set(null);
               this.paymentError.set(pagoStatus === 'ko'
                 ? 'El pago no se completó. La inscripción permanece pendiente; puedes reintentarlo o elegir otra modalidad.'
@@ -120,49 +122,48 @@ export class PagoComponent implements OnInit {
             window.scrollTo({ top: 0, behavior: 'smooth' });
           },
           error: () => {
+            this.normalizarModalidadDisponible();
             this.paymentNotice.set(null);
             this.paymentError.set('No se pudo verificar el resultado del pago. La inscripción no se marcará como pagada.');
           }
         });
       }
     });
+    this.loadPagoConfig();
   }
 
   loadPagoConfig(): void {
+    this.isLoadingPagoConfig.set(true);
+    this.configError.set(null);
+    this.pagoConfig.set(null);
     this.pagoService.getPagoConfig().subscribe({
       next: (config) => {
+        this.isLoadingPagoConfig.set(false);
+        if (!config.success) {
+          this.configError.set(config.message || 'No se pudo cargar la configuración de pago. Vuelve a intentarlo.');
+          return;
+        }
         this.pagoConfig.set(config);
+        this.normalizarModalidadDisponible();
       },
       error: () => {
-        // Fallback por defecto si hay problema temporal de conexión
-        this.pagoConfig.set({
-          success: true,
-          importe: '250.00',
-          bizum: {
-            telefono: '+34 600 000 000',
-            beneficiario: 'Encuentro Nacional de Magos Infantiles (ENMI)'
-          },
-          transferencia: {
-            iban: 'ES00 0000 0000 0000 0000 0000',
-            titular: 'Asociación ENMI 2027 / Eutikea',
-            banco: 'Banco Santander',
-            concepto_template: 'ENMI-2027-{ID}-{APELLIDOS}'
-          },
-          otras: {
-            texto: 'Para otra forma de pago, nos pondremos en contacto contigo personalmente a través de tu teléfono o email.'
-          },
-          redsys: {
-            entorno: 'sandbox',
-            sandbox: true,
-            tpv_url: 'https://sis-t.redsys.es:25443/sis/realizarPago'
-          },
-          demo_pago: true
-        });
+        this.isLoadingPagoConfig.set(false);
+        this.configError.set('No se pudo cargar la configuración de pago. Vuelve a intentarlo.');
       }
     });
   }
 
+  private normalizarModalidadDisponible(): void {
+    if (this.pagoConfig() && !this.isCompleted() && this.selectedModalidad() === 'redsys' && !this.isRedsysActivo()) {
+      this.selectedModalidad.set('bizum');
+    }
+  }
+
   chooseModalidad(mod: ModalidadPago): void {
+    if (mod === 'redsys' && !this.isRedsysActivo()) {
+      this.paymentError.set('El pago con Redsys no está disponible. Elige otra modalidad de pago.');
+      return;
+    }
     this.selectedModalidad.set(mod);
     this.paymentError.set(null);
   }
@@ -225,6 +226,10 @@ export class PagoComponent implements OnInit {
    * Procesa la opción 1: Pasarela Redsys Oficial
    */
   procederRedsysOficial(): void {
+    if (!this.isRedsysActivo()) {
+      this.paymentError.set('El pago con Redsys no está disponible. Elige otra modalidad de pago.');
+      return;
+    }
     const id = this.registeredId();
     if (id <= 0) return;
 
@@ -250,6 +255,10 @@ export class PagoComponent implements OnInit {
    * Simulador de pruebas para desarrollo local
    */
   ejecutarSimuladorRedsys(resultado: 'ok' | 'ko'): void {
+    if (!this.isDemoPagoActive()) {
+      this.paymentError.set('El simulador de Redsys no está disponible.');
+      return;
+    }
     const id = this.registeredId();
     if (id <= 0) return;
 
@@ -283,6 +292,10 @@ export class PagoComponent implements OnInit {
    * Confirma la selección de modalidades manuales (Bizum, Transferencia, Otras)
    */
   confirmarMetodoManual(modalidad: ModalidadPago): void {
+    if (!this.pagoConfig()) {
+      this.paymentError.set('Es necesario cargar la configuración de pago antes de continuar.');
+      return;
+    }
     const id = this.registeredId();
     if (id <= 0) return;
 
@@ -336,6 +349,7 @@ export class PagoComponent implements OnInit {
    */
   cambiarModalidad(): void {
     this.isCompleted.set(false);
+    this.normalizarModalidadDisponible();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
