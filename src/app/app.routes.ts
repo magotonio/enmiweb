@@ -3,6 +3,7 @@ import { HomeComponent } from './components/home/home.component';
 import { RegistrationComponent } from './components/registration/registration.component';
 import { RegistrationCompletedComponent } from './components/registration/registration-completed/registration-completed.component';
 import { PagoComponent } from './components/pago/pago.component';
+import { PagoExitoComponent } from './components/pago/pago-exito/pago-exito.component';
 import { LoginComponent } from './components/login/login.component';
 import { ResetPasswordComponent } from './components/reset-password/reset-password.component';
 import { AdminDashboardComponent } from './components/admin-dashboard/admin-dashboard.component';
@@ -17,6 +18,7 @@ import { MantenimientoComponent } from './components/mantenimiento/mantenimiento
 import { roleGuard } from './guards/role.guard';
 import { maintenanceGuard } from './guards/maintenance.guard';
 import { pagoGuard } from './guards/pago.guard';
+import { pagoExitoGuard } from './guards/pago-exito.guard';
 
 export const routes: Routes = [
   // Rutas Públicas (Nivel 0 - Abiertas con control de Modo Mantenimiento)
@@ -37,6 +39,12 @@ export const routes: Routes = [
     component: RegistrationComponent,
     canActivate: [maintenanceGuard],
     title: 'Inscripción | ENMI 2027 Madrid'
+  },
+  {
+    path: 'pago/exito',
+    component: PagoExitoComponent,
+    canActivate: [maintenanceGuard, pagoExitoGuard],
+    title: 'Inscripción recibida | ENMI 2027 Madrid'
   },
   {
     path: 'pago',

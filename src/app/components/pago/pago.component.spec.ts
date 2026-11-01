@@ -101,7 +101,7 @@ describe('PagoComponent', () => {
   it('should display participant info from session', () => {
     expect(component.registeredId()).toBe(42);
     expect(component.registeredFullName()).toBe('Carlos Gómez');
-    expect(component.registeredStatus()).toBe('iniciada');
+    expect(fixture.nativeElement.querySelector('#successState')).toBeNull();
   });
 
   it('should change payment modality', () => {
@@ -125,7 +125,7 @@ describe('PagoComponent', () => {
 
     expect(mockPagoService.getPagosByInscripcion).toHaveBeenCalledWith(42);
     expect(mockSessionService.updateStatus).not.toHaveBeenCalledWith('pagada', 'redsys');
-    expect(component.isCompleted()).toBeFalse();
+    expect(mockRouter.navigate).not.toHaveBeenCalled();
   });
 
   it('should mark payment complete only when the API reports a paid Redsys payment', () => {
@@ -140,7 +140,7 @@ describe('PagoComponent', () => {
     queryParams$.next({ pago: 'ko', id: '42' });
 
     expect(mockSessionService.updateStatus).toHaveBeenCalledWith('pagada', 'redsys');
-    expect(component.isCompleted()).toBeTrue();
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/pago/exito'], { replaceUrl: true });
   });
 
   for (const tipo of ['manual_administracion', 'simulacion', 'promesa'] as const) {
@@ -164,7 +164,7 @@ describe('PagoComponent', () => {
       queryParams$.next({ pago: 'ok', id: '42' });
 
       expect(mockSessionService.updateStatus).not.toHaveBeenCalledWith('pagada', 'redsys');
-      expect(component.isCompleted()).toBeFalse();
+      expect(mockRouter.navigate).not.toHaveBeenCalled();
     });
   }
 
@@ -220,7 +220,7 @@ describe('PagoComponent', () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
 
-    expect(component.isCompleted()).toBeFalse();
+    expect(mockRouter.navigate).not.toHaveBeenCalled();
     expect(component.descuentoInfo()).toEqual(descuento);
     expect(component.codigoDescuentoInput()).toBe('MAGIA50');
     expect(component.importeFinalStr()).toBe('200.00');
@@ -248,24 +248,72 @@ describe('PagoComponent', () => {
     expect(component.descuentoError()).toBe('El código ha caducado.');
   });
 
-  it('should confirm manual modality (bizum) and mark completed', () => {
+  for (const modalidad of ['bizum', 'transferencia', 'otras'] as const) {
+  it(`should confirm ${modalidad} and navigate to the success page`, () => {
     mockPagoService.confirmarModalidad.and.returnValue(of({
       success: true,
       inscripcion_id: 42,
       estado: 'pendiente'
     }));
 
+    component.confirmarMetodoManual(modalidad);
+
+    expect(mockPagoService.confirmarModalidad).toHaveBeenCalledWith(42, modalidad, undefined);
+    expect(mockSessionService.updateStatus).toHaveBeenCalledWith('pendiente', modalidad);
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/pago/exito']);
+  });
+  }
+
+  it('should stay on payment selection when manual confirmation fails', () => {
+    mockPagoService.confirmarModalidad.and.returnValue(of({ success: false, message: 'No registrada' }));
     component.confirmarMetodoManual('bizum');
 
-    expect(mockPagoService.confirmarModalidad).toHaveBeenCalledWith(42, 'bizum', undefined);
-    expect(mockSessionService.updateStatus).toHaveBeenCalledWith('pendiente', 'bizum');
-    expect(component.isCompleted()).toBeTrue();
+    expect(component.paymentError()).toBe('No registrada');
+    expect(mockSessionService.updateStatus).not.toHaveBeenCalled();
+    expect(mockRouter.navigate).not.toHaveBeenCalled();
   });
 
-  it('should clear session and navigate to /registro on registrarOtro', () => {
-    component.registrarOtro();
-    expect(mockSessionService.clearSession).toHaveBeenCalled();
-    expect(mockRouter.navigate).toHaveBeenCalledWith(['/registro']);
+  it('should stay on payment selection when manual confirmation has a network error', () => {
+    mockPagoService.confirmarModalidad.and.returnValue(throwError(() => new Error('Network error')));
+    component.confirmarMetodoManual('bizum');
+
+    expect(component.paymentError()).toBeTruthy();
+    expect(mockSessionService.updateStatus).not.toHaveBeenCalled();
+    expect(mockRouter.navigate).not.toHaveBeenCalled();
+  });
+
+  it('should navigate to success after a successful simulation', () => {
+    mockPagoService.simularRedsys.and.returnValue(of({ success: true }));
+    component.ejecutarSimuladorRedsys('ok');
+
+    expect(mockSessionService.updateStatus).toHaveBeenCalledWith('pagada', 'redsys');
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/pago/exito']);
+  });
+
+  it('should not navigate to success after a failed simulation', () => {
+    mockPagoService.simularRedsys.and.returnValue(of({ success: true }));
+    component.ejecutarSimuladorRedsys('ko');
+
+    expect(component.paymentError()).toBeTruthy();
+    expect(mockRouter.navigate).not.toHaveBeenCalled();
+  });
+
+  it('should not navigate to success when the simulation is rejected', () => {
+    mockPagoService.simularRedsys.and.returnValue(of({ success: false, message: 'No registrada' }));
+    component.ejecutarSimuladorRedsys('ok');
+
+    expect(component.paymentError()).toBe('No registrada');
+    expect(mockSessionService.updateStatus).not.toHaveBeenCalled();
+    expect(mockRouter.navigate).not.toHaveBeenCalled();
+  });
+
+  it('should not navigate to success when gateway verification fails', () => {
+    mockPagoService.getPagosByInscripcion.and.returnValue(throwError(() => new Error('Network error')));
+    queryParams$.next({ pago: 'ok', id: '42' });
+
+    expect(component.paymentError()).toBeTruthy();
+    expect(mockSessionService.updateStatus).not.toHaveBeenCalled();
+    expect(mockRouter.navigate).not.toHaveBeenCalled();
   });
 
   it('should show simulator buttons when demo_pago is true', () => {
@@ -352,16 +400,12 @@ describe('PagoComponent', () => {
     expect(fixture.nativeElement.querySelector('#simulateOkBtn')).not.toBeNull();
   });
 
-  it('preserves historical Redsys modality until the participant chooses to change it', () => {
-    component.isCompleted.set(true);
+  it('selects an available modality when returning to the selector', () => {
     mockPagoService.getPagoConfig.and.returnValue(of(configConRedsys(false)));
     component.loadPagoConfig();
 
-    expect(component.selectedModalidad()).toBe('redsys');
-    expect(component.isCompleted()).toBeTrue();
-    component.cambiarModalidad();
     expect(component.selectedModalidad()).toBe('bizum');
-    expect(component.isCompleted()).toBeFalse();
+    expect(mockRouter.navigate).not.toHaveBeenCalled();
   });
 
   it('selects an available option after a failed return when Redsys has been disabled', () => {
@@ -373,7 +417,7 @@ describe('PagoComponent', () => {
     queryParams$.next({ pago: 'ko', id: '42' });
 
     expect(component.selectedModalidad()).toBe('bizum');
-    expect(component.isCompleted()).toBeFalse();
+    expect(mockRouter.navigate).not.toHaveBeenCalled();
   });
 
   it('still verifies successful returns after Redsys has been disabled', () => {
@@ -395,7 +439,7 @@ describe('PagoComponent', () => {
     });
     response.complete();
 
-    expect(component.isCompleted()).toBeTrue();
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/pago/exito'], { replaceUrl: true });
     expect(component.selectedModalidad()).toBe('redsys');
     expect(mockSessionService.updateStatus).toHaveBeenCalledWith('pagada', 'redsys');
   });

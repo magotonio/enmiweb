@@ -1,0 +1,197 @@
+<div class="w-full py-8 sm:py-12 px-4 flex items-center justify-center flex-1 animate-in fade-in duration-300">
+  <section class="w-full max-w-4xl mx-auto">
+    <div
+      class="relative bg-brand-white border border-brand-silver/40 rounded-3xl p-6 sm:p-10 shadow-2xl shadow-brand-navy/10 transition-all duration-300">
+      <div
+        class="absolute top-0 left-0 right-0 h-2.5 bg-gradient-to-r from-brand-navy via-brand-gold to-brand-navy rounded-t-3xl"
+        aria-hidden="true"></div>
+
+      <header class="mb-8 text-center">
+        <div class="flex justify-center mb-5">
+          <img src="logo.svg" alt="Logo ENMI"
+            class="h-44 sm:h-52 w-auto object-contain drop-shadow-sm transition-transform duration-300 hover:scale-105">
+        </div>
+        <div
+          class="inline-flex items-center gap-2 px-4 py-1 text-xs font-extrabold tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-300 rounded-full uppercase mb-3 shadow-2xs">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          Inscripción Procesada
+        </div>
+        <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-brand-navy mb-2.5">
+          Estado de tu Inscripción
+        </h1>
+      </header>
+
+      <div id="successState" class="text-center py-8 px-4 animate-in zoom-in-95 duration-300 space-y-6">
+        @if (registeredStatus() === 'pagada') {
+        <div
+          class="w-20 h-20 rounded-full bg-emerald-100 text-emerald-700 border-2 border-emerald-300 ring-8 ring-emerald-50 flex items-center justify-center mx-auto shadow-sm">
+          <svg class="w-10 h-10" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        } @else {
+        <div
+          class="w-20 h-20 rounded-full bg-amber-100 text-amber-700 border-2 border-amber-300 ring-8 ring-amber-50 flex items-center justify-center mx-auto shadow-sm">
+          <svg class="w-10 h-10" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </div>
+        }
+
+        <div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-brand-navy mb-2">
+            ¡Inscripción Recibida con Éxito!
+          </h2>
+          <div
+            class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider mb-3 shadow-2xs"
+            [class.bg-emerald-100]="registeredStatus() === 'pagada'"
+            [class.text-emerald-800]="registeredStatus() === 'pagada'" [class.border]="true"
+            [class.border-emerald-300]="registeredStatus() === 'pagada'"
+            [class.bg-amber-100]="registeredStatus() === 'pendiente'"
+            [class.text-amber-900]="registeredStatus() === 'pendiente'"
+            [class.border-amber-300]="registeredStatus() === 'pendiente'">
+            <span class="w-2 h-2 rounded-full" [class.bg-emerald-500]="registeredStatus() === 'pagada'"
+              [class.bg-amber-500]="registeredStatus() === 'pendiente'"></span>
+            @if (registeredStatus() === 'pagada') {
+            <span>Pago Confirmado &bull; Inscripción Pagada</span>
+            } @else {
+            <span>Inscripción Registrada &bull; Pendiente de Pago</span>
+            }
+          </div>
+
+          <p class="text-slate-600 text-sm sm:text-base max-w-lg mx-auto leading-relaxed">
+            Gracias, <strong id="registeredName" class="font-bold text-brand-navy">{{ registeredFullName() }}</strong>
+            @if (registeredArtistName()) {
+            (<span class="text-brand-gold-dark font-semibold">{{ registeredArtistName() }}</span>)
+            }.
+            @if (registeredStatus() === 'pagada') {
+            Tu pago ha sido verificado con éxito y tu plaza en el Encuentro Nacional de Magos Infantiles (ENMI) se
+            encuentra <strong>totalmente confirmada</strong>.
+            } @else {
+            Tu solicitud de inscripción ha sido registrada en el sistema. Queda en estado <strong>pendiente de recibir y
+              verificar el pago</strong> para confirmar tu plaza definitiva.
+            @if (selectedModalidad() !== 'redsys') {
+            La modalidad elegida se registra como una <strong>intención de pago</strong>, no como un pago realizado.
+            }
+            }
+          </p>
+        </div>
+
+        <div
+          class="bg-slate-50 border border-slate-200 rounded-2xl p-5 max-w-lg mx-auto text-left space-y-3 text-xs shadow-2xs">
+          <div class="flex justify-between items-center pb-2 border-b border-slate-200 font-bold">
+            <span class="text-slate-500 uppercase tracking-wider text-[11px]">Número de Acreditación</span>
+            <span class="text-base font-black font-mono text-brand-gold-dark">#ENMI-{{ registeredId() }}</span>
+          </div>
+          <div class="flex justify-between items-center py-1 border-b border-slate-100">
+            <span class="text-slate-500">Participante:</span>
+            <span class="font-bold text-slate-800">{{ registeredFullName() }}</span>
+          </div>
+          @if (registeredEmail()) {
+          <div class="flex justify-between items-center py-1 border-b border-slate-100">
+            <span class="text-slate-500">Correo de contacto:</span>
+            <span class="font-medium text-slate-800 font-mono">{{ registeredEmail() }}</span>
+          </div>
+          }
+          <div class="flex justify-between items-center py-1 border-b border-slate-100">
+            <span class="text-slate-500">Cuota de inscripción:</span>
+            @if (pagoConfig(); as config) {
+            <span class="font-bold text-brand-navy font-mono">{{ config.importe }} €</span>
+            } @else if (!configError()) {
+            <span role="status">Cargando cuota...</span>
+            }
+          </div>
+          @if (configError()) {
+          <div role="alert" class="text-amber-950">
+            <p>{{ configError() }}</p>
+            <button type="button" (click)="loadPagoConfig()"
+              class="mt-2 px-3 py-2 rounded-xl bg-brand-navy text-white font-bold cursor-pointer">Reintentar</button>
+          </div>
+          }
+          <div class="flex justify-between items-center pt-1">
+            <span class="text-slate-500">Estado de la plaza:</span>
+            <span class="font-bold uppercase tracking-wider text-[11px]"
+              [class.text-emerald-700]="registeredStatus() === 'pagada'"
+              [class.text-amber-700]="registeredStatus() === 'pendiente'">
+              {{ registeredStatus() }}
+            </span>
+          </div>
+        </div>
+
+        @if (registeredEmail()) {
+        <div id="emailConfirmationNotice"
+          class="bg-blue-50/80 border border-blue-200/90 rounded-2xl p-4 sm:p-5 max-w-lg mx-auto text-left shadow-xs">
+          <div class="flex items-start gap-3.5">
+            <div class="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 mt-0.5">
+              <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+              </svg>
+            </div>
+            <div class="flex-1 space-y-1">
+              <strong class="text-sm font-bold text-blue-950 block">
+                Te hemos enviado un correo de confirmación
+              </strong>
+              <p class="text-xs sm:text-sm text-blue-900 leading-relaxed">
+                Hemos enviado un email con todos los datos y el estado de tu registro a:
+                <strong id="confirmedEmail"
+                  class="font-bold text-blue-950 block sm:inline mt-0.5 sm:mt-0 underline decoration-blue-300 underline-offset-2">{{
+                  registeredEmail() }}</strong>
+              </p>
+              <p class="text-xs text-blue-700/90 pt-1 flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                  stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+                </svg>
+                Si no lo encuentras en tu bandeja de entrada en unos instantes, revisa tu carpeta de spam o correo no
+                deseado.
+              </p>
+            </div>
+          </div>
+        </div>
+        }
+
+        <div
+          class="bg-brand-navy-soft/60 border border-brand-navy/10 rounded-2xl p-4 max-w-lg mx-auto text-xs text-slate-700 text-left space-y-2">
+          <div class="flex items-center gap-2 font-bold text-brand-navy">
+            <svg class="w-4 h-4 text-brand-gold-dark" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+              stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+            Próximos pasos:
+          </div>
+          @if (registeredStatus() === 'pagada') {
+          <p>Tu acreditación oficial estará lista para recoger en la recepción del encuentro. Si indicaste que quieres
+            participar activamente en galas o conferencias, el equipo organizador se pondrá en contacto contigo para
+            coordinar el programa artístico.</p>
+          } @else {
+          <p>Una vez completado y verificado el pago correspondiente, recibirás un correo definitivo confirmando tu
+            plaza. Recuerda indicar tu código de referencia en caso de transferencia o Bizum.</p>
+          }
+        </div>
+
+        <div class="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+          @if (registeredStatus() !== 'pagada') {
+          <button type="button" id="changeModalityBtn"
+            class="inline-flex items-center justify-center px-5 py-2.5 rounded-xl border border-brand-navy/20 text-xs font-semibold text-brand-navy bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
+            (click)="cambiarModalidad()">
+            Cambiar opción de pago
+          </button>
+          }
+
+          <button type="button" id="resetBtn"
+            class="inline-flex items-center justify-center px-6 py-3 rounded-xl border border-brand-silver text-sm font-semibold text-brand-navy bg-brand-white hover:bg-brand-silver-light hover:border-brand-navy active:bg-brand-silver/20 transition-all duration-200 shadow-sm cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-navy"
+            (click)="registrarOtro()">
+            Registrar a otro participante
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

@@ -328,6 +328,7 @@ try {
         'message'            => 'Inscripción iniciada correctamente. Procede a seleccionar la modalidad de pago.',
         'id'                 => $insertedId,
         'estado'             => 'iniciada',
+        'csrf_token'         => $_SESSION['csrf_token'],
         'data'               => [
             'id'                => $insertedId,
             'nombre'            => $nombre,
@@ -373,5 +374,4 @@ try {
         'message' => 'Error al registrar la inscripción en la base de datos: ' . $e->getMessage()
     ], 500);
 }
-
 

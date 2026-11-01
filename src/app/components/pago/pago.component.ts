@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal, computed } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -19,6 +20,7 @@ export class PagoComponent implements OnInit {
   private readonly sessionService = inject(InscripcionSessionService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   // Configuración de pagos y pasarela
   pagoConfig = signal<PagoConfigInfo | null>(null);
@@ -50,9 +52,6 @@ export class PagoComponent implements OnInit {
   });
   importeFinalStr = computed(() => this.importeFinal().toFixed(2));
 
-  // Control de pantalla: selector de pago vs pantalla de confirmación/éxito
-  isCompleted = signal<boolean>(false);
-
   // Datos reactivos de la sesión
   sessionData = this.sessionService.currentSession;
   registeredId = computed(() => this.sessionData()?.id || 0);
@@ -60,10 +59,8 @@ export class PagoComponent implements OnInit {
   registeredArtistName = computed(() => this.sessionData()?.artistName || '');
   registeredEmail = computed(() => this.sessionData()?.email || '');
   registeredPhone = computed(() => this.sessionData()?.telefono || '');
-  registeredStatus = computed(() => this.sessionData()?.status || 'iniciada');
 
   ngOnInit(): void {
-    // 2. Si la sesión ya estaba en estado pagada o con modalidad confirmada, mostrar pantalla final
     const currentSession = this.sessionService.getSession();
     if (currentSession) {
       if (currentSession.descuento) {
@@ -72,13 +69,10 @@ export class PagoComponent implements OnInit {
       if (currentSession.modalidad) {
         this.selectedModalidad.set(currentSession.modalidad);
       }
-      if (currentSession.status === 'pagada' || (currentSession.status === 'pendiente' && currentSession.modalidad)) {
-        this.isCompleted.set(true);
-      }
     }
 
-    // 3. Treat the browser return as a hint and verify payment status with the API.
-    this.route.queryParams.subscribe(params => {
+    // Verify gateway returns before considering a previously saved payment intention.
+    this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
       const pagoStatus = params['pago'];
       const idParam = params['id'];
 
@@ -87,7 +81,7 @@ export class PagoComponent implements OnInit {
         this.selectedModalidad.set('redsys');
         this.paymentNotice.set('Verificando el resultado del pago...');
 
-        this.pagoService.getPagosByInscripcion(id).subscribe({
+        this.pagoService.getPagosByInscripcion(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
           next: response => {
             const paid = response.success && (response.pagos?.some(pago =>
               pago.tipo_registro === 'redsys' && pago.pago_confirmado
@@ -107,12 +101,10 @@ export class PagoComponent implements OnInit {
             if (paid) {
               this.selectedModalidad.set('redsys');
               this.sessionService.updateStatus('pagada', 'redsys');
-              this.isCompleted.set(true);
               this.paymentError.set(null);
-              this.paymentNotice.set('El pago ha sido verificado correctamente por la pasarela de Redsys.');
+              this.router.navigate(['/pago/exito'], { replaceUrl: true });
             } else {
               this.sessionService.updateStatus('pendiente', 'redsys');
-              this.isCompleted.set(false);
               this.normalizarModalidadDisponible();
               this.paymentNotice.set(null);
               this.paymentError.set(pagoStatus === 'ko'
@@ -127,6 +119,9 @@ export class PagoComponent implements OnInit {
             this.paymentError.set('No se pudo verificar el resultado del pago. La inscripción no se marcará como pagada.');
           }
         });
+      } else if (currentSession?.status === 'pagada' ||
+          (currentSession?.status === 'pendiente' && currentSession.modalidad && params['cambiar'] !== '1')) {
+        this.router.navigate(['/pago/exito'], { replaceUrl: true });
       }
     });
     this.loadPagoConfig();
@@ -154,7 +149,7 @@ export class PagoComponent implements OnInit {
   }
 
   private normalizarModalidadDisponible(): void {
-    if (this.pagoConfig() && !this.isCompleted() && this.selectedModalidad() === 'redsys' && !this.isRedsysActivo()) {
+    if (this.pagoConfig() && this.selectedModalidad() === 'redsys' && !this.isRedsysActivo()) {
       this.selectedModalidad.set('bizum');
     }
   }
@@ -270,11 +265,13 @@ export class PagoComponent implements OnInit {
     this.pagoService.simularRedsys(id, resultado, codigo).subscribe({
       next: (res) => {
         this.isProcessingPayment.set(false);
+        if (!res.success) {
+          this.paymentError.set(res.message || 'No se pudo registrar la simulación de pago.');
+          return;
+        }
         if (resultado === 'ok') {
           this.sessionService.updateStatus('pagada', 'redsys');
-          this.isCompleted.set(true);
-          this.paymentNotice.set(res.message || '¡Pago completado con éxito! Inscripción pagada y confirmada.');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          this.router.navigate(['/pago/exito']);
         } else {
           this.sessionService.updateStatus('pendiente', 'redsys');
           this.paymentError.set(res.message || 'El pago no ha sido completado. Tu inscripción queda en estado pendiente.');
@@ -307,9 +304,12 @@ export class PagoComponent implements OnInit {
     this.pagoService.confirmarModalidad(id, modalidad, codigo).subscribe({
       next: (res) => {
         this.isProcessingPayment.set(false);
+        if (!res.success) {
+          this.paymentError.set(res.message || 'No se pudo registrar la modalidad de pago.');
+          return;
+        }
         this.sessionService.updateStatus('pendiente', modalidad);
-        this.isCompleted.set(true);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        this.router.navigate(['/pago/exito']);
       },
       error: (err) => {
         this.isProcessingPayment.set(false);
@@ -344,20 +344,4 @@ export class PagoComponent implements OnInit {
     });
   }
 
-  /**
-   * Permite volver a la pantalla de selección de modalidad si aún está pendiente
-   */
-  cambiarModalidad(): void {
-    this.isCompleted.set(false);
-    this.normalizarModalidadDisponible();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  /**
-   * Limpia la sesión y navega a la página de registro para inscribir a otra persona
-   */
-  registrarOtro(): void {
-    this.sessionService.clearSession();
-    this.router.navigate(['/registro']);
-  }
 }

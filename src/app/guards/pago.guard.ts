@@ -17,7 +17,7 @@ export const pagoGuard: CanActivateFn = (route) => {
   // 1. Verificar si hay datos de registro en sessionStorage
   if (sessionService.hasSession()) {
     if (sessionService.getSession()?.status === 'pagada') {
-      return router.createUrlTree(['/registro/completado']);
+      return router.createUrlTree(['/pago/exito']);
     }
     return true;
   }

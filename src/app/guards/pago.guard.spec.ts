@@ -54,7 +54,7 @@ describe('pagoGuard', () => {
 
   const paidSessionParams: Record<string, string>[] = [{}, { pago: 'ok', id: '15' }];
   for (const queryParams of paidSessionParams) {
-    it(`should redirect paid sessions to the summary with params ${JSON.stringify(queryParams)}`, () => {
+    it(`should redirect paid sessions to payment success with params ${JSON.stringify(queryParams)}`, () => {
       mockSessionService.hasSession.and.returnValue(true);
       mockSessionService.getSession.and.returnValue({
         id: 15, fullName: 'Mago Test', apellidos: 'Test',
@@ -64,7 +64,7 @@ describe('pagoGuard', () => {
       mockRouter.createUrlTree.and.returnValue(urlTree);
 
       expect(executeGuard(queryParams)).toBe(urlTree);
-      expect(mockRouter.createUrlTree).toHaveBeenCalledWith(['/registro/completado']);
+      expect(mockRouter.createUrlTree).toHaveBeenCalledWith(['/pago/exito']);
     });
   }
 });

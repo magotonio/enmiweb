@@ -39,6 +39,7 @@ export interface InscripcionFormData {
 export interface InscripcionApiResponse {
   success: boolean;
   message: string;
+  csrf_token?: string;
   duplicado?: boolean;
   id?: number;
   estado?: EstadoInscripcion;

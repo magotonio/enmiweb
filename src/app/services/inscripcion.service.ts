@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import {
   ActualizarEstadoInscripcionResponse,
   EstadoInscripcion,
@@ -11,12 +11,14 @@ import {
   InscripcionesListResponse
 } from '../models/inscripcion.model';
 import { environment } from '../../environments/environment';
+import { CsrfTokenService } from './csrf-token.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class InscripcionService {
   private readonly http = inject(HttpClient);
+  private readonly csrfTokenService = inject(CsrfTokenService);
   private readonly inscribirApiUrl = `${environment.apiUrl}/inscribir.php`;
   private readonly inscripcionesApiUrl = `${environment.apiUrl}/inscripciones.php`;
 
@@ -26,7 +28,13 @@ export class InscripcionService {
    * @returns Observable con la respuesta estandarizada de la API
    */
   inscribir(data: InscripcionFormData): Observable<InscripcionApiResponse> {
-    return this.http.post<InscripcionApiResponse>(this.inscribirApiUrl, data);
+    return this.http.post<InscripcionApiResponse>(this.inscribirApiUrl, data).pipe(
+      tap(response => {
+        if (response.success && response.csrf_token) {
+          this.csrfTokenService.setToken(response.csrf_token);
+        }
+      })
+    );
   }
 
   /**
