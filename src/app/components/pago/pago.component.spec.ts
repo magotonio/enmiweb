@@ -1,9 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { BehaviorSubject, of } from 'rxjs';
+import { BehaviorSubject, of, throwError } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PagoComponent } from './pago.component';
 import { PagoService } from '../../services/pago.service';
 import { InscripcionSessionService } from '../../services/inscripcion-session.service';
+import { DescuentoTokenInfo } from '../../models/inscripcion.model';
 
 describe('PagoComponent', () => {
   let component: PagoComponent;
@@ -12,6 +13,17 @@ describe('PagoComponent', () => {
   let mockSessionService: jasmine.SpyObj<InscripcionSessionService>;
   let mockRouter: jasmine.SpyObj<Router>;
   let queryParams$: BehaviorSubject<Record<string, string>>;
+  const descuento: DescuentoTokenInfo = {
+    valido: true,
+    token_id: 5,
+    token: 'MAGIA50',
+    descuento: 50,
+    descuento_str: '50.00',
+    precio_original: 250,
+    nuevo_total: 200,
+    nuevo_total_str: '200.00',
+    usos_restantes: 1
+  };
 
   beforeEach(async () => {
     mockPagoService = jasmine.createSpyObj('PagoService', [
@@ -30,6 +42,7 @@ describe('PagoComponent', () => {
       'hasSession',
       'updateStatus',
       'updateModalidad',
+      'updateDescuento',
       'clearSession'
     ]);
     mockRouter = jasmine.createSpyObj('Router', ['navigate']);
@@ -121,7 +134,7 @@ describe('PagoComponent', () => {
       success: true,
       inscripcion_id: 42,
       total: 1,
-      pagos: [{ modalidad_pago: 'redsys', estado: 'pagado' }]
+      pagos: [{ modalidad_pago: 'redsys', estado: 'pagado', tipo_registro: 'redsys', pago_confirmado: true }]
     } as any));
 
     queryParams$.next({ pago: 'ko', id: '42' });
@@ -129,6 +142,31 @@ describe('PagoComponent', () => {
     expect(mockSessionService.updateStatus).toHaveBeenCalledWith('pagada', 'redsys');
     expect(component.isCompleted()).toBeTrue();
   });
+
+  for (const tipo of ['manual_administracion', 'simulacion', 'promesa'] as const) {
+    it(`should not treat ${tipo} as a validated card payment`, () => {
+      mockSessionService.hasSession.and.returnValue(true);
+      mockPagoService.getPagosByInscripcion.and.returnValue(of({
+        success: true,
+        pagos: [{
+          id: 1,
+          inscripcion_id: 42,
+          referencia: 'ENMI-TEST',
+          cantidad_pagada: 250,
+          modalidad_pago: 'redsys',
+          estado: 'pagado',
+          tipo_registro: tipo,
+          pago_confirmado: tipo === 'manual_administracion',
+          fecha_creacion: '2026-11-01 10:00:00'
+        }]
+      }));
+
+      queryParams$.next({ pago: 'ok', id: '42' });
+
+      expect(mockSessionService.updateStatus).not.toHaveBeenCalledWith('pagada', 'redsys');
+      expect(component.isCompleted()).toBeFalse();
+    });
+  }
 
   it('should apply and remove discount code', () => {
     mockPagoService.validarDescuento.and.returnValue(of({
@@ -153,10 +191,61 @@ describe('PagoComponent', () => {
     expect(component.descuentoInfo()?.token).toBe('MAGIA50');
     expect(component.importeFinal()).toBe(200);
     expect(component.importeFinalStr()).toBe('200.00');
+    expect(mockSessionService.updateDescuento).toHaveBeenCalledWith(component.descuentoInfo());
 
     component.quitarDescuento();
     expect(component.descuentoInfo()).toBeNull();
     expect(component.importeFinal()).toBe(250);
+    expect(mockSessionService.updateDescuento).toHaveBeenCalledWith(null);
+  });
+
+  it('should restore the applied discount after a failed gateway return and send it on retry', () => {
+    const session = mockSessionService.getSession();
+    if (!session) throw new Error('Expected an enrollment session');
+    mockSessionService.getSession.and.returnValue({
+      ...session, status: 'pendiente', modalidad: 'redsys', descuento
+    });
+    mockSessionService.hasSession.and.returnValue(true);
+    mockPagoService.getPagosByInscripcion.and.returnValue(of({
+      success: true, inscripcion_id: 42, total: 0, pagos: []
+    }));
+    mockPagoService.iniciarRedsys.and.returnValue(of({
+      success: true, inscripcion_id: 42, tpv_url: 'https://sis-t.redsys.es',
+      Ds_SignatureVersion: 'HMAC_SHA256_V1', Ds_MerchantParameters: 'params',
+      Ds_Signature: 'signature', order: '123456789012', importe: '200.00', sandbox: true
+    }));
+    fixture.destroy();
+    queryParams$.next({ pago: 'ko', id: '42' });
+    fixture = TestBed.createComponent(PagoComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    expect(component.isCompleted()).toBeFalse();
+    expect(component.descuentoInfo()).toEqual(descuento);
+    expect(component.codigoDescuentoInput()).toBe('MAGIA50');
+    expect(component.importeFinalStr()).toBe('200.00');
+    expect(fixture.nativeElement.textContent).toContain('Cupón: MAGIA50');
+    expect(mockPagoService.validarDescuento).not.toHaveBeenCalled();
+
+    component.procederRedsysOficial();
+    expect(mockPagoService.iniciarRedsys).toHaveBeenCalledWith(42, 'MAGIA50');
+    expect(mockPagoService.submitToRedsysGateway).toHaveBeenCalled();
+
+    mockPagoService.confirmarModalidad.and.returnValue(of({ success: true }));
+    component.confirmarMetodoManual('transferencia');
+    expect(mockPagoService.confirmarModalidad).toHaveBeenCalledWith(42, 'transferencia', 'MAGIA50');
+  });
+
+  it('should clear the stored discount when validation fails', () => {
+    mockPagoService.validarDescuento.and.returnValue(throwError(() => ({
+      error: { message: 'El código ha caducado.' }
+    })));
+    component.codigoDescuentoInput.set('CADUCADO');
+    component.aplicarDescuento();
+
+    expect(component.descuentoInfo()).toBeNull();
+    expect(mockSessionService.updateDescuento).toHaveBeenCalledWith(null);
+    expect(component.descuentoError()).toBe('El código ha caducado.');
   });
 
   it('should confirm manual modality (bizum) and mark completed', () => {

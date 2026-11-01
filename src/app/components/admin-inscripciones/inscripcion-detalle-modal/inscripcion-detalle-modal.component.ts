@@ -152,7 +152,7 @@ export class InscripcionDetalleModalComponent implements OnInit, OnChanges {
 
   getTotalPagado(): number {
     return this.pagos()
-      .filter((p) => p.estado === 'pagado' || p.estado === 'pagada')
+      .filter((p) => p.pago_confirmado)
       .reduce((sum, p) => sum + (Number(p.cantidad_pagada) || 0), 0);
   }
 
@@ -189,6 +189,16 @@ export class InscripcionDetalleModalComponent implements OnInit, OnChanges {
         return { label: 'Otras Modalidades', class: 'bg-purple-50 text-purple-700 border-purple-200' };
       default:
         return { label: modalidad || 'No especificada', class: 'bg-slate-100 text-slate-700 border-slate-200' };
+    }
+  }
+
+  getTipoRegistroLabel(pago: PagoRegistro): string {
+    switch (pago.tipo_registro) {
+      case 'promesa': return 'Intención de pago del participante';
+      case 'manual_administracion': return 'Pago registrado por administración / supervisor';
+      case 'redsys': return pago.pago_confirmado ? 'Pago con tarjeta validado' : 'Intento de pago con tarjeta';
+      case 'simulacion': return 'Simulación de pago (no es un cobro real)';
+      default: return 'Registro de origen no identificado';
     }
   }
 
@@ -367,4 +377,3 @@ export class InscripcionDetalleModalComponent implements OnInit, OnChanges {
     });
   }
 }
-

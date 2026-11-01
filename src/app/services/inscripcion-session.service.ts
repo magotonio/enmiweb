@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { EstadoInscripcion, InscripcionSessionData, ModalidadPago } from '../models/inscripcion.model';
+import { DescuentoTokenInfo, EstadoInscripcion, InscripcionSessionData, ModalidadPago } from '../models/inscripcion.model';
 
 const SESSION_KEY = 'enmi_inscripcion_session';
 
@@ -73,6 +73,13 @@ export class InscripcionSessionService {
       modalidad
     };
     this.saveSession(updated);
+  }
+
+  updateDescuento(descuento: DescuentoTokenInfo | null): void {
+    const current = this.getSession();
+    if (!current) return;
+
+    this.saveSession({ ...current, descuento });
   }
 
   /**

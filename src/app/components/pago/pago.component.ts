@@ -66,6 +66,9 @@ export class PagoComponent implements OnInit {
     // 2. Si la sesión ya estaba en estado pagada o con modalidad confirmada, mostrar pantalla final
     const currentSession = this.sessionService.getSession();
     if (currentSession) {
+      if (currentSession.descuento) {
+        this.mostrarDescuento(currentSession.descuento);
+      }
       if (currentSession.modalidad) {
         this.selectedModalidad.set(currentSession.modalidad);
       }
@@ -86,7 +89,9 @@ export class PagoComponent implements OnInit {
 
         this.pagoService.getPagosByInscripcion(id).subscribe({
           next: response => {
-            const paid = response.pagos?.some(pago => pago.modalidad_pago === 'redsys' && pago.estado === 'pagado') ?? false;
+            const paid = response.success && (response.pagos?.some(pago =>
+              pago.tipo_registro === 'redsys' && pago.pago_confirmado
+            ) ?? false);
             if (!this.sessionService.hasSession()) {
               this.sessionService.saveSession({
                 id,
@@ -181,26 +186,35 @@ export class PagoComponent implements OnInit {
       next: (res) => {
         this.isValidatingDescuento.set(false);
         if (res.success && res.descuento) {
-          this.descuentoInfo.set(res.descuento);
-          this.descuentoExito.set(`¡Descuento de ${res.descuento.descuento_str} € aplicado! Total a abonar: ${res.descuento.nuevo_total_str} €`);
+          this.mostrarDescuento(res.descuento);
+          this.sessionService.updateDescuento(res.descuento);
           this.descuentoError.set(null);
         } else {
           this.descuentoInfo.set(null);
+          this.sessionService.updateDescuento(null);
           this.descuentoError.set(res.message || 'El código de descuento no está disponible.');
         }
       },
       error: (err) => {
         this.isValidatingDescuento.set(false);
         this.descuentoInfo.set(null);
+        this.sessionService.updateDescuento(null);
         this.descuentoError.set(err?.error?.message || 'El código de descuento no está disponible o ha caducado.');
       }
     });
+  }
+
+  private mostrarDescuento(descuento: DescuentoTokenInfo): void {
+    this.codigoDescuentoInput.set(descuento.token);
+    this.descuentoInfo.set(descuento);
+    this.descuentoExito.set(`¡Descuento de ${descuento.descuento_str} € aplicado! Total a abonar: ${descuento.nuevo_total_str} €`);
   }
 
   /**
    * Retira el código de descuento aplicado
    */
   quitarDescuento(): void {
+    this.sessionService.updateDescuento(null);
     this.descuentoInfo.set(null);
     this.codigoDescuentoInput.set('');
     this.descuentoError.set(null);

@@ -181,7 +181,7 @@
         <div class="flex items-center justify-between gap-2 mb-3 flex-wrap">
           <h4 class="text-xs font-bold uppercase tracking-wider text-brand-navy flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-brand-gold"></span>
-            Historial de Pagos y Transacciones
+            Historial de Pagos e Intenciones de Pago
             <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-navy/10 text-brand-navy">
               {{ pagos().length }}
             </span>
@@ -494,14 +494,22 @@
               </span>
             </div>
             <div class="text-[11px] text-slate-500 font-medium">
-              {{ pagos().length }} {{ pagos().length === 1 ? 'transacción registrada' : 'transacciones registradas' }}
+              {{ pagos().length }} {{ pagos().length === 1 ? 'registro' : 'registros' }}
             </div>
           </div>
+          <p class="text-[11px] text-slate-500">
+            El total abonado incluye solo cobros registrados por administración o supervisor y pagos con tarjeta
+            validados. Las intenciones de pago, los intentos y las simulaciones no suman.
+          </p>
 
           <!-- Tarjetas de pagos -->
           <div class="space-y-2.5">
             @for (pago of pagos(); track pago.id) {
             <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 shadow-2xs text-xs space-y-2.5">
+              <p class="font-bold" [class.text-amber-800]="pago.tipo_registro === 'promesa'"
+                [class.text-emerald-700]="pago.pago_confirmado">
+                {{ getTipoRegistroLabel(pago) }}
+              </p>
               <div class="flex items-center justify-between gap-2 flex-wrap">
                 <div class="flex items-center gap-2 flex-wrap">
                   <!-- Badge modalidad -->
@@ -520,6 +528,9 @@
 
                 <!-- Importe -->
                 <div class="font-mono text-sm font-extrabold text-slate-900">
+                  <span class="block text-[10px] font-semibold text-slate-500">
+                    {{ pago.pago_confirmado ? 'Importe abonado' : 'Importe previsto (no abonado)' }}
+                  </span>
                   {{ pago.cantidad_pagada | currency:'EUR':'symbol':'1.2-2':'es' }}
                 </div>
               </div>

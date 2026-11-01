@@ -58,7 +58,7 @@ export class PagoService {
   }
 
   /**
-   * Registra la modalidad de pago elegida (bizum, transferencia, otras) y sitúa la inscripción en 'pendiente'
+   * Registra una intención de pago (bizum, transferencia, otras), no un cobro, y deja la inscripción pendiente.
    */
   confirmarModalidad(inscripcionId: number, modalidad: ModalidadPago, codigoDescuento?: string): Observable<PagoAccionResponse> {
     return this.http.post<PagoAccionResponse>(this.pagoApiUrl, {

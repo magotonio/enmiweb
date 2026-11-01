@@ -172,6 +172,7 @@ export interface InscripcionSessionData {
   telefono: string;
   status: EstadoInscripcion;
   modalidad?: ModalidadPago | null;
+  descuento?: DescuentoTokenInfo | null;
   registeredAt?: string;
 }
 
@@ -183,6 +184,8 @@ export interface PagoRegistro {
   cantidad_pagada: number;
   modalidad_pago: string;
   estado: string;
+  tipo_registro: 'promesa' | 'manual_administracion' | 'redsys' | 'simulacion' | 'desconocido';
+  pago_confirmado: boolean;
   fecha_compra?: string | null;
   notas?: string | null;
   datos_transaccion?: Record<string, any> | string | null;

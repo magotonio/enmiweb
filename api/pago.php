@@ -11,6 +11,7 @@
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/mailer.php';
+require_once __DIR__ . '/pago-registro.php';
 
 $pdo = getDbConnection();
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
@@ -252,15 +253,47 @@ function validarTokenDescuento(PDO $pdo, string $codigo, float $precioBase): arr
 
 /**
  * Valida y descuenta 1 uso en la columna 'utilizado' de enmi_tokens.
- * Se ejecuta al pulsar el botón de confirmación de pago.
+ * Reutiliza el descuento ya consumido por un pago pendiente de la misma inscripción.
  */
-function consumirTokenDescuento(PDO $pdo, string $codigo, float $precioBase): array {
+function consumirTokenDescuento(PDO $pdo, string $codigo, float $precioBase, int $inscripcionId): array {
     $codigo = trim($codigo);
     if (empty($codigo)) {
         return ['exito' => false, 'mensaje' => 'Código no proporcionado.'];
     }
 
     try {
+        $stmtPrevio = $pdo->prepare("
+            SELECT datos_transaccion
+            FROM `enmi_pagos`
+            WHERE inscripcion_id = :inscripcion_id AND estado = 'no-pagado'
+            ORDER BY id DESC
+        ");
+        $stmtPrevio->execute([':inscripcion_id' => $inscripcionId]);
+        while ($pagoPrevio = $stmtPrevio->fetch(PDO::FETCH_ASSOC)) {
+            if (empty($pagoPrevio['datos_transaccion'])) {
+                continue;
+            }
+            $datos = json_decode($pagoPrevio['datos_transaccion'], true, 512, JSON_THROW_ON_ERROR);
+            if (!is_array($datos) || strcasecmp(trim((string)($datos['codigo_descuento'] ?? '')), $codigo) !== 0) {
+                continue;
+            }
+            if (!isset($datos['descuento_importe']) || !is_numeric($datos['descuento_importe']) || (float)$datos['descuento_importe'] < 0) {
+                throw new RuntimeException('El pago anterior no contiene un importe de descuento válido.');
+            }
+
+            $descuento = min((float)$datos['descuento_importe'], $precioBase);
+            $nuevoTotal = round($precioBase - $descuento, 2);
+            return [
+                'exito' => true,
+                'token' => (string)$datos['codigo_descuento'],
+                'descuento' => $descuento,
+                'descuento_str' => number_format($descuento, 2, '.', ''),
+                'precio_original' => $precioBase,
+                'nuevo_total' => $nuevoTotal,
+                'nuevo_total_str' => number_format($nuevoTotal, 2, '.', '')
+            ];
+        }
+
         $stmt = $pdo->prepare("
             SELECT id, token, tipo, valor, descripcion, fecha_caducidad, utilizado
             FROM `enmi_tokens`
@@ -341,6 +374,7 @@ function consumirTokenDescuento(PDO $pdo, string $codigo, float $precioBase): ar
             'descripcion'     => (string)($row['descripcion'] ?? '')
         ];
     } catch (Throwable $e) {
+        logError('pagos', 'error_consumir_descuento', $e->getMessage());
         return ['exito' => false, 'mensaje' => 'Error al procesar el código de descuento: ' . $e->getMessage()];
     }
 }
@@ -460,7 +494,7 @@ if ($method === 'GET') {
                     }
                 }
 
-                return [
+                return array_merge([
                     'id'                  => (int)$p['id'],
                     'inscripcion_id'      => (int)$p['inscripcion_id'],
                     'referencia'          => $p['referencia'] ?? '',
@@ -473,7 +507,7 @@ if ($method === 'GET') {
                     'datos_transaccion'   => $datosTrx,
                     'fecha_creacion'      => $p['fecha_creacion'],
                     'fecha_actualizacion' => $p['fecha_actualizacion'] ?? null
-                ];
+                ], clasificarRegistroPago($p));
             }, $rows);
 
             sendJsonResponse([
@@ -545,7 +579,7 @@ if ($method === 'POST') {
             $descuentoInfo = null;
 
             if (!empty($codigoDescuento)) {
-                $descuentoInfo = consumirTokenDescuento($pdo, $codigoDescuento, $importeNum);
+                $descuentoInfo = consumirTokenDescuento($pdo, $codigoDescuento, $importeNum, $inscripcionId);
                 if (!$descuentoInfo['exito']) {
                     sendJsonResponse(['success' => false, 'message' => $descuentoInfo['mensaje']], 400);
                 }
@@ -655,7 +689,7 @@ if ($method === 'POST') {
         $inscripcionId = isset($data['inscripcion_id']) ? (int)$data['inscripcion_id'] : 0;
         $modalidad     = isset($data['modalidad']) ? trim((string)$data['modalidad']) : '';
 
-        if ($inscripcionId <= 0 || !in_array($modalidad, ['bizum', 'transferencia', 'otras', 'redsys'], true)) {
+        if ($inscripcionId <= 0 || !in_array($modalidad, ['bizum', 'transferencia', 'otras'], true)) {
             sendJsonResponse(['success' => false, 'message' => 'Datos de modalidad o inscripción inválidos.'], 400);
         }
         requireApiCsrfToken();
@@ -681,7 +715,7 @@ if ($method === 'POST') {
             $descuentoInfo = null;
 
             if (!empty($codigoDescuento)) {
-                $descuentoInfo = consumirTokenDescuento($pdo, $codigoDescuento, $importeNum);
+                $descuentoInfo = consumirTokenDescuento($pdo, $codigoDescuento, $importeNum, $inscripcionId);
                 if (!$descuentoInfo['exito']) {
                     sendJsonResponse(['success' => false, 'message' => $descuentoInfo['mensaje']], 400);
                 }
@@ -690,7 +724,7 @@ if ($method === 'POST') {
 
             $nombreParticipante = trim($inscripcion['nombre'] . ' ' . $inscripcion['apellidos']);
             $conceptoCompra = 'Inscripción ENMI 2027 #' . $inscripcionId . ' - ' . $nombreParticipante;
-            $notasModalidad = "Modalidad seleccionada: " . strtoupper($modalidad) . ". Pago en espera de recepción.";
+            $notasModalidad = "Intención de pago del participante: " . strtoupper($modalidad) . ". No acredita un cobro.";
             if ($descuentoInfo) {
                 $notasModalidad .= " | Descuento aplicado: {$descuentoInfo['token']} (-{$descuentoInfo['descuento_str']} €)";
             }
@@ -717,6 +751,7 @@ if ($method === 'POST') {
                     'ip'                => $_SERVER['REMOTE_ADDR'] ?? null,
                     'user_agent'        => $_SERVER['HTTP_USER_AGENT'] ?? null,
                     'origen'            => 'confirmar_modalidad',
+                    'tipo_registro'     => 'promesa',
                     'codigo_descuento'  => $descuentoInfo ? $descuentoInfo['token'] : null,
                     'descuento_importe' => $descuentoInfo ? $descuentoInfo['descuento'] : null,
                     'importe_original'  => $descuentoInfo ? $descuentoInfo['precio_original'] : null
@@ -767,11 +802,13 @@ if ($method === 'POST') {
                 'modalidad'          => $modalidad,
                 'estado_pago'        => 'no-pagado',
                 'estado_compra'      => 'no-pagado',
+                'tipo_registro'      => 'promesa',
+                'pago_confirmado'    => false,
                 'importe'            => number_format($importeNum, 2, '.', ''),
                 'pago_id'            => $pagoId,
                 'compra_id'          => $pagoId,
                 'descuento_aplicado' => $descuentoInfo,
-                'message'            => 'Modalidad de pago registrada correctamente.'
+                'message'            => 'Intención de pago registrada. El pago queda pendiente de recepción y validación.'
             ], 200);
 
         } catch (Throwable $e) {
@@ -815,7 +852,7 @@ if ($method === 'POST') {
             $descuentoInfo = null;
 
             if (!empty($codigoDescuento) && $resultado === 'ok') {
-                $descuentoInfo = consumirTokenDescuento($pdo, $codigoDescuento, $importeNum);
+                $descuentoInfo = consumirTokenDescuento($pdo, $codigoDescuento, $importeNum, $inscripcionId);
                 if (!$descuentoInfo['exito']) {
                     sendJsonResponse(['success' => false, 'message' => $descuentoInfo['mensaje']], 400);
                 }
@@ -957,7 +994,7 @@ if ($method === 'POST') {
             }
 
             $stmtPago = $pdo->prepare(
-                "SELECT id, inscripcion_id, cantidad_pagada, estado FROM `enmi_pagos` WHERE referencia = :order AND modalidad_pago = 'redsys' LIMIT 1"
+                "SELECT id, inscripcion_id, cantidad_pagada, estado, datos_transaccion FROM `enmi_pagos` WHERE referencia = :order AND modalidad_pago = 'redsys' LIMIT 1"
             );
             $stmtPago->execute([':order' => $order]);
             $pago = $stmtPago->fetch(PDO::FETCH_ASSOC);
@@ -991,6 +1028,12 @@ if ($method === 'POST') {
                 ], 200);
             }
 
+            // Conservar el descuento consumido al iniciar el pedido para futuros reintentos.
+            $datosInicio = empty($pago['datos_transaccion'])
+                ? []
+                : json_decode($pago['datos_transaccion'], true, 512, JSON_THROW_ON_ERROR);
+            $datosRetorno = array_merge($datosInicio, $params);
+
             $pdo->beginTransaction();
             $stmtPagoUp = $pdo->prepare(
                 "UPDATE `enmi_pagos` SET `estado` = :estado, `fecha_compra` = :fecha_compra, `notas` = :notas, `datos_transaccion` = :datos, `fecha_actualizacion` = NOW() WHERE `id` = :id AND `estado` <> 'pagado'"
@@ -999,7 +1042,7 @@ if ($method === 'POST') {
                 ':estado' => $estadoCompra,
                 ':fecha_compra' => $isPagoOk ? date('Y-m-d H:i:s') : null,
                 ':notas' => $notasRetorno,
-                ':datos' => json_encode($params, JSON_UNESCAPED_UNICODE),
+                ':datos' => json_encode($datosRetorno, JSON_UNESCAPED_UNICODE),
                 ':id' => (int)$pago['id']
             ]);
             if ($isPagoOk) {
@@ -1197,6 +1240,8 @@ if ($method === 'POST') {
                     'cantidad_pagada'     => $cantidad,
                     'modalidad_pago'      => $modalidad,
                     'estado'              => 'pagado',
+                    'tipo_registro'       => 'manual_administracion',
+                    'pago_confirmado'     => true,
                     'fecha_compra'        => date('Y-m-d H:i:s'),
                     'notas'               => $notaFinal,
                     'datos_transaccion'   => $datosAuditoria,

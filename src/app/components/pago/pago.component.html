@@ -690,6 +690,9 @@
             } @else {
             Tu solicitud de inscripción ha sido registrada en el sistema. Queda en estado <strong>pendiente de recibir y
               verificar el pago</strong> para confirmar tu plaza definitiva.
+            @if (selectedModalidad() !== 'redsys') {
+            La modalidad elegida se registra como una <strong>intención de pago</strong>, no como un pago realizado.
+            }
             }
           </p>
         </div>

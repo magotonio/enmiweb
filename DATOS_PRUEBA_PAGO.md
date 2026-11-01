@@ -28,6 +28,16 @@ Si deseas comprobar el comportamiento de la aplicación y la pantalla de rechazo
 | **Tarjeta Caducada** | `4548 8100 0000 0029` | `0104` |
 | **Error en Autenticación 3D Secure** | `4548 8100 0000 0045` | `0184` |
 
+### Comprobación del descuento tras un pago fallido
+
+1. Aplica un código de descuento válido y comprueba el total reducido.
+2. Inicia el pago en Redsys, provoca una denegación y vuelve a la aplicación desde la pasarela.
+3. Comprueba que siguen visibles el cupón y el total reducido, sin introducir de nuevo el código.
+4. Reintenta el pago o cambia a una modalidad manual: debe enviarse el mismo código sin consumir otro uso para esa inscripción, incluso si el primer intento consumió el último uso disponible.
+5. Quita el descuento y recarga: no debe reaparecer. Tampoco debe trasladarse al registrar otro participante.
+
+El descuento se conserva en la sesión de la pestaña. La notificación de Redsys mantiene los datos del descuento del pedido para que el servidor pueda reutilizarlo en los reintentos.
+
 ---
 
 ## 2. Configuración del Comercio Sandbox de Redsys
@@ -60,3 +70,13 @@ Además de la pasarela oficial Redsys, la aplicación permite:
    - Deja la inscripción en estado `pendiente`.
 4. **Simulador Redsys (Demo Pago)**:
    - Botón directo en pantalla de pago (solo activo si `demo_pago = 1` en administración) que permite simular la respuesta `OK` o `KO` de forma inmediata sin necesidad de salir a la web de Redsys.
+
+### Intenciones de pago frente a cobros reales
+
+- Elegir Bizum, transferencia u otras modalidades crea una **intención de pago del participante**, con estado `no-pagado`. No acredita un cobro ni incrementa el total abonado.
+- El cobro manual posterior crea un registro independiente identificado como **pago registrado por administración / supervisor**, conservando su auditoría y la intención de pago original.
+- La tarjeta solo cuenta como abonada cuando Redsys valida el pago. Los intentos fallidos o pendientes no suman.
+- Las simulaciones conservan el comportamiento demo de la inscripción, pero se identifican como simulaciones y no suman al total de cobros reales.
+- Los registros existentes se clasifican a partir de sus datos de auditoría y referencias; no se necesita migración. Un registro de origen desconocido se muestra como tal y no acredita un cobro.
+
+Comprobación: seleccionar transferencia por 250 €, abrir la ficha y verificar una intención de pago con total abonado de 0 €. Registrar después un cobro manual de 250 €: deben aparecer ambos registros diferenciados, con un total abonado de 250 €, no 500 €. Un cobro parcial de 100 € debe sumar solo 100 €.
