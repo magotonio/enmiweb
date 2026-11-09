@@ -27,7 +27,7 @@ export class HomeComponent {
     },
     {
       icon: 'map-pin',
-      title: 'Madrid 2027',
+      title: 'Sede en Madrid',
       description: 'Una sede vibrante con la mejor oferta cultural, accesibilidad e instalaciones de primer nivel.'
     }
   ];

@@ -568,7 +568,7 @@ HTML;
                                 <span style="color: #D4AF37; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;">Confirmación Oficial</span>
                             </div>
                             <h1 style="color: #ffffff; margin: 0 0 8px 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em;">¡Tu inscripción ha sido recibida!</h1>
-                            <p style="color: #cbd5e1; margin: 0; font-size: 14px;">Encuentro Nacional de Magos Infantiles (ENMI)</p>
+                            <p style="color: #cbd5e1; margin: 0; font-size: 14px;">Encuentro Nacional de Magos Infantiles (ENMI) &bull; Madrid, 19 al 21 de noviembre de 2027</p>
                         </td>
                     </tr>
                     
@@ -721,7 +721,7 @@ HTML;
 
 ¡Hola, {$nombre}!
 
-Te confirmamos que hemos recibido y registrado correctamente tus datos de inscripción para el Encuentro Nacional de Magos Infantiles (ENMI).
+Te confirmamos que hemos recibido y registrado correctamente tus datos de inscripción para el Encuentro Nacional de Magos Infantiles (ENMI), que se celebrará en Madrid del 19 al 21 de noviembre de 2027.
 
 A continuación tienes el resumen con los datos enviados:
 
